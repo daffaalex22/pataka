@@ -54,15 +54,16 @@ function buildSeats(): SeatRow[] {
     }
   })
 
-  // Tribunes: elevated sides, 3 rows x 20 per side
+  // Tribunes: elevated side stands, 3 stepped rows x 20 per side, facing the stage
   for (const side of ['L', 'R'] as const) {
     const section = `TRIB${side}`
-    const x = side === 'L' ? -16.5 : 16.5
     ;['A', 'B', 'C'].forEach((row, r) => {
       for (let i = 0; i < 20; i++) {
         seats.push({
           id: `${section}-${row}${i + 1}`, categoryKey: 'TRIB', section, row, num: i + 1,
-          x, y: 1.2 + r * 1.2, z: -4 + i * 1.4,
+          x: side === 'L' ? -(13 + r * 2) : 13 + r * 2,
+          y: 1.2 + r * 1.2,
+          z: -4 + i * 1.4,
         })
       }
     })

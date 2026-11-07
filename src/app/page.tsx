@@ -35,6 +35,10 @@ export default function Home() {
   const title = event ? (lang === 'id' ? event.name : event.nameEn) : ''
   const venue = event ? (lang === 'id' ? event.venue : event.venueEn) : ''
   const description = event ? (lang === 'id' ? event.description : event.descriptionEn) : ''
+  const shortName = title.includes('—') ? title.split('—').pop()!.trim() : title
+  const titleWords = shortName.split(' ').filter(Boolean)
+  const titleLead = titleWords.slice(0, -1).join(' ')
+  const titleAccent = titleWords.slice(-1).join(' ')
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-16 sm:px-6">
@@ -68,10 +72,18 @@ export default function Home() {
             </span>
 
             <h1 className="text-balance mt-6 max-w-3xl text-4xl font-semibold leading-[1.05] tracking-tight sm:text-6xl">
-              {failed ? 'Pataka' : title || ' '}
-              <span className="block bg-gradient-to-r from-accent via-amber-200 to-accent bg-clip-text text-transparent">
-                {lang === 'id' ? 'Konser Malam Terbuka' : 'Open-Air Night Concert'}
-              </span>
+              {shortName ? (
+                <>
+                  {titleLead}{' '}
+                  <span className="bg-gradient-to-r from-accent via-amber-200 to-accent bg-clip-text text-transparent">
+                    {titleAccent}
+                  </span>
+                </>
+              ) : failed ? (
+                'Pataka'
+              ) : (
+                <span className="block h-14 w-2/3 animate-pulse rounded-xl bg-white/10 sm:h-20" />
+              )}
             </h1>
 
             <p className="text-balance mt-5 max-w-xl text-sm leading-relaxed text-muted sm:text-base">

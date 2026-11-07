@@ -153,7 +153,9 @@ export default function BookPage() {
   }
 
   const visibleStep: BookingStep = step === 'form' && !holdToken ? 'seat' : step
-  const activeIndex = STEPS.findIndex((s) => s.key === visibleStep)
+  const uniqueSteps = STEPS.filter((item, index) => STEPS.findIndex((x) => x.labelKey === item.labelKey) === index)
+  const currentLabel = STEPS.find((item) => item.key === visibleStep)?.labelKey
+  const activeIndex = uniqueSteps.findIndex((item) => item.labelKey === currentLabel)
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 pb-10 sm:px-6">
@@ -173,8 +175,7 @@ export default function BookPage() {
       </header>
 
       <ol className="mb-6 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.12em]">
-        {STEPS.filter((s, index) => STEPS.findIndex((x) => x.labelKey === s.labelKey) === index).map((item) => {
-          const index = STEPS.indexOf(item)
+        {uniqueSteps.map((item, index) => {
           const done = index < activeIndex
           const active = index === activeIndex
           return (
@@ -191,7 +192,7 @@ export default function BookPage() {
                 {index + 1}
               </span>
               <span className={active ? 'text-foreground' : 'text-muted'}>{t(item.labelKey)}</span>
-              {index < 3 && <span aria-hidden className="h-px flex-1 bg-line" />}
+              {index < uniqueSteps.length - 1 && <span aria-hidden className="h-px flex-1 bg-line" />}
             </li>
           )
         })}
