@@ -1,4 +1,9 @@
-import { Pool } from '@neondatabase/serverless'
+import { Pool, neonConfig } from '@neondatabase/serverless'
+import ws from 'ws'
+
+if (typeof WebSocket === 'undefined') {
+  neonConfig.webSocketConstructor = ws
+}
 
 export interface SqlClient {
   query<T = Record<string, unknown>>(text: string, params?: unknown[]): Promise<T[]>
