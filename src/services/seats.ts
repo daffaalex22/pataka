@@ -15,6 +15,8 @@ export type HoldResult = { holdToken: string; expiresAt: string } | 'SEAT_UNAVAI
 
 /** Atomically acquire a 10-minute hold. Exactly one concurrent caller can win a seat. */
 export async function holdSeat(db: SqlDb, seatId: string): Promise<HoldResult> {
+  await expireStaleHolds(db)
+
   const rows = await db.query<{
     hold_token: string
     hold_expires_at: string
@@ -33,6 +35,9 @@ export async function holdSeat(db: SqlDb, seatId: string): Promise<HoldResult> {
     `UPDATE seats
      SET status = 'held', hold_token = $1, hold_expires_at = now() + ($2 || ' minutes')::interval
      WHERE id = $3 AND status = 'available'
+       AND (SELECT count(*) FROM seats s2
+            WHERE s2.category_id = seats.category_id AND s2.status IN ('held', 'sold'))
+           < (SELECT quota FROM ticket_categories c WHERE c.id = seats.category_id)
      RETURNING hold_expires_at`,
     [token, String(HOLD_MINUTES), seatId],
   )

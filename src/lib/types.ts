@@ -63,3 +63,41 @@ export function formatEventDate(iso: string, lang: Lang) {
     timeZone: 'Asia/Jakarta',
   }).format(new Date(iso))
 }
+
+export interface AdminCategory {
+  id: number
+  key: string
+  name: string
+  nameEn: string
+  priceIdr: number
+  quota: number
+  salesOpen: boolean
+  colorHex: string
+  available: number
+  held: number
+  sold: number
+}
+
+export interface AdminStats {
+  orders: { total: number; pending: number; paid: number; cancelled: number; checkedIn: number; revenueIdr: number }
+  seats: { available: number; held: number; sold: number }
+  categories: AdminCategory[]
+}
+
+export interface AdminOrder {
+  code: string
+  name: string
+  email: string
+  phone: string
+  status: 'pending' | 'paid' | 'cancelled'
+  paymentMethod: string | null
+  totalIdr: number
+  createdAt: string
+  paidAt: string | null
+  checkedInAt: string | null
+  seatLabel: string
+  categoryKey: string
+  categoryName: string
+  categoryNameEn: string
+}
+
