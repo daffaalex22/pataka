@@ -30,6 +30,20 @@ export function CheckIn({ adminKey }: { adminKey: string }) {
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const lockRef = useRef(false)
 
+  const stopCamera = useCallback(async () => {
+    const scanner = scannerRef.current
+    scannerRef.current = null
+    setCameraActive(false)
+    if (scanner) {
+      try {
+        await scanner.stop()
+        scanner.clear()
+      } catch {
+        // already stopped
+      }
+    }
+  }, [])
+
   const validate = useCallback(
     async (payload: string) => {
       if (!payload || lockRef.current) return
@@ -45,30 +59,18 @@ export function CheckIn({ adminKey }: { adminKey: string }) {
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
           navigator.vibrate(data.result === 'valid' ? 80 : [60, 60, 60])
         }
+        // Freeze the scanner on the result so the same QR is not re-scanned as ALREADY USED.
+        await stopCamera()
       } catch {
         setError(t('error.generic'))
       } finally {
         window.setTimeout(() => {
           lockRef.current = false
-        }, 1500)
+        }, 800)
       }
     },
-    [adminKey, t],
+    [adminKey, t, stopCamera],
   )
-
-  const stopCamera = useCallback(async () => {
-    const scanner = scannerRef.current
-    scannerRef.current = null
-    setCameraActive(false)
-    if (scanner) {
-      try {
-        await scanner.stop()
-        scanner.clear()
-      } catch {
-        // already stopped
-      }
-    }
-  }, [])
 
   const startCamera = useCallback(async () => {
     setError(null)
@@ -125,10 +127,13 @@ export function CheckIn({ adminKey }: { adminKey: string }) {
           )}
           <button
             type="button"
-            onClick={() => setOutcome(null)}
+            onClick={() => {
+              setOutcome(null)
+              if (!cameraActive) void startCamera()
+            }}
             className="mt-4 rounded-full border border-line px-5 py-2 text-xs font-medium transition hover:border-white/30"
           >
-            {t('admin.checkin.check')} →
+            {t('admin.checkin.next')}
           </button>
         </div>
       )}

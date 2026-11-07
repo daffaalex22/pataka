@@ -1,7 +1,9 @@
+import { connection } from 'next/server'
 import { getDb } from '@/lib/db'
 import { expireStaleHolds } from '@/services/seats'
 
 export async function GET() {
+  await connection()
   const db = await getDb()
   await expireStaleHolds(db)
 
@@ -69,6 +71,7 @@ export async function GET() {
       available: c.available,
       held: c.held,
       sold: c.sold,
+      remaining: Math.max(0, c.quota - c.held - c.sold),
     })),
   })
 }

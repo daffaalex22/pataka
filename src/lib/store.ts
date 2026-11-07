@@ -11,37 +11,34 @@ type BookingState = {
   seat: Seat | null
   holdToken: string | null
   holdExpiresAt: string | null
+  holdSeatId: string | null
   orderCode: string | null
   totalIdr: number | null
   setStep: (step: BookingStep) => void
   setCategory: (key: string | null) => void
   setSeat: (seat: Seat | null) => void
-  setHold: (holdToken: string | null, holdExpiresAt: string | null) => void
+  setHold: (holdToken: string | null, holdExpiresAt: string | null, holdSeatId: string | null) => void
   setOrder: (orderCode: string, totalIdr: number) => void
   reset: () => void
 }
 
-export const useBooking = create<BookingState>((set) => ({
-  step: 'category',
+const initial = {
+  step: 'category' as BookingStep,
   categoryKey: null,
   seat: null,
   holdToken: null,
   holdExpiresAt: null,
+  holdSeatId: null,
   orderCode: null,
   totalIdr: null,
+}
+
+export const useBooking = create<BookingState>((set) => ({
+  ...initial,
   setStep: (step) => set({ step }),
   setCategory: (categoryKey) => set({ categoryKey }),
   setSeat: (seat) => set({ seat }),
-  setHold: (holdToken, holdExpiresAt) => set({ holdToken, holdExpiresAt }),
+  setHold: (holdToken, holdExpiresAt, holdSeatId) => set({ holdToken, holdExpiresAt, holdSeatId }),
   setOrder: (orderCode, totalIdr) => set({ orderCode, totalIdr }),
-  reset: () =>
-    set({
-      step: 'category',
-      categoryKey: null,
-      seat: null,
-      holdToken: null,
-      holdExpiresAt: null,
-      orderCode: null,
-      totalIdr: null,
-    }),
+  reset: () => set(initial),
 }))

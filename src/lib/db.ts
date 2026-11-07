@@ -15,7 +15,10 @@ export interface SqlDb extends SqlClient {
 
 /** Neon serverless (WebSocket) adapter — supports interactive transactions. */
 export function createNeonDb(connectionString: string): SqlDb {
-  const pool = new Pool({ connectionString })
+  const pool = new Pool({ connectionString, max: 5 })
+  pool.on('error', (error: Error) => {
+    console.error('neon pool error', error)
+  })
   const client: SqlClient = {
     query: async <T = Record<string, unknown>>(text: string, params?: unknown[]) => {
       const result = await pool.query(text, params as unknown[])

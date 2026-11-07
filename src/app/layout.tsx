@@ -10,6 +10,12 @@ export const metadata: Metadata = {
   title: 'Pataka — 3D Event Ticketing',
   description:
     'Pilih kursi konser langsung dari venue 3D, lihat pemandangan panggung dari kursimu, dan terima e-ticket dengan QR code.',
+  openGraph: {
+    title: 'Pataka — 3D Event Ticketing',
+    description:
+      'Pilih kursi konser langsung dari venue 3D, lihat pemandangan panggung dari kursimu, dan terima e-ticket dengan QR code.',
+    type: 'website',
+  },
 }
 
 export const viewport: Viewport = {

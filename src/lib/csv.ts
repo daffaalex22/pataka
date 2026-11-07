@@ -2,7 +2,9 @@ type Column = { key: string; label: string }
 
 function escapeCell(value: unknown): string {
   if (value === null || value === undefined) return ''
-  const text = String(value)
+  let text = String(value)
+  // Spreadsheet formula injection guard (also covers leading tab/CR).
+  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`
   if (/[",\r\n]/.test(text)) {
     return `"${text.replace(/"/g, '""')}"`
   }

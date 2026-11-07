@@ -13,6 +13,17 @@ export async function expireStaleHolds(db: SqlClient): Promise<void> {
 
 export type HoldResult = { holdToken: string; expiresAt: string } | 'SEAT_UNAVAILABLE' | 'SALES_CLOSED'
 
+/** Release a hold the visitor explicitly backed out of. Only the owning token can release. */
+export async function releaseHold(db: SqlDb, seatId: string, holdToken: string): Promise<boolean> {
+  const rows = await db.query(
+    `UPDATE seats SET status = 'available', hold_token = NULL, hold_expires_at = NULL
+     WHERE id = $1 AND status = 'held' AND hold_token = $2
+     RETURNING id`,
+    [seatId, holdToken],
+  )
+  return rows.length > 0
+}
+
 /** Atomically acquire a 10-minute hold. Exactly one concurrent caller can win a seat. */
 export async function holdSeat(db: SqlDb, seatId: string): Promise<HoldResult> {
   await expireStaleHolds(db)

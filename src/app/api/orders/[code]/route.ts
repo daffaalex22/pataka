@@ -1,7 +1,9 @@
+import { connection } from 'next/server'
 import { getDb } from '@/lib/db'
 import { qrPayload } from '@/lib/qr'
 
 export async function GET(_req: Request, ctx: { params: Promise<{ code: string }> }) {
+  await connection()
   const { code } = await ctx.params
   const db = await getDb()
   const rows = await db.query<{

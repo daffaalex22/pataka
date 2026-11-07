@@ -1,8 +1,10 @@
+import { connection } from 'next/server'
 import { getDb } from '@/lib/db'
 import { isAdmin, unauthorized } from '@/lib/auth'
 import { toCsv } from '@/lib/csv'
 
 export async function GET(req: Request) {
+  await connection()
   if (!isAdmin(req)) return unauthorized()
   const type = new URL(req.url).searchParams.get('type') ?? 'participants'
   const db = await getDb()

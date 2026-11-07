@@ -224,7 +224,7 @@ function Seats({
       dummy.updateMatrix()
       pads.setMatrixAt(index, dummy.matrix)
 
-      dummy.position.set(seat.x, seat.y + 0.95 + lift, seat.z - 0.42)
+      dummy.position.set(seat.x, seat.y + 0.95 + lift, seat.z + 0.42)
       dummy.updateMatrix()
       backs.setMatrixAt(index, dummy.matrix)
 

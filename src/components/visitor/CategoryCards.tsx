@@ -19,9 +19,9 @@ export function CategoryCards({
     <div className={`grid gap-3 ${compact ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-4'}`}>
       {categories.map((category) => {
         const name = lang === 'id' ? category.name : category.nameEn
-        const soldOut = category.available === 0
+        const soldOut = category.remaining === 0
         const disabled = !category.salesOpen || soldOut
-        const pct = Math.round((category.available / Math.max(category.quota, 1)) * 100)
+        const pct = Math.round((category.remaining / Math.max(category.quota, 1)) * 100)
 
         return (
           <button
@@ -56,7 +56,7 @@ export function CategoryCards({
                 ? t('cat.salesClosed')
                 : soldOut
                   ? t('cat.soldOut')
-                  : `${category.available} ${t('cat.available')} ${t('cat.of')} ${category.quota}`}
+                  : `${category.remaining} ${t('cat.available')} ${t('cat.of')} ${category.quota}`}
             </p>
             {category.held > 0 && (
               <p className="mt-0.5 text-[11px] text-amber-300/80">{category.held} {t('status.held').toLowerCase()}</p>

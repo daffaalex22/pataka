@@ -1,9 +1,13 @@
+import { connection } from 'next/server'
 import { getDb } from '@/lib/db'
 import { isAdmin, unauthorized } from '@/lib/auth'
+import { expireStaleHolds } from '@/services/seats'
 
 export async function GET(req: Request) {
+  await connection()
   if (!isAdmin(req)) return unauthorized()
   const db = await getDb()
+  await expireStaleHolds(db)
 
   const [orderStats] = await db.query<{
     total: number

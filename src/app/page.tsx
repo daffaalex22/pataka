@@ -8,7 +8,6 @@ import { CategoryCards } from '@/components/visitor/CategoryCards'
 import { useLang, useT } from '@/lib/i18n'
 import { useBooking } from '@/lib/store'
 import { formatEventDate, type Category, type EventInfo } from '@/lib/types'
-
 type EventResponse = { event: EventInfo; categories: Category[] }
 
 export default function Home() {
@@ -16,6 +15,7 @@ export default function Home() {
   const { lang } = useLang()
   const t = useT()
   const setCategory = useBooking((s) => s.setCategory)
+  const resetBooking = useBooking((s) => s.reset)
   const [data, setData] = useState<EventResponse | null>(null)
   const [failed, setFailed] = useState(false)
 
@@ -27,6 +27,7 @@ export default function Home() {
   }, [])
 
   const choose = (category: Category) => {
+    resetBooking()
     setCategory(category.key)
     router.push('/book')
   }
@@ -108,7 +109,10 @@ export default function Home() {
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                onClick={() => router.push('/book')}
+                onClick={() => {
+                  resetBooking()
+                  router.push('/book')
+                }}
                 className="accent-glow rounded-full bg-accent px-6 py-3 text-sm font-semibold text-black transition hover:brightness-110 active:scale-[0.99]"
               >
                 {t('hero.cta')} →

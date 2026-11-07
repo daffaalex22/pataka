@@ -136,7 +136,8 @@ export function OrdersTable({ adminKey }: { adminKey: string }) {
                 </p>
                 <p className="mt-0.5 text-xs text-muted">
                   {order.seatLabel} · {lang === 'id' ? order.categoryName : order.categoryNameEn} ·{' '}
-                  {formatIdr(order.totalIdr, lang)}
+                  {formatIdr(order.totalIdr, lang)} · {order.paymentMethod ?? '—'} ·{' '}
+                  {new Date(order.createdAt).toLocaleString('id-ID')}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">

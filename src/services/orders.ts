@@ -43,6 +43,22 @@ export async function createOrder(db: SqlDb, input: CreateOrderInput): Promise<C
     const seat = valid[0]
     if (!seat.sales_open) return 'SALES_CLOSED'
 
+    // Idempotent: the same hold token always maps to one pending order.
+    const existing = await tx.query<{ code: string; total_idr: number }>(
+      `SELECT code, total_idr FROM orders WHERE hold_token = $1 AND status = 'pending' LIMIT 1`,
+      [input.holdToken],
+    )
+    if (existing.length > 0) {
+      return { orderCode: existing[0].code, totalIdr: Number(existing[0].total_idr) }
+    }
+
+    // Any older pending order on this seat is stale — the current hold token owns the seat now.
+    await tx.query(
+      `UPDATE orders SET status = 'cancelled', cancelled_at = now()
+       WHERE seat_id = $1 AND status = 'pending' AND (hold_token IS NULL OR hold_token <> $2)`,
+      [seat.id, input.holdToken],
+    )
+
     const code = newOrderCode()
     await tx.query(
       `INSERT INTO orders (code, seat_id, hold_token, name, email, phone, total_idr)
@@ -53,16 +69,19 @@ export async function createOrder(db: SqlDb, input: CreateOrderInput): Promise<C
   })
 }
 
-/** Simulated payment: validates the hold is still live, then marks order paid and seat sold. */
+/** Simulated payment: the order must still own the seat's live hold, then seat becomes sold. */
 export async function payOrder(db: SqlDb, code: string, method: string): Promise<PayResult> {
   return db.transaction(async (tx) => {
     const rows = await tx.query<{
       status: string
       seat_id: string
+      hold_token: string | null
       seat_status: string
+      seat_hold_token: string | null
       hold_fresh: boolean
     }>(
-      `SELECT o.status, o.seat_id, s.status AS seat_status,
+      `SELECT o.status, o.seat_id, o.hold_token, s.status AS seat_status,
+              s.hold_token AS seat_hold_token,
               (s.hold_expires_at > now()) AS hold_fresh
        FROM orders o JOIN seats s ON s.id = o.seat_id
        WHERE o.code = $1`,
@@ -74,7 +93,8 @@ export async function payOrder(db: SqlDb, code: string, method: string): Promise
     if (order.status === 'cancelled') return 'ORDER_CANCELLED'
     if (order.status === 'paid') return 'paid'
 
-    if (order.seat_status !== 'held' || !order.hold_fresh) {
+    const ownsSeat = order.hold_token !== null && order.hold_token === order.seat_hold_token
+    if (order.seat_status !== 'held' || !order.hold_fresh || !ownsSeat) {
       await tx.query(
         `UPDATE seats SET status = 'available', hold_token = NULL, hold_expires_at = NULL
          WHERE id = $1 AND status = 'held' AND hold_expires_at <= now()`,
@@ -83,10 +103,14 @@ export async function payOrder(db: SqlDb, code: string, method: string): Promise
       return 'HOLD_EXPIRED'
     }
 
-    await tx.query(
-      `UPDATE seats SET status = 'sold', hold_token = NULL, hold_expires_at = NULL WHERE id = $1`,
-      [order.seat_id],
+    const sold = await tx.query(
+      `UPDATE seats SET status = 'sold', hold_token = NULL, hold_expires_at = NULL
+       WHERE id = $1 AND status = 'held' AND hold_token = $2
+       RETURNING id`,
+      [order.seat_id, order.hold_token],
     )
+    if (sold.length === 0) return 'HOLD_EXPIRED'
+
     await tx.query(
       `UPDATE orders SET status = 'paid', payment_method = $1, paid_at = now() WHERE code = $2`,
       [method, code],
@@ -125,7 +149,32 @@ export async function cancelOrder(db: SqlDb, code: string): Promise<boolean> {
   })
 }
 
-/** Admin action: manually confirm a pending payment. */
+/** Admin action: manually confirm a pending payment even if the hold lapsed, as long as nobody else owns the seat. */
 export async function confirmPayment(db: SqlDb, code: string): Promise<PayResult> {
-  return payOrder(db, code, 'manual')
+  return db.transaction(async (tx) => {
+    const rows = await tx.query<{ status: string; seat_id: string; hold_token: string | null }>(
+      'SELECT status, seat_id, hold_token FROM orders WHERE code = $1',
+      [code],
+    )
+    if (rows.length === 0) return 'NOT_FOUND'
+
+    const order = rows[0]
+    if (order.status === 'cancelled') return 'ORDER_CANCELLED'
+    if (order.status === 'paid') return 'paid'
+
+    const sold = await tx.query(
+      `UPDATE seats SET status = 'sold', hold_token = NULL, hold_expires_at = NULL
+       WHERE id = $1
+         AND (status = 'available' OR (status = 'held' AND hold_token = $2))
+       RETURNING id`,
+      [order.seat_id, order.hold_token],
+    )
+    if (sold.length === 0) return 'HOLD_EXPIRED'
+
+    await tx.query(
+      `UPDATE orders SET status = 'paid', payment_method = 'manual', paid_at = now() WHERE code = $1`,
+      [code],
+    )
+    return 'paid'
+  })
 }

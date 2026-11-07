@@ -22,6 +22,7 @@ export function SeatStep({
   onHold,
   holding,
   holdExpiresAt,
+  holdSeatId,
   onBack,
   onResume,
   error,
@@ -33,6 +34,7 @@ export function SeatStep({
   onHold: () => void
   holding: boolean
   holdExpiresAt: string | null
+  holdSeatId: string | null
   onBack: () => void
   onResume: () => void
   error: string | null
@@ -152,7 +154,7 @@ export function SeatStep({
         )}
       </div>
 
-      <div className="sticky bottom-3 mt-3">
+      <div className="sticky bottom-3 mt-3 pb-[env(safe-area-inset-bottom)]">
         {selected ? (
           <div className="panel flex items-center justify-between gap-3 rounded-2xl border-white/15 px-4 py-3 shadow-2xl">
             <div className="min-w-0">
@@ -160,7 +162,14 @@ export function SeatStep({
               <p className="truncate text-sm font-semibold">
                 {selected.id} · {lang === 'id' ? selected.categoryName : selected.categoryNameEn}
               </p>
-              <p className="text-xs text-muted">{formatIdr(selected.priceIdr, lang)}</p>
+              <p className="text-xs text-muted">
+                {formatIdr(selected.priceIdr, lang)}
+                {selected.status !== 'available' && (
+                  <span className={selected.status === 'held' ? 'ml-2 text-amber-300' : 'ml-2 text-zinc-400'}>
+                    · {t(`status.${selected.status}`)}
+                  </span>
+                )}
+              </p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <button
@@ -173,7 +182,7 @@ export function SeatStep({
               >
                 👁 {t('seat.preview')}
               </button>
-              {holdExpiresAt ? (
+              {holdExpiresAt && holdSeatId === selected.id ? (
                 <button
                   type="button"
                   onClick={onResume}

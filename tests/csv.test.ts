@@ -20,4 +20,17 @@ describe('toCsv', () => {
     expect(lines[1]).toBe('PTK-1,"Rina, Contoh","line1\nline2","say ""hi"""')
     expect(lines[2]).toBe('PTK-2,Budi,,')
   })
+
+  it('neutralizes spreadsheet formula injection', () => {
+    const csv = toCsv(
+      [{ name: '=cmd|calc', phone: '+62812', email: '@evil', note: '-1+1' }],
+      [
+        { key: 'name', label: 'Name' },
+        { key: 'phone', label: 'Phone' },
+        { key: 'email', label: 'Email' },
+        { key: 'note', label: 'Note' },
+      ],
+    )
+    expect(csv.split('\r\n')[1]).toBe("'=cmd|calc,'+62812,'@evil,'-1+1")
+  })
 })

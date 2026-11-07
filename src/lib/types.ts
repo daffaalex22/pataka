@@ -14,6 +14,7 @@ export interface Category {
   available: number
   held: number
   sold: number
+  remaining: number
 }
 
 export interface EventInfo {

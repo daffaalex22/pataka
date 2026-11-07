@@ -34,6 +34,7 @@ export function ETicketClient() {
   const [ticket, setTicket] = useState<Ticket | null>(null)
   const [event, setEvent] = useState<EventInfo | null>(null)
   const [notFound, setNotFound] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (!code) return
@@ -74,7 +75,18 @@ export function ETicketClient() {
 
       {!notFound && !ticket && <div className="panel mt-6 h-96 animate-pulse rounded-3xl" />}
 
-      {ticket && ticket.status !== 'paid' && (
+      {ticket && ticket.status === 'cancelled' && (
+        <div className="panel mt-10 rounded-2xl p-8 text-center">
+          <p className="text-sm uppercase tracking-[0.16em] text-red-300">{t('eticket.cancelledTitle')}</p>
+          <p className="mt-2 text-sm leading-relaxed text-muted">{t('eticket.cancelledBody')}</p>
+          <p className="mt-2 font-mono text-xs text-muted">{ticket.orderCode}</p>
+          <Link href="/" className="mt-3 inline-block text-sm text-accent hover:underline">
+            {t('eticket.backHome')} →
+          </Link>
+        </div>
+      )}
+
+      {ticket && ticket.status === 'pending' && (
         <div className="panel mt-10 rounded-2xl p-8 text-center">
           <p className="text-sm uppercase tracking-[0.16em] text-amber-300">{t('summary.statusPending')}</p>
           <p className="mt-2 text-lg font-medium">{ticket.orderCode}</p>
@@ -149,6 +161,21 @@ export function ETicketClient() {
             >
               📅 {t('eticket.calendar')}
             </a>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(window.location.href)
+                  setCopied(true)
+                  window.setTimeout(() => setCopied(false), 1800)
+                } catch {
+                  // clipboard may be unavailable in some browsers
+                }
+              }}
+              className="flex-1 rounded-full border border-line px-5 py-3 text-center text-sm font-medium transition hover:border-white/30"
+            >
+              {copied ? t('eticket.copied') : `🔗 ${t('eticket.copy')}`}
+            </button>
             <Link
               href="/"
               className="flex-1 rounded-full bg-accent px-5 py-3 text-center text-sm font-semibold text-black transition hover:brightness-110"

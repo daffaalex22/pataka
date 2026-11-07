@@ -1,7 +1,14 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 
 function secret() {
-  return process.env.CHECKIN_SECRET ?? 'dev-secret'
+  const value = process.env.CHECKIN_SECRET
+  if (!value) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('CHECKIN_SECRET must be set in production')
+    }
+    return 'dev-secret'
+  }
+  return value
 }
 
 function sign(orderCode: string) {

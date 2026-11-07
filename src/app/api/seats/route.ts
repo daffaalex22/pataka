@@ -1,7 +1,9 @@
+import { connection } from 'next/server'
 import { getDb } from '@/lib/db'
 import { expireStaleHolds } from '@/services/seats'
 
 export async function GET() {
+  await connection()
   const db = await getDb()
   await expireStaleHolds(db)
 

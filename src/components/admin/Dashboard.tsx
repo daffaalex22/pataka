@@ -16,7 +16,11 @@ export function Dashboard({ adminKey, onOpenOrders }: { adminKey: string; onOpen
     let active = true
     const load = () =>
       adminFetch<AdminStats>(adminKey, '/api/admin/stats')
-        .then((data) => active && setStats(data))
+        .then((data) => {
+          if (!active) return
+          setStats(data)
+          setError(false)
+        })
         .catch(() => active && setError(true))
     load()
     const timer = window.setInterval(load, 10000)

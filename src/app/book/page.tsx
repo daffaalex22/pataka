@@ -28,7 +28,7 @@ export default function BookPage() {
   const { lang } = useLang()
   const t = useT()
   const {
-    step, categoryKey, seat, holdToken, holdExpiresAt, orderCode, totalIdr,
+    step, categoryKey, seat, holdToken, holdExpiresAt, holdSeatId, orderCode, totalIdr,
     setStep, setCategory, setSeat, setHold, setOrder, reset,
   } = useBooking((state) => state)
 
@@ -79,7 +79,7 @@ export default function BookPage() {
       const res = await fetch(`/api/seats/${encodeURIComponent(seat.id)}/hold`, { method: 'POST' })
       if (res.ok) {
         const held = (await res.json()) as { holdToken: string; expiresAt: string }
-        setHold(held.holdToken, held.expiresAt)
+        setHold(held.holdToken, held.expiresAt, seat.id)
         setStep('form')
       } else if (res.status === 409) {
         setError(t('error.seatTaken'))
@@ -110,7 +110,7 @@ export default function BookPage() {
         setStep('summary')
       } else if (res.status === 409) {
         setError(t('error.holdExpired'))
-        setHold(null, null)
+        setHold(null, null, null)
         setStep('seat')
         loadSeats()
       } else if (res.status === 400) {
@@ -136,10 +136,11 @@ export default function BookPage() {
         body: JSON.stringify({ method }),
       })
       if (res.ok) {
+        reset()
         router.push(`/eticket/${orderCode}`)
       } else if (res.status === 409) {
         setError(t('error.holdExpired'))
-        setHold(null, null)
+        setHold(null, null, null)
         setStep('seat')
         loadSeats()
       } else {
@@ -208,6 +209,7 @@ export default function BookPage() {
                 categories={data.categories}
                 compact
                 onChoose={(category) => {
+                  reset()
                   setCategory(category.key)
                   setError(null)
                   setStep('seat')
@@ -230,12 +232,21 @@ export default function BookPage() {
           categoryKey={categoryKey}
           selected={seat}
           onSelect={(next) => {
+            if (holdToken && holdSeatId && next.id !== holdSeatId) {
+              fetch(`/api/seats/${encodeURIComponent(holdSeatId)}/release`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ holdToken }),
+              }).catch(() => {})
+              setHold(null, null, null)
+            }
             setError(null)
             setSeat(next)
           }}
           onHold={handleHold}
           holding={busy}
           holdExpiresAt={holdExpiresAt}
+          holdSeatId={holdSeatId}
           onBack={() => {
             reset()
             setStep('category')
