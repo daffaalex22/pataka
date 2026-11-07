@@ -144,6 +144,7 @@ const id = {
   'admin.checkin.invalid': 'TIDAK VALID',
   'admin.checkin.recent': 'Scan terakhir',
   'admin.checkin.seat': 'Kursi',
+  'admin.checkin.cameraError': 'Kamera tidak tersedia — gunakan input manual.',
 
   'status.available': 'Tersedia',
   'status.held': 'Ditahan',
@@ -293,6 +294,7 @@ const en: Record<DictKey, string> = {
   'admin.checkin.invalid': 'INVALID',
   'admin.checkin.recent': 'Recent scans',
   'admin.checkin.seat': 'Seat',
+  'admin.checkin.cameraError': 'Camera unavailable — use manual entry instead.',
 
   'status.available': 'Available',
   'status.held': 'Held',
