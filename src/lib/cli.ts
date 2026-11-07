@@ -2,15 +2,13 @@ import { config } from 'dotenv'
 config({ path: '.env.local' })
 config()
 
-import { createNeonDb } from './db'
+import { getDb } from './db'
 import { migrate } from './migrate'
 import { seed } from './seed'
 
 async function main() {
   const command = process.argv[2]
-  const url = process.env.DATABASE_URL
-  if (!url) throw new Error('DATABASE_URL is not set')
-  const db = createNeonDb(url)
+  const db = await getDb()
 
   switch (command) {
     case 'migrate': {

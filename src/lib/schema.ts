@@ -39,6 +39,7 @@ export const SCHEMA_STATEMENTS: string[] = [
   `CREATE TABLE IF NOT EXISTS orders (
     code TEXT PRIMARY KEY,
     seat_id TEXT NOT NULL REFERENCES seats(id),
+    hold_token TEXT,
     name TEXT NOT NULL,
     email TEXT NOT NULL,
     phone TEXT NOT NULL,

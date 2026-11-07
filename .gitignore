@@ -48,3 +48,7 @@ next-env.d.ts
 
 # challenge brief (source material, not part of the app)
 Bandung_Build_Challenge_2026_Technical_Brief.pdf
+
+# local PGlite database
+.local-db*/
+
