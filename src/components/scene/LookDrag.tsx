@@ -2,7 +2,7 @@
 
 import { useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
-import { type DragTracker, dragEnd, dragMove, dragStart, updateLookYaw } from './lookYaw'
+import { type DragTracker, dragEnd, dragMove, dragStart, updateLookYaw, updatePitch } from './lookYaw'
 
 /**
  * Horizontal pointer drag rotates the walk camera around the character.
@@ -13,9 +13,11 @@ import { type DragTracker, dragEnd, dragMove, dragStart, updateLookYaw } from '.
  */
 export function LookDrag({
   yawRef,
+  pitchRef,
   dragStateRef,
 }: {
   yawRef: React.RefObject<number>
+  pitchRef: React.RefObject<number>
   dragStateRef: React.RefObject<{ dragging: boolean }>
 }) {
   const gl = useThree((state) => state.gl)
@@ -36,6 +38,7 @@ export function LookDrag({
       if (result.tracker.dragging) {
         dragStateRef.current.dragging = true
         yawRef.current = updateLookYaw(yawRef.current, result.yawDeltaPx)
+        pitchRef.current = updatePitch(pitchRef.current, result.pitchDeltaPx)
       }
     }
 
@@ -63,7 +66,7 @@ export function LookDrag({
       window.removeEventListener('pointerup', end)
       window.removeEventListener('pointercancel', end)
     }
-  }, [gl, yawRef, dragStateRef])
+  }, [gl, yawRef, pitchRef, dragStateRef])
 
   return null
 }

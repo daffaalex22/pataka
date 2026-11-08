@@ -168,6 +168,7 @@ function WalkRig({
   paused,
   characterRef,
   lookYawRef,
+  pitchRef,
   dragStateRef,
   autoWalkSeat,
   onAutoWalkArrived,
@@ -177,6 +178,7 @@ function WalkRig({
   paused: boolean
   characterRef: React.RefObject<THREE.Group | null>
   lookYawRef: React.RefObject<number>
+  pitchRef: React.RefObject<number>
   dragStateRef: React.RefObject<{ dragging: boolean }>
   autoWalkSeat?: Seat | null
   onAutoWalkArrived?: (seat: Seat) => void
@@ -187,8 +189,8 @@ function WalkRig({
   return (
     <>
       <Character moveRef={moveRef} keysRef={keysRef} characterRef={characterRef} paused={paused} />
-      {!paused && <FollowCamera characterRef={characterRef} lookYawRef={lookYawRef} />}
-      {!paused && <LookDrag yawRef={lookYawRef} dragStateRef={dragStateRef} />}
+      {!paused && <FollowCamera characterRef={characterRef} lookYawRef={lookYawRef} pitchRef={pitchRef} />}
+      {!paused && <LookDrag yawRef={lookYawRef} pitchRef={pitchRef} dragStateRef={dragStateRef} />}
       {autoWalkSeat && (
         <AutoWalk
           characterRef={characterRef}
@@ -258,6 +260,7 @@ export default function PlazaScene({
   const internalCharacterRef = useRef<THREE.Group | null>(null)
   const characterRef = externalCharacterRef ?? internalCharacterRef
   const lookYawRef = useRef(0)
+  const pitchRef = useRef(0)
   const dragStateRef = useRef({ dragging: false })
 
   return (
@@ -291,6 +294,7 @@ export default function PlazaScene({
             paused={paused || Boolean(previewSeat)}
             characterRef={characterRef}
             lookYawRef={lookYawRef}
+            pitchRef={pitchRef}
             dragStateRef={dragStateRef}
             autoWalkSeat={autoWalkSeat}
             onAutoWalkArrived={onAutoWalkArrived}

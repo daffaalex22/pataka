@@ -3,7 +3,7 @@
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { floorHeightAt, resolveWalkable, targetFloorHeight } from '@/components/scene/summaba/layout'
+import { floorHeightAt, resolveWalkable, targetFloorHeight, clearCameraPosition } from '@/components/scene/summaba/layout'
 import { hasMoved, recenterLookYaw } from '@/components/scene/lookYaw'
 
 export type MoveVector = { x: number; y: number }
@@ -83,7 +83,7 @@ export function Character({
   })
 
   return (
-    <group ref={characterRef} position={[0, 0, 19]}>
+    <group ref={characterRef} position={[0, 0, 19]} rotation-y={Math.PI}>
       <group ref={bodyRef} position={[0, 1.05, 0]}>
         {/* hoodie */}
         <mesh castShadow={false}>
@@ -128,13 +128,15 @@ export function Character({
   )
 }
 
-/** Third-person follow camera used while walking. */
+/** Third-person follow camera used while walking: trails behind the character's heading. */
 export function FollowCamera({
   characterRef,
   lookYawRef,
+  pitchRef,
 }: {
   characterRef: React.RefObject<THREE.Group | null>
   lookYawRef: React.RefObject<number>
+  pitchRef: React.RefObject<number>
 }) {
   const camera = useThree((state) => state.camera)
   const desired = useMemo(() => new THREE.Vector3(), [])
@@ -150,15 +152,31 @@ export function FollowCamera({
     lastPosition.set(character.position.x, 0, character.position.z)
 
     const yaw = recenterLookYaw(lookYawRef.current, dt, moved)
+    const pitch = recenterLookYaw(pitchRef.current, dt, moved)
     lookYawRef.current = yaw
+    pitchRef.current = pitch
 
-    const sin = Math.sin(yaw)
-    const cos = Math.cos(yaw)
+    const facing = character.rotation.y + yaw
+    const sin = Math.sin(facing)
+    const cos = Math.cos(facing)
+    const horiz = 6.6 * Math.cos(pitch)
 
-    desired.set(character.position.x + sin * 6.6, character.position.y + 3.6, character.position.z + cos * 6.6)
+    const clear = clearCameraPosition(
+      { x: character.position.x, y: character.position.y + 1.6, z: character.position.z },
+      {
+        x: character.position.x - sin * horiz,
+        y: character.position.y + 3.6 + Math.sin(pitch) * 5.5,
+        z: character.position.z - cos * horiz,
+      },
+    )
+    desired.set(clear.x, clear.y, clear.z)
     camera.position.lerp(desired, 1 - Math.exp(-4 * delta))
 
-    lookAt.set(character.position.x - sin * 2.2, character.position.y + 1.25, character.position.z - cos * 2.2)
+    lookAt.set(
+      character.position.x + sin * 2.2,
+      character.position.y + 1.25 - Math.sin(pitch) * 4,
+      character.position.z + cos * 2.2,
+    )
     camera.lookAt(lookAt)
   })
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  clearCameraPosition,
   floorHeightAt,
   planWalkRoute,
   resolveWalkable,
@@ -109,5 +110,24 @@ describe('targetFloorHeight', () => {
   })
   it('descends to ground at the ramp foot', () => {
     expect(targetFloorHeight(5.2, 0)).toBe(0)
+  })
+})
+
+describe('clearCameraPosition', () => {
+  it('leaves a clear position untouched', () => {
+    const to = { x: 0, y: 3.6, z: 16.6 }
+    expect(clearCameraPosition({ x: 0, y: 1.6, z: 10 }, to)).toEqual(to)
+  })
+  it('pulls the camera out of the north ring', () => {
+    const result = clearCameraPosition({ x: 0, y: 1.6, z: -8 }, { x: 0, y: 3.6, z: -30 })
+    expect(result.z).toBeGreaterThanOrEqual(-18)
+  })
+  it('pulls the camera out of the east ring', () => {
+    const result = clearCameraPosition({ x: 17, y: 1.6, z: 0 }, { x: 26, y: 3.6, z: 0 })
+    expect(result.x).toBeLessThanOrEqual(22)
+  })
+  it('keeps the camera above the floor', () => {
+    const result = clearCameraPosition({ x: 0, y: 1.6, z: 0 }, { x: 0, y: 0.1, z: 6.6 })
+    expect(result.y).toBeGreaterThanOrEqual(0.35)
   })
 })

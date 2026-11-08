@@ -119,6 +119,31 @@ export function targetFloorHeight(currentY: number, surface: number): number {
   return currentY > 0 ? currentY : 0
 }
 
+const CAMERA_BLOCKERS: Rect[] = [WORLD.ringNorth, WORLD.ringEast, WORLD.ringWest, WORLD.stageObstacle]
+
+function isCameraBlocked(point: Vec3): boolean {
+  if (CAMERA_BLOCKERS.some((rect) => insideRect(rect, point.x, point.z))) return true
+  return point.y < floorHeightAt(point.x, point.z) + 0.35
+}
+
+/**
+ * Keep the follow camera out of the mall masses, the stage and the floor:
+ * if the desired point is blocked, step from it toward the character's head
+ * and return the closest clear point.
+ */
+export function clearCameraPosition(from: Vec3, to: Vec3): Vec3 {
+  if (!isCameraBlocked(to)) return to
+  for (let t = 0.85; t >= 0.1; t -= 0.15) {
+    const candidate: Vec3 = {
+      x: from.x + (to.x - from.x) * t,
+      y: from.y + (to.y - from.y) * t,
+      z: from.z + (to.z - from.z) * t,
+    }
+    if (!isCameraBlocked(candidate)) return candidate
+  }
+  return { ...from }
+}
+
 function stairSideForX(x: number): 'east' | 'west' {
   return x >= 0 ? 'east' : 'west'
 }
