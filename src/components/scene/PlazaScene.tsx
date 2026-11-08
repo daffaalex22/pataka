@@ -195,7 +195,14 @@ function WalkRig({
         paused={paused}
         scripted={Boolean(autoWalkSeat)}
       />
-      {!paused && <FollowCamera characterRef={characterRef} lookYawRef={lookYawRef} pitchRef={pitchRef} />}
+      {!paused && (
+        <FollowCamera
+          characterRef={characterRef}
+          lookYawRef={lookYawRef}
+          pitchRef={pitchRef}
+          scripted={Boolean(autoWalkSeat)}
+        />
+      )}
       {!paused && <LookDrag yawRef={lookYawRef} pitchRef={pitchRef} dragStateRef={dragStateRef} />}
       {autoWalkSeat && (
         <AutoWalk

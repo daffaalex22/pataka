@@ -50,12 +50,16 @@ describe('isMovingAway', () => {
     expect(isMovingAway(0, 1, Math.PI)).toBe(false)
   })
 
-  it('realigns on a perpendicular strafe (90 deg is inside the 100 deg cone)', () => {
-    expect(isMovingAway(1, 0, Math.PI)).toBe(true)
+  it('holds on lateral strafes so screen-right stays a straight line', () => {
+    expect(isMovingAway(1, 0, Math.PI)).toBe(false)
   })
 
-  it('holds when moving 126 deg off the view (outside the cone)', () => {
-    expect(isMovingAway(Math.sin(2.2), Math.cos(2.2), 0)).toBe(false)
+  it('holds on a 45 degree diagonal (outside the forward cone)', () => {
+    expect(isMovingAway(Math.sin(Math.PI / 4), Math.cos(Math.PI / 4), 0)).toBe(false)
+  })
+
+  it('realigns on a slight forward offset (within 25 deg)', () => {
+    expect(isMovingAway(Math.sin(0.2), Math.cos(0.2), 0)).toBe(true)
   })
 
   it('treats a zero vector as not moving away', () => {
@@ -83,7 +87,7 @@ describe('nextFollowYaw', () => {
   })
 
   it('pins the tunables', () => {
-    expect(REALIGN_CONE).toBeCloseTo((100 * Math.PI) / 180, 10)
+    expect(REALIGN_CONE).toBeCloseTo((25 * Math.PI) / 180, 10)
     expect(FOLLOW_YAW_EASE).toBe(1.5)
   })
 })

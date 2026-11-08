@@ -143,10 +143,13 @@ export function FollowCamera({
   characterRef,
   lookYawRef,
   pitchRef,
+  scripted = false,
 }: {
   characterRef: React.RefObject<THREE.Group | null>
   lookYawRef: React.RefObject<number>
   pitchRef: React.RefObject<number>
+  /** AutoWalk steers in world space: always realign behind the route. */
+  scripted?: boolean
 }) {
   const camera = useThree((state) => state.camera)
   const desired = useMemo(() => new THREE.Vector3(), [])
@@ -169,12 +172,14 @@ export function FollowCamera({
     lookYawRef.current = yaw
     pitchRef.current = pitch
 
-    // Walk away from the camera and it eases back behind the heading; walk
-    // toward it and it holds its yaw and backs away instead of orbiting.
+    // Walk away from the camera and it eases back behind the movement
+    // direction; walk toward it (or sideways) and it holds its yaw and backs
+    // away instead of orbiting. Scripted walks always follow the route.
     if (followYawRef.current === null) followYawRef.current = character.rotation.y
     const viewYaw = followYawRef.current + yaw // includes the drag-look offset
-    const movingAway = moved && isMovingAway(stepX, stepZ, viewYaw)
-    const followYaw = nextFollowYaw(followYawRef.current, character.rotation.y, movingAway, dt)
+    const moveYaw = Math.atan2(stepX, stepZ)
+    const movingAway = moved && (scripted || isMovingAway(stepX, stepZ, viewYaw))
+    const followYaw = nextFollowYaw(followYawRef.current, moveYaw, movingAway, dt)
     followYawRef.current = followYaw
 
     const facing = followYaw + yaw

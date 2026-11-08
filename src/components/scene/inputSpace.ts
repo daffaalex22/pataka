@@ -1,7 +1,11 @@
 /** Camera-relative movement math (Three.js-free for tests). */
 
-/** Hysteresis half-angle: the camera only realigns behind headings within this angle of the view. */
-export const REALIGN_CONE = (100 * Math.PI) / 180
+/**
+ * Hysteresis half-angle: the camera only realigns behind headings within this
+ * angle of the view. Narrow enough that lateral/diagonal input never chases
+ * its own rotated frame (which would orbit); forward runs still recenter.
+ */
+export const REALIGN_CONE = (25 * Math.PI) / 180
 
 /** Ease rate of the follow camera's yaw toward the character's heading (1/s). */
 export const FOLLOW_YAW_EASE = 1.5
