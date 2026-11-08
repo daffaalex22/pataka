@@ -11,6 +11,8 @@ import { PreviewCamera } from '@/components/scene/PreviewCamera'
 import { Board, Booth } from '@/components/world/Interactables'
 import { CourtyardFloor } from '@/components/scene/summaba/CourtyardFloor'
 import { MallRing } from '@/components/scene/summaba/MallRing'
+import { Atriums } from '@/components/scene/summaba/Atriums'
+import { Stage } from '@/components/scene/summaba/Stage'
 
 const STATUS_3D: Record<string, string> = {
   available: '#2dd4bf',
@@ -47,16 +49,6 @@ function Venue() {
     mesh.instanceMatrix.needsUpdate = true
   }, [lightPoints])
 
-  const tribunes = useMemo(() => {
-    const boxes: { x: number; height: number }[] = []
-    for (const side of [-1, 1]) {
-      for (let r = 0; r < 3; r++) {
-        boxes.push({ x: side * (13 + r * 2), height: 1.2 + r * 1.2 })
-      }
-    }
-    return boxes
-  }, [])
-
   return (
     <group>
       <color attach="background" args={['#07060d']} />
@@ -64,63 +56,8 @@ function Venue() {
 
       <CourtyardFloor />
       <MallRing />
-
-      {/* stage */}
-      <group position={[0, 0, -27]}>
-        <mesh position={[0, 4.6, -5.7]}>
-          <boxGeometry args={[28, 9.2, 0.4]} />
-          <meshStandardMaterial color="#0c0a14" roughness={0.9} metalness={0.05} />
-        </mesh>
-        <mesh position={[0, 0.7, 0]}>
-          <boxGeometry args={[26, 1.4, 11]} />
-          <meshStandardMaterial color="#1a1426" roughness={0.45} metalness={0.35} />
-        </mesh>
-        {/* LED panels */}
-        {[
-          { x: -6, color: '#f5c542' },
-          { x: 0, color: '#7c5cff' },
-          { x: 6, color: '#38bdf8' },
-        ].map((panel) => (
-          <mesh key={panel.x} position={[panel.x, 4.4, -4.6]}>
-            <planeGeometry args={[4.6, 6.4]} />
-            <meshBasicMaterial color={panel.color} toneMapped={false} transparent opacity={0.85} />
-          </mesh>
-        ))}
-        {/* truss */}
-        <mesh position={[0, 8.6, 1.5]}>
-          <boxGeometry args={[28, 0.35, 0.35]} />
-          <meshStandardMaterial color="#2a2438" metalness={0.8} roughness={0.3} />
-        </mesh>
-        {[-13, 13].map((x) => (
-          <mesh key={x} position={[x, 4.3, 1.5]}>
-            <cylinderGeometry args={[0.14, 0.14, 8.6, 8]} />
-            <meshStandardMaterial color="#2a2438" metalness={0.8} roughness={0.3} />
-          </mesh>
-        ))}
-        {/* spotlight cans + beams */}
-        {[-9, -3, 3, 9].map((x) => (
-          <group key={x}>
-            <mesh position={[x, 8.1, 1.2]}>
-              <cylinderGeometry args={[0.28, 0.34, 0.7, 10]} />
-              <meshStandardMaterial color="#1c1826" metalness={0.6} roughness={0.4} />
-            </mesh>
-            <mesh position={[x, 4.4, -0.8]} rotation-x={0.42}>
-              <coneGeometry args={[1.15, 8, 12, 1, true]} />
-              <meshBasicMaterial color={x % 2 === 0 ? '#f5c542' : '#9b7bff'} transparent opacity={0.055} side={THREE.DoubleSide} depthWrite={false} />
-            </mesh>
-          </group>
-        ))}
-        <pointLight position={[0, 5, 2]} intensity={40} distance={46} color="#f5c542" />
-        <pointLight position={[-8, 3, 2]} intensity={22} distance={30} color="#9b7bff" />
-      </group>
-
-      {/* tribune platforms */}
-      {tribunes.map((tribune) => (
-        <mesh key={`${tribune.x}-${tribune.height}`} position={[tribune.x, tribune.height / 2, 9]}>
-          <boxGeometry args={[2.2, tribune.height, 31]} />
-          <meshStandardMaterial color="#151120" roughness={0.8} metalness={0.15} />
-        </mesh>
-      ))}
+      <Atriums />
+      <Stage />
 
       {/* string lights */}
       <instancedMesh ref={bulbsRef} args={[undefined, undefined, lightPoints.length]}>

@@ -140,7 +140,6 @@ export function MallRing() {
       {/* Warm glow spilling from the arcade */}
       <pointLight position={[0, 4, -14]} intensity={18} distance={30} color="#f5c542" />
       <pointLight position={[18, 4, 4]} intensity={10} distance={22} color="#9b7bff" />
-      <pointLight position={[-18, 4, 4]} intensity={10} distance={22} color="#9b7bff" />
     </group>
   )
 }
