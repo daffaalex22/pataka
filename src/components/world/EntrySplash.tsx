@@ -35,6 +35,9 @@ export function EntrySplash({
           <span aria-hidden className="size-1.5 rounded-full bg-accent" />
         </span>
         <div className="flex items-center gap-3">
+          <Link href="/tickets" className="text-xs text-muted transition hover:text-foreground">
+            {t('world.myTickets')}
+          </Link>
           <Link href="/deck" className="hidden text-xs text-muted transition hover:text-foreground sm:block">
             {t('common.deck')}
           </Link>

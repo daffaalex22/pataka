@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { useBooking } from '@/lib/store'
+import { saveTicket } from '@/lib/ticketStore'
 import type { Category, EventInfo, Seat } from '@/lib/types'
 
 type EventResponse = { event: EventInfo; categories: Category[] }
@@ -105,6 +106,7 @@ export function useBookingFlow() {
         body: JSON.stringify({ method }),
       })
       if (res.ok) {
+        saveTicket(orderCode)
         reset()
         router.push(`/eticket/${orderCode}`)
       } else if (res.status === 409) {

@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { LangToggle } from '@/components/ui/LangToggle'
 import { useLang, useT } from '@/lib/i18n'
+import { saveTicket } from '@/lib/ticketStore'
 import { formatEventDate, formatIdr, type EventInfo } from '@/lib/types'
 
 type Ticket = {
@@ -35,6 +36,7 @@ export function ETicketClient() {
   const [event, setEvent] = useState<EventInfo | null>(null)
   const [notFound, setNotFound] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [emailState, setEmailState] = useState<'idle' | 'sending' | 'sent' | 'not_configured' | 'failed'>('idle')
 
   useEffect(() => {
     if (!code) return
@@ -46,13 +48,29 @@ export function ETicketClient() {
         }
         return res.json()
       })
-      .then((data) => data && setTicket(data as Ticket))
+      .then((data) => {
+        if (!data) return
+        setTicket(data as Ticket)
+        saveTicket(code)
+      })
       .catch(() => setNotFound(true))
     fetch('/api/event')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => data && setEvent(data.event as EventInfo))
       .catch(() => {})
   }, [code])
+
+  const sendEmail = async () => {
+    if (!ticket) return
+    setEmailState('sending')
+    try {
+      const res = await fetch(`/api/orders/${encodeURIComponent(ticket.orderCode)}/email`, { method: 'POST' })
+      const data = res.ok ? ((await res.json()) as { status: 'sent' | 'not_configured' | 'failed' }) : null
+      setEmailState(data?.status ?? 'failed')
+    } catch {
+      setEmailState('failed')
+    }
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 pb-16 sm:px-6">
@@ -61,7 +79,12 @@ export function ETicketClient() {
           PATAKA
           <span aria-hidden className="size-1.5 rounded-full bg-accent" />
         </Link>
-        <LangToggle />
+        <div className="flex items-center gap-3">
+          <Link href="/tickets" className="text-xs text-muted transition hover:text-foreground">
+            {t('world.myTickets')}
+          </Link>
+          <LangToggle />
+        </div>
       </header>
 
       {notFound && (
@@ -182,6 +205,26 @@ export function ETicketClient() {
             >
               {t('eticket.backHome')}
             </Link>
+          </div>
+
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={sendEmail}
+              disabled={emailState === 'sending'}
+              className="w-full rounded-full border border-line px-5 py-3 text-sm font-medium transition hover:border-white/30 disabled:cursor-wait disabled:opacity-50"
+            >
+              ✉️ {emailState === 'sending' ? t('eticket.emailSending') : t('eticket.email')}
+            </button>
+            {emailState === 'sent' && (
+              <p className="mt-2 text-center text-xs text-emerald-300">{t('eticket.emailSent')}</p>
+            )}
+            {emailState === 'not_configured' && (
+              <p className="mt-2 text-center text-xs text-muted">{t('eticket.emailUnavailable')}</p>
+            )}
+            {emailState === 'failed' && (
+              <p className="mt-2 text-center text-xs text-red-300">{t('eticket.emailFailed')}</p>
+            )}
           </div>
 
           <div className="panel mt-4 flex items-start gap-3 rounded-2xl p-4">

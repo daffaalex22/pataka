@@ -31,6 +31,8 @@ npm run dev           # http://localhost:3000
 
 `DATABASE_URL` can also point at a real Postgres (`postgresql://…`), e.g. Neon.
 
+Optional ticket email: set `RESEND_API_KEY` and `EMAIL_FROM` to send e-ticket links through a Resend-compatible API after payment (and via the “Email ticket” button). Without them the app reports “email not configured” and the ticket link is still saved in the browser (`/tickets`).
+
 ## Scripts
 
 | Script | Purpose |
