@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { floorHeightAt, planWalkRoute, resolveWalkable } from '@/components/scene/summaba/layout'
+import {
+  floorHeightAt,
+  planWalkRoute,
+  resolveWalkable,
+  targetFloorHeight,
+} from '@/components/scene/summaba/layout'
 
 describe('floorHeightAt', () => {
   it('is 0 on the courtyard floor', () => expect(floorHeightAt(0, 0)).toBe(0))
@@ -22,13 +27,13 @@ describe('resolveWalkable', () => {
     resolveWalkable(pos)
     expect(pos.z).toBeGreaterThanOrEqual(-18)
   })
-  it('blocks the east ring but allows the atrium porch', () => {
-    const porch = { x: 23, y: 0, z: 0 }
-    resolveWalkable(porch)
-    expect(porch.x).toBe(23)
-    const wall = { x: 30, y: 0, z: 0 }
+  it('blocks the east ring at the atrium face', () => {
+    const face = { x: 21.5, y: 0, z: 0 }
+    resolveWalkable(face)
+    expect(face.x).toBe(21.5)
+    const wall = { x: 23, y: 0, z: 0 }
     resolveWalkable(wall)
-    expect(wall.x).toBeLessThanOrEqual(25)
+    expect(wall.x).toBeLessThanOrEqual(22)
   })
   it('keeps the character out of the koi pond', () => {
     const pos = { x: -12, y: 0, z: 31 }
@@ -64,5 +69,45 @@ describe('planWalkRoute', () => {
     expect(route).toHaveLength(3)
     expect(route[0].x).toBeLessThan(0)
     expect(route[2].y).toBe(0)
+  })
+  it('routes to a west balcony seat via the west stairs from spawn', () => {
+    const route = planWalkRoute({ x: 0, y: 0, z: 19 }, { x: -17.5, y: 5.75, z: 0 })
+    expect(route).toHaveLength(3)
+    expect(route[0].x).toBeLessThan(0)
+    expect(route[1].x).toBeLessThan(0)
+  })
+  it('routes to an east balcony seat via the east stairs from the west side', () => {
+    const route = planWalkRoute({ x: -5, y: 0, z: 19 }, { x: 17.5, y: 5.75, z: 0 })
+    expect(route[0].x).toBeGreaterThan(0)
+  })
+  it('crosses balconies by descending and re-ascending', () => {
+    const route = planWalkRoute({ x: -17.5, y: 5.75, z: 0 }, { x: 17.5, y: 5.75, z: 0 })
+    expect(route).toHaveLength(5)
+    expect(route[0].x).toBeLessThan(0)
+    expect(route[1].x).toBeLessThan(0)
+    expect(route[2].x).toBeGreaterThan(0)
+    expect(route[3].x).toBeGreaterThan(0)
+  })
+  it('goes direct on the same balcony', () => {
+    const route = planWalkRoute({ x: -17.5, y: 5.75, z: 0 }, { x: -15.5, y: 5.75, z: 5 })
+    expect(route).toEqual([{ x: -15.5, y: 5.75, z: 5 }])
+  })
+})
+
+describe('targetFloorHeight', () => {
+  it('keeps a grounded character grounded under the balcony', () => {
+    expect(targetFloorHeight(0, 5.2)).toBe(0)
+  })
+  it('keeps a grounded character grounded under mid-ramp', () => {
+    expect(targetFloorHeight(0, 3.47)).toBe(0)
+  })
+  it('lets a grounded character take the ramp foot', () => {
+    expect(targetFloorHeight(0, 0.87)).toBeCloseTo(0.87, 5)
+  })
+  it('follows the surface while elevated', () => {
+    expect(targetFloorHeight(4.9, 5.2)).toBe(5.2)
+  })
+  it('descends to ground at the ramp foot', () => {
+    expect(targetFloorHeight(5.2, 0)).toBe(0)
   })
 })

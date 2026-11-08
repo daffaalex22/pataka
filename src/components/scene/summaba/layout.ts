@@ -52,29 +52,7 @@ const BALCONIES: Rect[] = [
 
 const STAIRS: Rect[] = [WORLD.stairs.east, WORLD.stairs.west]
 
-/** Shallow walkable recesses at each atrium's courtyard-facing entrance. */
-const PORCHES: Rect[] = [
-  {
-    minX: WORLD.atriums.ciunik.minX,
-    maxX: WORLD.atriums.ciunik.maxX,
-    minZ: WORLD.atriums.ciunik.maxZ,
-    maxZ: WORLD.atriums.ciunik.maxZ + WORLD.porchDepth,
-  },
-  {
-    minX: WORLD.atriums.cibadak.minX,
-    maxX: WORLD.atriums.cibadak.minX + WORLD.porchDepth,
-    minZ: WORLD.atriums.cibadak.minZ,
-    maxZ: WORLD.atriums.cibadak.maxZ,
-  },
-  {
-    minX: WORLD.atriums.cileutik.maxX - WORLD.porchDepth,
-    maxX: WORLD.atriums.cileutik.maxX,
-    minZ: WORLD.atriums.cileutik.minZ,
-    maxZ: WORLD.atriums.cileutik.maxZ,
-  },
-]
-
-const GROUND_RECTS: Rect[] = [WORLD.courtyard, WORLD.downtown, ...PORCHES, ...STAIRS]
+const GROUND_RECTS: Rect[] = [WORLD.courtyard, WORLD.downtown, ...STAIRS]
 const UPPER_RECTS: Rect[] = [...BALCONIES, ...STAIRS]
 
 function insideRect(rect: Rect, x: number, z: number) {
@@ -130,25 +108,47 @@ export function stairTop(side: 'east' | 'west'): Vec3 {
   return side === 'east' ? { x: 19.5, y: WORLD.balcony.y, z: 14 } : { x: -19.5, y: WORLD.balcony.y, z: 14 }
 }
 
-function nearestStairSide(from: Vec3): 'east' | 'west' {
-  return Math.abs(from.x - 19.5) <= Math.abs(from.x + 19.5) ? 'east' : 'west'
+/**
+ * Height the character should ease toward. A grounded character only takes a
+ * surface it can step onto (the ramp foot); it stays grounded under the
+ * balcony deck and under mid-ramp instead of popping up through geometry.
+ */
+export function targetFloorHeight(currentY: number, surface: number): number {
+  if (currentY > 1) return surface
+  if (surface > 0 && surface - currentY < 1.2) return surface
+  return currentY > 0 ? currentY : 0
+}
+
+function stairSideForX(x: number): 'east' | 'west' {
+  return x >= 0 ? 'east' : 'west'
 }
 
 /**
  * Waypoints a scripted walk should follow. Ground → balcony goes up via the
- * nearest stairway; balcony → ground comes down the same way; same-level
- * walks go direct.
+ * stairs on the target balcony's side; balcony → ground comes down the
+ * starting balcony's side; crossing between balconies descends, crosses the
+ * courtyard and re-ascends.
  */
 export function planWalkRoute(from: Vec3, to: Vec3): Vec3[] {
   const fromUpper = from.y > 1
   const toUpper = to.y > 1
-  if (fromUpper === toUpper) return [to]
 
-  const side = nearestStairSide(from)
+  if (!fromUpper && !toUpper) return [to]
+
   if (!fromUpper && toUpper) {
+    const side = stairSideForX(to.x)
     return [stairBottom(side), stairTop(side), to]
   }
-  return [stairTop(side), stairBottom(side), to]
+
+  if (fromUpper && !toUpper) {
+    const side = stairSideForX(from.x)
+    return [stairTop(side), stairBottom(side), to]
+  }
+
+  const fromSide = stairSideForX(from.x)
+  const toSide = stairSideForX(to.x)
+  if (fromSide === toSide) return [to]
+  return [stairTop(fromSide), stairBottom(fromSide), stairBottom(toSide), stairTop(toSide), to]
 }
 
 /**

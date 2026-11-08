@@ -3,8 +3,8 @@
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { floorHeightAt, resolveWalkable, WORLD } from '@/components/scene/summaba/layout'
-import { recenterLookYaw } from '@/components/scene/lookYaw'
+import { floorHeightAt, resolveWalkable, targetFloorHeight } from '@/components/scene/summaba/layout'
+import { hasMoved, recenterLookYaw } from '@/components/scene/lookYaw'
 
 export type MoveVector = { x: number; y: number }
 export type KeysState = Record<string, boolean>
@@ -57,8 +57,7 @@ export function Character({
 
     resolveWalkable(group.position)
     const surface = floorHeightAt(group.position.x, group.position.z)
-    const elevated = group.position.y > 1 || surface < WORLD.balcony.y - 0.05
-    const targetHeight = elevated ? surface : 0
+    const targetHeight = targetFloorHeight(group.position.y, surface)
     group.position.y += (targetHeight - group.position.y) * (1 - Math.exp(-10 * dt))
 
     const moving = velocity.length() > 0.4
@@ -147,9 +146,7 @@ export function FollowCamera({
     if (!character) return
 
     const dt = Math.min(delta, 0.1)
-    const moved =
-      !Number.isNaN(lastPosition.x) &&
-      Math.hypot(character.position.x - lastPosition.x, character.position.z - lastPosition.z) > 0.05
+    const moved = hasMoved(lastPosition.x, lastPosition.z, character.position.x, character.position.z, dt)
     lastPosition.set(character.position.x, 0, character.position.z)
 
     const yaw = recenterLookYaw(lookYawRef.current, dt, moved)

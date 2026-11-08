@@ -8,10 +8,11 @@ import { useSignage } from './signage'
 const CANOPY_X = [-24, -12, 0, 12, 24]
 const BULB_ROWS = [24.5, 38.5]
 
-function useStringLights() {
-  const ref = useRef<THREE.InstancedMesh>(null)
+/** The Downtown Walk: alfresco dining strip, koi pond and the live-music corner. */
+export function DowntownWalk() {
+  const bulbsRef = useRef<THREE.InstancedMesh>(null)
 
-  const points = useMemo(() => {
+  const bulbPoints = useMemo(() => {
     const points: [number, number, number][] = []
     for (const z of BULB_ROWS) {
       for (let x = -30; x <= 34; x += 3.2) {
@@ -22,23 +23,17 @@ function useStringLights() {
   }, [])
 
   useEffect(() => {
-    const mesh = ref.current
+    const mesh = bulbsRef.current
     if (!mesh) return
     const dummy = new THREE.Object3D()
-    points.forEach(([x, y, z], index) => {
+    bulbPoints.forEach(([x, y, z], index) => {
       dummy.position.set(x, y, z)
       dummy.updateMatrix()
       mesh.setMatrixAt(index, dummy.matrix)
     })
     mesh.instanceMatrix.needsUpdate = true
-  }, [points])
+  }, [bulbPoints])
 
-  return { ref, count: points.length }
-}
-
-/** The Downtown Walk: alfresco dining strip, koi pond and the live-music corner. */
-export function DowntownWalk() {
-  const bulbs = useStringLights()
   const sign = useSignage('THE DOWNTOWN WALK')
   const pond = WORLD.koiPond
 
@@ -145,7 +140,7 @@ export function DowntownWalk() {
       )}
 
       {/* String lights */}
-      <instancedMesh ref={bulbs.ref} args={[undefined, undefined, bulbs.count]}>
+      <instancedMesh ref={bulbsRef} args={[undefined, undefined, bulbPoints.length]}>
         <sphereGeometry args={[0.09, 8, 8]} />
         <meshBasicMaterial color="#ffd88a" toneMapped={false} />
       </instancedMesh>

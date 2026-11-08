@@ -1,6 +1,5 @@
 'use client'
 
-import * as THREE from 'three'
 import { WORLD } from './layout'
 
 const BALCONY_Y = WORLD.balcony.y
@@ -39,13 +38,15 @@ export function Balconies() {
               <meshStandardMaterial color="#2a2438" roughness={0.5} metalness={0.5} />
             </mesh>
 
-            {/* End railings */}
-            {[MIN_Z, MAX_Z].map((z) => (
-              <mesh key={z} position={[midX, BALCONY_Y + 0.55, z]}>
-                <boxGeometry args={[BALCONY_WIDTH, 1.1, 0.14]} />
-                <meshStandardMaterial color="#2a2438" roughness={0.5} metalness={0.5} />
-              </mesh>
-            ))}
+            {/* End railings — the south one leaves the stair landing open */}
+            <mesh position={[midX, BALCONY_Y + 0.55, MIN_Z]}>
+              <boxGeometry args={[BALCONY_WIDTH, 1.1, 0.14]} />
+              <meshStandardMaterial color="#2a2438" roughness={0.5} metalness={0.5} />
+            </mesh>
+            <mesh position={[side * 16, BALCONY_Y + 0.55, MAX_Z]}>
+              <boxGeometry args={[4, 1.1, 0.14]} />
+              <meshStandardMaterial color="#2a2438" roughness={0.5} metalness={0.5} />
+            </mesh>
 
             {/* Support columns under the overhang */}
             {[-10, 0, 10].map((z) => (
