@@ -4,9 +4,10 @@ import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls, PerformanceMonitor } from '@react-three/drei'
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
-import type { Seat } from '@/lib/types'
+import type { Category, EventInfo, Lang, Seat } from '@/lib/types'
 import { Character, FollowCamera, useKeyboard, type KeysState, type MoveVector } from '@/components/scene/Character'
 import { PreviewCamera } from '@/components/scene/PreviewCamera'
+import { Board, Booth } from '@/components/world/Interactables'
 
 const STATUS_3D: Record<string, string> = {
   available: '#2dd4bf',
@@ -196,10 +197,12 @@ function Seats({
   seats,
   selectedId,
   onSelect,
+  highlightCategory = null,
 }: {
   seats: Seat[]
   selectedId: string | null
   onSelect: (seat: Seat) => void
+  highlightCategory?: string | null
 }) {
   const padsRef = useRef<THREE.InstancedMesh>(null)
   const backsRef = useRef<THREE.InstancedMesh>(null)
@@ -215,7 +218,8 @@ function Seats({
     seats.forEach((seat, index) => {
       const isSelected = seat.id === selectedId
       const isHovered = index === hovered
-      const lift = isSelected ? 0.18 : isHovered ? 0.08 : 0
+      const isHighlighted = !isSelected && !isHovered && highlightCategory === seat.categoryKey
+      const lift = isSelected ? 0.18 : isHovered ? 0.08 : isHighlighted ? 0.1 : 0
       const scale = isSelected ? 1.45 : isHovered ? 1.18 : 1
 
       dummy.position.set(seat.x, seat.y + 0.55 + lift, seat.z)
@@ -231,6 +235,7 @@ function Seats({
       const base = STATUS_3D[seat.status] ?? STATUS_3D.available
       color.set(isSelected ? '#f5c542' : base)
       if (isHovered && !isSelected) color.offsetHSL(0, 0.15, 0.12)
+      if (isHighlighted) color.offsetHSL(0, 0.1, 0.1)
       pads.setColorAt(index, color)
       backs.setColorAt(index, color)
     })
@@ -239,7 +244,7 @@ function Seats({
     backs.instanceMatrix.needsUpdate = true
     if (pads.instanceColor) pads.instanceColor.needsUpdate = true
     if (backs.instanceColor) backs.instanceColor.needsUpdate = true
-  }, [seats, selectedId, hovered, dummy, color])
+  }, [seats, selectedId, hovered, highlightCategory, dummy, color])
 
   return (
     <group>
@@ -312,6 +317,10 @@ export default function PlazaScene({
   previewSeat = null,
   maxDpr = 1.5,
   paused = false,
+  showInteractables = false,
+  boardData,
+  onBoothTap,
+  highlightCategory = null,
   characterRef: externalCharacterRef,
 }: {
   seats: Seat[]
@@ -322,6 +331,10 @@ export default function PlazaScene({
   previewSeat?: Seat | null
   maxDpr?: number
   paused?: boolean
+  showInteractables?: boolean
+  boardData?: { event: EventInfo; categories: Category[]; lang: Lang }
+  onBoothTap?: () => void
+  highlightCategory?: string | null
   characterRef?: React.RefObject<THREE.Group | null>
 }) {
   const [dpr, setDpr] = useState(maxDpr)
@@ -342,7 +355,16 @@ export default function PlazaScene({
       <CameraReset mode={mode} />
       <Suspense fallback={null}>
         <Venue />
-        <Seats seats={seats} selectedId={selectedId} onSelect={onSelect} />
+        <Seats
+          seats={seats}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          highlightCategory={highlightCategory}
+        />
+        {showInteractables && boardData && (
+          <Board event={boardData.event} categories={boardData.categories} lang={boardData.lang} />
+        )}
+        {showInteractables && onBoothTap && <Booth onTap={onBoothTap} />}
         {mode === 'walk' && moveRef && (
           <WalkRig moveRef={moveRef} paused={paused || Boolean(previewSeat)} characterRef={characterRef} />
         )}

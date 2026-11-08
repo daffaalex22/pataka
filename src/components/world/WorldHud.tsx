@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
 import { Legend } from '@/components/ui/Legend'
 import { LangToggle } from '@/components/ui/LangToggle'
 import { useT } from '@/lib/i18n'
@@ -12,20 +11,16 @@ export function WorldHud({
   mapEnabled,
   mapOpen,
   onToggleMap,
+  hint,
 }: {
   mode: 'walk' | 'orbit'
   onMode: (mode: 'walk' | 'orbit') => void
   mapEnabled: boolean
   mapOpen: boolean
   onToggleMap: () => void
+  hint: string | null
 }) {
   const t = useT()
-  const [hint, setHint] = useState(true)
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setHint(false), 6000)
-    return () => window.clearTimeout(timer)
-  }, [])
 
   return (
     <>
@@ -88,7 +83,7 @@ export function WorldHud({
       {hint && (
         <div className="pointer-events-none absolute inset-x-0 bottom-28 z-10 flex justify-center px-4">
           <p className="rounded-full border border-white/15 bg-black/50 px-4 py-2 text-center text-xs text-white/80 backdrop-blur">
-            {t('world.hint')}
+            {hint}
           </p>
         </div>
       )}
