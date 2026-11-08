@@ -188,7 +188,13 @@ function WalkRig({
   useKeyboard(keysRef)
   return (
     <>
-      <Character moveRef={moveRef} keysRef={keysRef} characterRef={characterRef} paused={paused} />
+      <Character
+        moveRef={moveRef}
+        keysRef={keysRef}
+        characterRef={characterRef}
+        paused={paused}
+        scripted={Boolean(autoWalkSeat)}
+      />
       {!paused && <FollowCamera characterRef={characterRef} lookYawRef={lookYawRef} pitchRef={pitchRef} />}
       {!paused && <LookDrag yawRef={lookYawRef} pitchRef={pitchRef} dragStateRef={dragStateRef} />}
       {autoWalkSeat && (

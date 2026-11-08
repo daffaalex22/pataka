@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { floorHeightAt, resolveWalkable, targetFloorHeight, clearCameraPosition } from '@/components/scene/summaba/layout'
 import { hasMoved, recenterLookYaw } from '@/components/scene/lookYaw'
+import { resolveMoveInput } from '@/components/scene/inputSpace'
 
 export type MoveVector = { x: number; y: number }
 export type KeysState = Record<string, boolean>
@@ -20,11 +21,14 @@ export function Character({
   keysRef,
   characterRef,
   paused = false,
+  scripted = false,
 }: {
   moveRef: React.RefObject<MoveVector>
   keysRef: React.RefObject<KeysState>
   characterRef: React.RefObject<THREE.Group | null>
   paused?: boolean
+  /** AutoWalk drives `moveRef` in world space; manual input is screen space. */
+  scripted?: boolean
 }) {
   const bodyRef = useRef<THREE.Group>(null)
   const armL = useRef<THREE.Mesh>(null)
@@ -33,9 +37,10 @@ export function Character({
   const legR = useRef<THREE.Mesh>(null)
   const velocity = useMemo(() => new THREE.Vector3(), [])
   const target = useMemo(() => new THREE.Vector3(), [])
+  const camDir = useMemo(() => new THREE.Vector3(), [])
   const walkTime = useRef(0)
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const group = characterRef.current
     if (!group) return
 
@@ -47,7 +52,12 @@ export function Character({
     const inputX = paused ? 0 : stick.x + (keys['d'] || keys['arrowright'] ? 1 : 0) - (keys['a'] || keys['arrowleft'] ? 1 : 0)
     const inputZ = paused ? 0 : -stick.y + (keys['s'] || keys['arrowdown'] ? 1 : 0) - (keys['w'] || keys['arrowup'] ? 1 : 0)
 
-    target.set(inputX, 0, inputZ)
+    // Arrows/joystick are screen space: rotate by the camera yaw so "down"
+    // always walks toward the viewer, whatever way the camera faces.
+    state.camera.getWorldDirection(camDir)
+    const camYaw = Math.atan2(camDir.x, camDir.z)
+    const world = resolveMoveInput(inputX, inputZ, camYaw, scripted)
+    target.set(world.x, 0, world.z)
     if (target.lengthSq() > 1) target.normalize()
     const speed = 7
     target.multiplyScalar(speed)
