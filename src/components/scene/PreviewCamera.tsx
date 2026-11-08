@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import type { Seat } from '@/lib/types'
 
-const STAGE_LOOK_AT = new THREE.Vector3(0, 3.2, -24)
+const STAGE_LOOK_AT = new THREE.Vector3(0, 3.2, -13)
 
 /** Smoothly flies the camera to a seated eye-level view of the stage, then restores on exit. */
 export function PreviewCamera({ seat }: { seat: Seat }) {
