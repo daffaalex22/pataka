@@ -63,6 +63,8 @@ async function main() {
     await desktop.locator('input[type="password"]').fill(adminKey)
     await desktop.getByRole('button', { name: /Masuk|Sign in/ }).click()
     await desktop.getByRole('button', { name: /Dasbor|Dashboard/ }).waitFor({ timeout: 20000 })
+    await desktop.getByText(/pendaftar|tiket terjual|registrants|tickets sold/i).first().waitFor({ timeout: 20000 })
+    await desktop.waitForTimeout(1000)
     await desktop.screenshot({ path: path.join(outDir, 'admin.png') })
     console.log('wrote', path.join(outDir, 'admin.png'))
 

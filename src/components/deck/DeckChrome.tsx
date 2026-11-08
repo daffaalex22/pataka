@@ -10,11 +10,11 @@ export function DeckChrome({ count }: { count: number }) {
   const [fullscreen, setFullscreen] = useState(false)
   const slidesRef = useRef<HTMLElement[]>([])
 
-  const goTo = useCallback((index: number) => {
+  const goTo = useCallback((index: number, behavior: ScrollBehavior = 'smooth') => {
     const slides = slidesRef.current
     if (!slides.length) return
     const target = nextSlideIndex(index, 0, slides.length)
-    slides[target]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    slides[target]?.scrollIntoView({ behavior, block: 'start' })
     setActive(target)
   }, [])
 
@@ -26,7 +26,7 @@ export function DeckChrome({ count }: { count: number }) {
     if (!slides.length) return
 
     const initial = parseDeckHash(window.location.hash, slides.length)
-    if (initial !== null) slides[initial]?.scrollIntoView({ block: 'start' })
+    if (initial !== null) slides[initial]?.scrollIntoView({ behavior: 'instant', block: 'start' })
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -69,13 +69,13 @@ export function DeckChrome({ count }: { count: number }) {
 
       if (event.key === 'Home') {
         event.preventDefault()
-        goTo(0)
+        goTo(0, 'instant')
         return
       }
 
       if (event.key === 'End') {
         event.preventDefault()
-        goTo(slidesRef.current.length - 1)
+        goTo(slidesRef.current.length - 1, 'instant')
         return
       }
 
