@@ -45,10 +45,11 @@ export function DowntownWalk() {
         <meshStandardMaterial color="#141020" roughness={0.9} metalness={0.05} />
       </mesh>
 
-      {/* Warm shopfront wall along the south edge */}
-      <mesh position={[0, 1.6, 39.6]}>
+      {/* Warm shopfront wall along the south edge (faces the courtyard; culled
+          from behind so the follow camera never films it from outside) */}
+      <mesh position={[0, 1.6, 39.6]} rotation-y={Math.PI}>
         <planeGeometry args={[72, 3.2]} />
-        <meshBasicMaterial color="#5a4420" toneMapped={false} transparent opacity={0.95} side={THREE.DoubleSide} />
+        <meshBasicMaterial color="#5a4420" toneMapped={false} transparent opacity={0.95} />
       </mesh>
       <mesh position={[0, 2.95, 39.45]}>
         <planeGeometry args={[72, 0.22]} />
@@ -66,9 +67,9 @@ export function DowntownWalk() {
             <boxGeometry args={[10, 0.25, 5.2]} />
             <meshStandardMaterial color="#1c1729" roughness={0.75} metalness={0.2} />
           </mesh>
-          <mesh position={[0, 3.46, 0]}>
+          <mesh position={[0, 3.46, 0]} rotation-x={Math.PI / 2}>
             <planeGeometry args={[9.4, 4.6]} />
-            <meshBasicMaterial color="#6b4f1e" toneMapped={false} transparent opacity={0.95} side={THREE.DoubleSide} />
+            <meshBasicMaterial color="#6b4f1e" toneMapped={false} transparent opacity={0.95} />
           </mesh>
           {[-4.4, 4.4].map((px) => (
             <mesh key={px} position={[px, 1.75, 0]}>
