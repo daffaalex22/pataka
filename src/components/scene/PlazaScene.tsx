@@ -233,6 +233,7 @@ export default function PlazaScene({
   showInteractables = false,
   boardData,
   onBoothTap,
+  onBoardTap,
   highlightCategory = null,
   autoWalkSeat = null,
   onAutoWalkArrived,
@@ -250,6 +251,7 @@ export default function PlazaScene({
   showInteractables?: boolean
   boardData?: { event: EventInfo; categories: Category[]; lang: Lang }
   onBoothTap?: () => void
+  onBoardTap?: () => void
   highlightCategory?: string | null
   autoWalkSeat?: Seat | null
   onAutoWalkArrived?: (seat: Seat) => void
@@ -285,7 +287,13 @@ export default function PlazaScene({
           dragStateRef={dragStateRef}
         />
         {showInteractables && boardData && (
-          <Board event={boardData.event} categories={boardData.categories} lang={boardData.lang} />
+          <Board
+            event={boardData.event}
+            categories={boardData.categories}
+            lang={boardData.lang}
+            onTap={onBoardTap}
+            dragStateRef={dragStateRef}
+          />
         )}
         {showInteractables && onBoothTap && <Booth onTap={onBoothTap} dragStateRef={dragStateRef} />}
         {mode === 'walk' && moveRef && (

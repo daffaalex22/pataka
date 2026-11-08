@@ -73,8 +73,28 @@ function BillboardTag({ texture, position }: { texture: THREE.Texture; position:
 }
 
 /** Freestanding LED board near the spawn: live event info and per-category availability. */
-export function Board({ event, categories, lang }: { event: EventInfo; categories: Category[]; lang: Lang }) {
+export function Board({
+  event,
+  categories,
+  lang,
+  onTap,
+  dragStateRef,
+}: {
+  event: EventInfo
+  categories: Category[]
+  lang: Lang
+  onTap?: () => void
+  dragStateRef?: RefObject<{ dragging: boolean }>
+}) {
   const t = useT()
+  const [hovered, setHovered] = useState(false)
+
+  useEffect(
+    () => () => {
+      document.body.style.cursor = ''
+    },
+    [],
+  )
 
   const texture = useMemo(() => {
     const canvas = document.createElement('canvas')
@@ -134,7 +154,28 @@ export function Board({ event, categories, lang }: { event: EventInfo; categorie
   if (!texture) return null
 
   return (
-    <group position={[-9, 0, 19]} rotation-y={2.3}>
+    <group
+      position={[-9, 0, 19]}
+      rotation-y={2.3}
+      scale={hovered ? 1.03 : 1}
+      onPointerOver={(event_) => {
+        if (!onTap) return
+        event_.stopPropagation()
+        setHovered(true)
+        document.body.style.cursor = 'pointer'
+      }}
+      onPointerOut={(event_) => {
+        if (!onTap) return
+        event_.stopPropagation()
+        setHovered(false)
+        document.body.style.cursor = ''
+      }}
+      onClick={(event_) => {
+        event_.stopPropagation()
+        if (dragStateRef?.current.dragging) return
+        onTap?.()
+      }}
+    >
       <PulseRing position={[0, 0.02, 0]} />
       {[-2.3, 2.3].map((x) => (
         <mesh key={x} position={[x, 0.6, 0]}>

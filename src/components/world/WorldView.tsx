@@ -12,6 +12,7 @@ import { SeatMap2D } from '@/components/visitor/SeatMap2D'
 import { SummaryStep } from '@/components/visitor/SummaryStep'
 import type { Group } from 'three'
 import { BoothOverlay } from '@/components/world/BoothOverlay'
+import { BoardDetail } from '@/components/world/BoardDetail'
 import { SeatBar } from '@/components/world/SeatBar'
 import { SeatViewPanel } from '@/components/world/SeatViewPanel'
 import { StepOverlay } from '@/components/world/StepOverlay'
@@ -52,8 +53,9 @@ export function WorldView() {
   const [previewSeat, setPreviewSeat] = useState<Seat | null>(null)
   const [autoWalkSeat, setAutoWalkSeat] = useState<Seat | null>(null)
   const [boothOpen, setBoothOpen] = useState(false)
+  const [boardDetailOpen, setBoardDetailOpen] = useState(false)
   const [highlightCategory, setHighlightCategory] = useState<string | null>(null)
-  const [hint, setHint] = useState<string | null>(null)
+  const [hint, setHint] = useState<string | null>(() => `${t('world.hint')} · ${t('world.lookHint')}`)
   const hintTimer = useRef<number | null>(null)
 
   const showHint = useCallback((message: string) => {
@@ -63,11 +65,10 @@ export function WorldView() {
   }, [])
 
   useEffect(() => {
-    showHint(`${t('world.hint')} · ${t('world.lookHint')}`)
+    hintTimer.current = window.setTimeout(() => setHint(null), 6000)
     return () => {
       if (hintTimer.current) window.clearTimeout(hintTimer.current)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -161,10 +162,11 @@ export function WorldView() {
           moveRef={moveRef}
           previewSeat={previewSeat}
           maxDpr={maxDpr}
-          paused={overlayOpen || mapOpen || boothOpen}
+          paused={overlayOpen || mapOpen || boothOpen || boardDetailOpen}
           showInteractables={Boolean(data)}
           boardData={data ? { event: data.event, categories: data.categories, lang } : undefined}
           onBoothTap={() => setBoothOpen(true)}
+          onBoardTap={() => setBoardDetailOpen(true)}
           highlightCategory={highlightCategory}
           characterRef={characterRef}
           autoWalkSeat={autoWalkSeat}
@@ -186,11 +188,11 @@ export function WorldView() {
         hint={hint}
       />
 
-      {mode === 'walk' && !overlayOpen && !mapOpen && !previewSeat && !boothOpen && (
+      {mode === 'walk' && !overlayOpen && !mapOpen && !previewSeat && !boothOpen && !boardDetailOpen && (
         <Joystick moveRef={moveRef} />
       )}
 
-      {!overlayOpen && !mapOpen && !previewSeat && !boothOpen && (
+      {!overlayOpen && !mapOpen && !previewSeat && !boothOpen && !boardDetailOpen && (
         <SeatBar
           seat={seat}
           busy={busy}
@@ -208,7 +210,7 @@ export function WorldView() {
         />
       )}
 
-      {previewSeat && !overlayOpen && !mapOpen && !boothOpen && (
+      {previewSeat && !overlayOpen && !mapOpen && !boothOpen && !boardDetailOpen && (
         <SeatViewPanel
           seat={previewSeat}
           busy={busy}
@@ -300,6 +302,15 @@ export function WorldView() {
         onChoose={chooseCategory}
         onClose={() => setBoothOpen(false)}
       />
+
+      {data && (
+        <BoardDetail
+          open={boardDetailOpen}
+          event={data.event}
+          categories={data.categories}
+          onClose={() => setBoardDetailOpen(false)}
+        />
+      )}
     </div>
   )
 }
