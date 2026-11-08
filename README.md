@@ -50,6 +50,9 @@ Optional ticket email: set `RESEND_API_KEY` and `EMAIL_FROM` to send e-ticket li
 - Visitor: `/`
 - Organizer panel: `/admin` — demo key `panitia2026`
 - Submission deck: `/deck`
+- Pitch deck: `/deck` — arrow/space navigation, `F` fullscreen, print to 16:9 PDF
+- Speaker notes: `/deck/notes`
+- PDF backup: `/deck/pataka-pitch.pdf` · notes PDF: `/deck/pataka-notes.pdf`
 
 ## Prototype assumptions (also on the deck)
 
