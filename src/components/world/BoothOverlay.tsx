@@ -38,7 +38,7 @@ export function BoothOverlay({
             onClick={onClose}
             aria-label={t('common.back')}
             title={t('common.back')}
-            className="grid size-8 shrink-0 place-items-center rounded-full border border-line text-sm text-muted transition hover:text-foreground"
+            className="grid size-10 shrink-0 place-items-center rounded-full border border-line text-sm text-muted transition hover:text-foreground"
           >
             ✕
           </button>

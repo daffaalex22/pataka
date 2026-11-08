@@ -25,7 +25,7 @@ export function StepOverlay({
             onClick={onBack}
             aria-label={t('common.back')}
             title={t('common.back')}
-            className="grid size-8 place-items-center rounded-full border border-line text-sm text-muted transition hover:text-foreground"
+            className="grid size-10 place-items-center rounded-full border border-line text-sm text-muted transition hover:text-foreground"
           >
             ✕
           </button>

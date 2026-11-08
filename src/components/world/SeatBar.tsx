@@ -69,7 +69,7 @@ export function SeatBar({
             onClick={onPreview}
             aria-label={t('seat.preview')}
             title={t('seat.preview')}
-            className="grid size-10 place-items-center rounded-full border border-white/15 text-base text-white/75 transition hover:border-accent/50 hover:text-accent"
+            className="grid size-11 place-items-center rounded-full border border-white/15 text-base text-white/75 transition hover:border-accent/50 hover:text-accent"
           >
             👁
           </button>
@@ -78,7 +78,7 @@ export function SeatBar({
             onClick={onWalkToSeat}
             aria-label={t('seat.walkToSeat')}
             title={t('seat.walkToSeat')}
-            className="grid size-10 place-items-center rounded-full border border-white/15 text-base text-white/75 transition hover:border-accent/50 hover:text-accent"
+            className="grid size-11 place-items-center rounded-full border border-white/15 text-base text-white/75 transition hover:border-accent/50 hover:text-accent"
           >
             🚶
           </button>
@@ -86,7 +86,7 @@ export function SeatBar({
             <button
               type="button"
               onClick={onResume}
-              className="rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-black transition hover:brightness-110"
+              className="rounded-full bg-accent px-4 py-3 text-sm font-semibold text-black transition hover:brightness-110"
             >
               {t('seat.resume')} →
             </button>
@@ -95,7 +95,7 @@ export function SeatBar({
               type="button"
               disabled={busy || seat.status !== 'available'}
               onClick={onHold}
-              className="rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-full bg-accent px-4 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {busy ? t('common.loading') : t('seat.choose')}
             </button>

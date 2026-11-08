@@ -26,7 +26,7 @@ export function SeatViewPanel({
           <button
             type="button"
             onClick={onBack}
-            className="flex-1 rounded-full border border-white/15 px-4 py-2.5 text-sm font-medium text-white/75 transition hover:border-white/30 hover:text-white"
+            className="flex-1 rounded-full border border-white/15 px-4 py-3 text-sm font-medium text-white/75 transition hover:border-white/30 hover:text-white"
           >
             {t('seatView.back')}
           </button>
@@ -34,7 +34,7 @@ export function SeatViewPanel({
             type="button"
             onClick={onContinue}
             disabled={busy}
-            className="flex-1 rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex-1 rounded-full bg-accent px-4 py-3 text-sm font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy ? t('common.loading') : t('seatView.continue')}
           </button>
