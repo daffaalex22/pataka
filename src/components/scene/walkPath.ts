@@ -1,13 +1,24 @@
 export const WALK_SPEED = 6
-export const RAMP_DISTANCE = 3
+export const RAMP_DISTANCE = 4
+const RAMP_COMPLETE_DISTANCE = 1
 const ARRIVE_DISTANCE = 0.06
 
 export type WalkPoint = { x: number; y: number; z: number }
 
+/** Where the character stands when it arrives: just behind the seat pad, inside the walkable bounds. */
+export function standTarget(seat: WalkPoint): WalkPoint {
+  return {
+    x: Math.max(-24, Math.min(24, seat.x)),
+    y: seat.y,
+    z: Math.min(seat.z + 0.8, 21.5),
+  }
+}
+
 /**
  * One frame of a scripted walk: horizontal step toward the target (never
- * overshooting), elevation only ramps inside RAMP_DISTANCE of the target,
- * and a heading suitable for the character's shortest-angle rotation.
+ * overshooting), elevation ramps from RAMP_DISTANCE down to
+ * RAMP_COMPLETE_DISTANCE (so tribunes are climbed before entering the solid
+ * platform boxes), and a heading suitable for the character's rotation.
  */
 export function stepTowards(
   current: WalkPoint,
@@ -27,10 +38,11 @@ export function stepTowards(
   const x = current.x + (dx / distance) * step
   const z = current.z + (dz / distance) * step
 
-  const y =
+  const progress =
     distance < RAMP_DISTANCE
-      ? current.y + (target.y - current.y) * (1 - distance / RAMP_DISTANCE)
-      : current.y
+      ? Math.min(1, (RAMP_DISTANCE - distance) / (RAMP_DISTANCE - RAMP_COMPLETE_DISTANCE))
+      : 0
+  const y = current.y + (target.y - current.y) * progress
 
   const arrived = distance - step < ARRIVE_DISTANCE
 

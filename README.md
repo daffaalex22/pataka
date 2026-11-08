@@ -14,7 +14,7 @@ ticket settings, sales, seat inventory, CSV exports and camera QR check-in.
 - Postgres — Neon in production, PGlite (in-process Postgres) for local dev and tests
 - Thin SQL adapter (`src/lib/db.ts`), no ORM
 - HMAC-signed QR payloads, `html5-qrcode` camera scanning on the check-in page
-- Vitest (19 tests) for the business-critical services
+- Vitest (49 tests) for the business-critical services, walk path, ticket store and email delivery
 
 ## Local development
 
@@ -56,14 +56,16 @@ Optional ticket email: set `RESEND_API_KEY` and `EMAIL_FROM` to send e-ticket li
 - Closing Night Concert, Central Plaza (open-air), Summarecon Mall Bandung, 14 Nov 2026, 19:00 WIB.
 - 446 numbered seats: VIP Front 48, CAT 1 128, Tribune 120, Regular 150; Rp 350k–1.5M.
 - One seat per order; 10-minute server-side hold before payment.
-- Payments, email/WhatsApp notifications and reminders are simulated; calendar `.ics` works.
+- Payments and WhatsApp reminders are simulated; calendar `.ics` works. E-ticket email uses a Resend-compatible API when configured, otherwise it reports “not configured”.
 - Sample fictional data only — no real transactions or personal data.
 - Seat layout is fixed per event; organizers manage price, quota and sales period.
 
 ## Key flows to try
 
-1. Open `/book`, pick a category, orbit or walk the 3D plaza, tap a seat, hit
-   **Preview from seat**, then hold it, fill sample details and pay.
+1. Open `/` (splash → 3D plaza), visit the ticket booth or tap a seat directly,
+   hit **Walk to seat** to see the stage from your seat, then hold it, fill
+   sample details and pay. No WebGL? “Classic mode” (`/book`) still works, and
+   purchased tickets stay recoverable at `/tickets` on the same device.
 2. The e-ticket shows a signed QR. Open `/admin` → **Check-in** and scan it
    (or paste the payload) — the first scan is VALID, the second is ALREADY USED.
 3. Double-booking: open two browsers, hold the same seat in both — exactly one wins.

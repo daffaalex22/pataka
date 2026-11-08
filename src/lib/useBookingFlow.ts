@@ -14,7 +14,7 @@ type EventResponse = { event: EventInfo; categories: Category[] }
  * entry page. Reads and writes the `useBooking` store; callers own the seats
  * polling interval and the live-seat-sync effect.
  */
-export function useBookingFlow() {
+export function useBookingFlow(options: { eventPollMs?: number } = {}) {
   const router = useRouter()
   const t = useT()
   const { seat, holdToken, orderCode, setStep, setSeat, setHold, setOrder, reset } = useBooking((state) => state)
@@ -31,6 +31,21 @@ export function useBookingFlow() {
       .catch(() => setError(t('error.generic')))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const refreshEvent = useCallback(async () => {
+    try {
+      const res = await fetch('/api/event')
+      if (res.ok) setData((await res.json()) as EventResponse)
+    } catch {
+      // transient network errors are fine; next poll retries
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!options.eventPollMs) return
+    const timer = window.setInterval(refreshEvent, options.eventPollMs)
+    return () => window.clearInterval(timer)
+  }, [refreshEvent, options.eventPollMs])
 
   const loadSeats = useCallback(async () => {
     try {

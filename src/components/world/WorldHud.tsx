@@ -39,7 +39,7 @@ export function WorldHud({
           <div className="flex items-center gap-2">
             <Link
               href="/book"
-              className="rounded-full border border-white/15 bg-black/40 px-3 py-2 text-[11px] font-medium text-white/70 backdrop-blur transition hover:text-white"
+              className="rounded-full border border-white/15 bg-black/40 px-3 py-2.5 text-[11px] font-medium text-white/70 backdrop-blur transition hover:text-white"
             >
               {t('splash.classic')}
             </Link>
@@ -50,14 +50,14 @@ export function WorldHud({
             <button
               type="button"
               onClick={() => onMode('orbit')}
-              className={`rounded-full px-3 py-2 transition ${mode === 'orbit' ? 'bg-accent text-black' : 'text-white/70'}`}
+              className={`rounded-full px-3 py-2.5 transition ${mode === 'orbit' ? 'bg-accent text-black' : 'text-white/70'}`}
             >
               ⟲ {t('seat.orbit')}
             </button>
             <button
               type="button"
               onClick={() => onMode('walk')}
-              className={`rounded-full px-3 py-2 transition ${mode === 'walk' ? 'bg-accent text-black' : 'text-white/70'}`}
+              className={`rounded-full px-3 py-2.5 transition ${mode === 'walk' ? 'bg-accent text-black' : 'text-white/70'}`}
             >
               ⌂ {t('seat.walk')}
             </button>
@@ -66,7 +66,7 @@ export function WorldHud({
               disabled={!mapEnabled}
               onClick={onToggleMap}
               aria-pressed={mapOpen}
-              className={`rounded-full px-3 py-2 transition disabled:opacity-40 ${
+              className={`rounded-full px-3 py-2.5 transition disabled:opacity-40 ${
                 mapOpen ? 'bg-accent text-black' : 'text-white/70'
               }`}
             >

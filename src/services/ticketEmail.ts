@@ -1,6 +1,19 @@
 import type { SqlDb } from '@/lib/db'
 import type { TicketEmail } from '@/services/email'
 
+/**
+ * Absolute origin used in emailed links. Prefers configuration over request
+ * headers so a spoofed Host header cannot point the ticket link elsewhere.
+ */
+export function resolveTicketOrigin(
+  requestUrl: string,
+  env: Record<string, string | undefined> = process.env,
+): string {
+  if (env.APP_URL) return env.APP_URL.replace(/\/+$/, '')
+  if (env.VERCEL_URL) return `https://${env.VERCEL_URL.replace(/\/+$/, '')}`
+  return new URL(requestUrl).origin
+}
+
 type OrderRow = {
   name: string
   email: string

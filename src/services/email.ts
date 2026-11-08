@@ -15,6 +15,19 @@ export type EmailDeps = {
   fetchImpl?: typeof fetch
 }
 
+/** Per-order send throttle for the email endpoint (in-memory, best effort). */
+export function createCooldown(windowMs: number) {
+  const last = new Map<string, number>()
+  return {
+    allow(key: string, now = Date.now()): boolean {
+      const previous = last.get(key)
+      if (previous !== undefined && now - previous < windowMs) return false
+      last.set(key, now)
+      return true
+    },
+  }
+}
+
 function escapeHtml(value: string): string {
   return value
     .replaceAll('&', '&amp;')

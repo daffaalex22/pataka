@@ -4,10 +4,12 @@ import dynamic from 'next/dynamic'
 import { useRef, useState } from 'react'
 import { Joystick } from '@/components/scene/Joystick'
 import type { MoveVector } from '@/components/scene/Character'
+import { SceneBoundary } from '@/components/scene/SceneBoundary'
 import { Legend } from '@/components/ui/Legend'
 import { SeatMap2D } from '@/components/visitor/SeatMap2D'
 import { useLang, useT } from '@/lib/i18n'
 import { formatIdr, type Seat } from '@/lib/types'
+import { defaultSeatView, hasWebGL } from '@/lib/webgl'
 
 const PlazaScene = dynamic(() => import('@/components/scene/PlazaScene'), {
   ssr: false,
@@ -41,7 +43,8 @@ export function SeatStep({
 }) {
   const { lang } = useLang()
   const t = useT()
-  const [view, setView] = useState<'3d' | 'map'>('3d')
+  const [webglAvailable] = useState(() => typeof window !== 'undefined' && hasWebGL())
+  const [view, setView] = useState<'3d' | 'map'>(() => defaultSeatView(webglAvailable))
   const [mode, setMode] = useState<'orbit' | 'walk'>('orbit')
   const [previewSeat, setPreviewSeat] = useState<Seat | null>(null)
   const moveRef = useRef<MoveVector>({ x: 0, y: 0 })
@@ -64,20 +67,22 @@ export function SeatStep({
         <div className="flex items-center gap-3">
           <Legend />
           <div className="flex rounded-full border border-line p-0.5 text-[11px] font-medium">
-            <button
-              type="button"
-              onClick={() => setView('3d')}
-              className={`rounded-full px-2.5 py-1 transition ${view === '3d' ? 'bg-accent text-black' : 'text-muted'}`}
-            >
-              {t('seat.view3d')}
-            </button>
+            {webglAvailable && (
+              <button
+                type="button"
+                onClick={() => setView('3d')}
+                className={`rounded-full px-2.5 py-1.5 transition ${view === '3d' ? 'bg-accent text-black' : 'text-muted'}`}
+              >
+                {t('seat.view3d')}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {
                 setView('map')
                 setPreviewSeat(null)
               }}
-              className={`rounded-full px-2.5 py-1 transition ${view === 'map' ? 'bg-accent text-black' : 'text-muted'}`}
+              className={`rounded-full px-2.5 py-1.5 transition ${view === 'map' ? 'bg-accent text-black' : 'text-muted'}`}
             >
               {t('seat.viewMap')}
             </button>
@@ -94,14 +99,28 @@ export function SeatStep({
       <div className="relative mt-4 h-[46vh] min-h-[340px] overflow-hidden rounded-2xl border border-line bg-[#07060d] sm:h-[56vh]">
         {view === '3d' ? (
           <>
-            <PlazaScene
-              seats={seats}
-              selectedId={selected?.id ?? null}
-              onSelect={selectSeat}
-              mode={mode}
-              moveRef={moveRef}
-              previewSeat={previewSeat}
-            />
+            <SceneBoundary
+              fallback={
+                <div className="grid h-full place-items-center p-6 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setView('map')}
+                    className="rounded-full bg-accent px-4 py-2.5 text-xs font-semibold text-black"
+                  >
+                    {t('seat.viewMap')} →
+                  </button>
+                </div>
+              }
+            >
+              <PlazaScene
+                seats={seats}
+                selectedId={selected?.id ?? null}
+                onSelect={selectSeat}
+                mode={mode}
+                moveRef={moveRef}
+                previewSeat={previewSeat}
+              />
+            </SceneBoundary>
 
             {!previewSeat && (
               <div className="absolute left-3 top-3 flex rounded-full border border-white/15 bg-black/40 p-0.5 text-[11px] font-medium backdrop-blur">

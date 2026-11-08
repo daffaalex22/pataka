@@ -1,10 +1,12 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MoveVector } from '@/components/scene/Character'
 import { Joystick } from '@/components/scene/Joystick'
 import { PaymentStep } from '@/components/visitor/PaymentStep'
+import { SceneBoundary } from '@/components/scene/SceneBoundary'
 import { FormStep } from '@/components/visitor/FormStep'
 import { SeatMap2D } from '@/components/visitor/SeatMap2D'
 import { SummaryStep } from '@/components/visitor/SummaryStep'
@@ -32,7 +34,9 @@ const PlazaScene = dynamic(() => import('@/components/scene/PlazaScene'), {
 export function WorldView() {
   const t = useT()
   const { lang } = useLang()
-  const { data, seats, busy, error, loadSeats, setError, handleHold, handleOrder, handlePay } = useBookingFlow()
+  const { data, seats, busy, error, loadSeats, setError, handleHold, handleOrder, handlePay } = useBookingFlow({
+    eventPollMs: 5000,
+  })
   const {
     step, categoryKey, seat, holdToken, holdExpiresAt, holdSeatId, orderCode, totalIdr,
     setStep, setCategory, setSeat, setHold,
@@ -137,6 +141,18 @@ export function WorldView() {
   return (
     <div className="fixed inset-0 overflow-hidden bg-[#07060d]">
       <div className="absolute inset-0">
+        <SceneBoundary
+          fallback={
+            <div className="grid h-full place-items-center p-6 text-center">
+              <Link
+                href="/book"
+                className="rounded-full bg-accent px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110"
+              >
+                {t('splash.classic')} →
+              </Link>
+            </div>
+          }
+        >
         <PlazaScene
           seats={seats}
           selectedId={seat?.id ?? null}
@@ -158,6 +174,7 @@ export function WorldView() {
           }}
           onAutoWalkCancel={() => setAutoWalkSeat(null)}
         />
+        </SceneBoundary>
       </div>
 
       <WorldHud
@@ -197,8 +214,11 @@ export function WorldView() {
           busy={busy}
           onBack={exitPreview}
           onContinue={() => {
+            const held = Boolean(holdExpiresAt && holdSeatId && holdSeatId === previewSeat.id)
+            const available = previewSeat.status === 'available'
             exitPreview()
-            handleHold()
+            if (held) setStep('form')
+            else if (available) handleHold()
           }}
         />
       )}
