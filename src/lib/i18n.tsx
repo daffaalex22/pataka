@@ -15,6 +15,7 @@ const id = {
   'splash.classic': 'Mode klasik',
   'splash.loading': 'Menyiapkan plaza…',
   'world.hint': 'Jelajahi plaza — ketuk kursi, atau kunjungi booth tiket',
+  'world.lookHint': 'Geser untuk melihat sekeliling',
   'world.boothHint': 'Kategori dipilih — kursi yang menyala adalah pilihanmu',
   'world.myTickets': 'Tiket saya',
 
@@ -204,6 +205,7 @@ const en: Record<DictKey, string> = {
   'splash.classic': 'Classic mode',
   'splash.loading': 'Preparing the plaza…',
   'world.hint': 'Explore the plaza — tap a seat, or visit the ticket booth',
+  'world.lookHint': 'Drag to look around',
   'world.boothHint': 'Category selected — the glowing seats are your pick',
   'world.myTickets': 'My tickets',
 

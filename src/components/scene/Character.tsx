@@ -4,6 +4,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { floorHeightAt, resolveWalkable, WORLD } from '@/components/scene/summaba/layout'
+import { recenterLookYaw } from '@/components/scene/lookYaw'
 
 export type MoveVector = { x: number; y: number }
 export type KeysState = Record<string, boolean>
@@ -129,17 +130,38 @@ export function Character({
 }
 
 /** Third-person follow camera used while walking. */
-export function FollowCamera({ characterRef }: { characterRef: React.RefObject<THREE.Group | null> }) {
+export function FollowCamera({
+  characterRef,
+  lookYawRef,
+}: {
+  characterRef: React.RefObject<THREE.Group | null>
+  lookYawRef: React.RefObject<number>
+}) {
   const camera = useThree((state) => state.camera)
   const desired = useMemo(() => new THREE.Vector3(), [])
   const lookAt = useMemo(() => new THREE.Vector3(), [])
+  const lastPosition = useMemo(() => new THREE.Vector3(Number.NaN, 0, 0), [])
 
   useFrame((_, delta) => {
     const character = characterRef.current
     if (!character) return
-    desired.set(character.position.x, character.position.y + 3.6, character.position.z + 6.6)
+
+    const dt = Math.min(delta, 0.1)
+    const moved =
+      !Number.isNaN(lastPosition.x) &&
+      Math.hypot(character.position.x - lastPosition.x, character.position.z - lastPosition.z) > 0.05
+    lastPosition.set(character.position.x, 0, character.position.z)
+
+    const yaw = recenterLookYaw(lookYawRef.current, dt, moved)
+    lookYawRef.current = yaw
+
+    const sin = Math.sin(yaw)
+    const cos = Math.cos(yaw)
+
+    desired.set(character.position.x + sin * 6.6, character.position.y + 3.6, character.position.z + cos * 6.6)
     camera.position.lerp(desired, 1 - Math.exp(-4 * delta))
-    lookAt.set(character.position.x, character.position.y + 1.25, character.position.z - 2.2)
+
+    lookAt.set(character.position.x - sin * 2.2, character.position.y + 1.25, character.position.z - cos * 2.2)
     camera.lookAt(lookAt)
   })
 

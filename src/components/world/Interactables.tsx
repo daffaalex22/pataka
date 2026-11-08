@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import type { RefObject } from 'react'
 import * as THREE from 'three'
 import { useT } from '@/lib/i18n'
 import { formatEventDate, type Category, type EventInfo, type Lang } from '@/lib/types'
@@ -110,7 +111,13 @@ export function Board({ event, categories, lang }: { event: EventInfo; categorie
 }
 
 /** Ticket booth kiosk near the spawn; tapping it opens the category picker. */
-export function Booth({ onTap }: { onTap: () => void }) {
+export function Booth({
+  onTap,
+  dragStateRef,
+}: {
+  onTap: () => void
+  dragStateRef?: RefObject<{ dragging: boolean }>
+}) {
   const [hovered, setHovered] = useState(false)
 
   const sign = useMemo(() => {
@@ -160,6 +167,7 @@ export function Booth({ onTap }: { onTap: () => void }) {
       }}
       onClick={(event) => {
         event.stopPropagation()
+        if (dragStateRef?.current.dragging) return
         onTap()
       }}
     >

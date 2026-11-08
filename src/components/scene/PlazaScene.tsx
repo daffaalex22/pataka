@@ -10,6 +10,7 @@ import { AutoWalk } from '@/components/scene/AutoWalk'
 import { PreviewCamera } from '@/components/scene/PreviewCamera'
 import { Board, Booth } from '@/components/world/Interactables'
 import { CourtyardFloor } from '@/components/scene/summaba/CourtyardFloor'
+import { LookDrag } from '@/components/scene/LookDrag'
 import { MallRing } from '@/components/scene/summaba/MallRing'
 import { Atriums } from '@/components/scene/summaba/Atriums'
 import { Stage } from '@/components/scene/summaba/Stage'
@@ -80,11 +81,13 @@ function Seats({
   selectedId,
   onSelect,
   highlightCategory = null,
+  dragStateRef,
 }: {
   seats: Seat[]
   selectedId: string | null
   onSelect: (seat: Seat) => void
   highlightCategory?: string | null
+  dragStateRef?: React.RefObject<{ dragging: boolean }>
 }) {
   const padsRef = useRef<THREE.InstancedMesh>(null)
   const backsRef = useRef<THREE.InstancedMesh>(null)
@@ -140,6 +143,7 @@ function Seats({
         onPointerOut={() => setHovered(null)}
         onClick={(event) => {
           event.stopPropagation()
+          if (dragStateRef?.current.dragging) return
           if (event.instanceId !== undefined) onSelect(seats[event.instanceId])
         }}
       >
@@ -159,6 +163,8 @@ function WalkRig({
   moveRef,
   paused,
   characterRef,
+  lookYawRef,
+  dragStateRef,
   autoWalkSeat,
   onAutoWalkArrived,
   onAutoWalkCancel,
@@ -166,6 +172,8 @@ function WalkRig({
   moveRef: React.RefObject<MoveVector>
   paused: boolean
   characterRef: React.RefObject<THREE.Group | null>
+  lookYawRef: React.RefObject<number>
+  dragStateRef: React.RefObject<{ dragging: boolean }>
   autoWalkSeat?: Seat | null
   onAutoWalkArrived?: (seat: Seat) => void
   onAutoWalkCancel?: () => void
@@ -175,7 +183,8 @@ function WalkRig({
   return (
     <>
       <Character moveRef={moveRef} keysRef={keysRef} characterRef={characterRef} paused={paused} />
-      {!paused && <FollowCamera characterRef={characterRef} />}
+      {!paused && <FollowCamera characterRef={characterRef} lookYawRef={lookYawRef} />}
+      {!paused && <LookDrag yawRef={lookYawRef} dragStateRef={dragStateRef} />}
       {autoWalkSeat && (
         <AutoWalk
           characterRef={characterRef}
@@ -244,6 +253,8 @@ export default function PlazaScene({
   const [dpr, setDpr] = useState(maxDpr)
   const internalCharacterRef = useRef<THREE.Group | null>(null)
   const characterRef = externalCharacterRef ?? internalCharacterRef
+  const lookYawRef = useRef(0)
+  const dragStateRef = useRef({ dragging: false })
 
   return (
     <Canvas
@@ -264,16 +275,19 @@ export default function PlazaScene({
           selectedId={selectedId}
           onSelect={onSelect}
           highlightCategory={highlightCategory}
+          dragStateRef={dragStateRef}
         />
         {showInteractables && boardData && (
           <Board event={boardData.event} categories={boardData.categories} lang={boardData.lang} />
         )}
-        {showInteractables && onBoothTap && <Booth onTap={onBoothTap} />}
+        {showInteractables && onBoothTap && <Booth onTap={onBoothTap} dragStateRef={dragStateRef} />}
         {mode === 'walk' && moveRef && (
           <WalkRig
             moveRef={moveRef}
             paused={paused || Boolean(previewSeat)}
             characterRef={characterRef}
+            lookYawRef={lookYawRef}
+            dragStateRef={dragStateRef}
             autoWalkSeat={autoWalkSeat}
             onAutoWalkArrived={onAutoWalkArrived}
             onAutoWalkCancel={onAutoWalkCancel}

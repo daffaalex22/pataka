@@ -63,7 +63,7 @@ export function WorldView() {
   }, [])
 
   useEffect(() => {
-    showHint(t('world.hint'))
+    showHint(`${t('world.hint')} · ${t('world.lookHint')}`)
     return () => {
       if (hintTimer.current) window.clearTimeout(hintTimer.current)
     }
