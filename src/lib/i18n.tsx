@@ -11,6 +11,10 @@ const id = {
   'common.deck': 'Deck',
   'common.home': 'Beranda',
 
+  'splash.enter': 'Masuk ke Plaza',
+  'splash.classic': 'Mode klasik',
+  'splash.loading': 'Menyiapkan plaza…',
+
   'hero.badge': 'Bandung Innovation Week 2026',
   'hero.cta': 'Pilih Kursi Sekarang',
   'hero.secondary': 'Lihat kategori tiket',
@@ -175,6 +179,10 @@ const en: Record<DictKey, string> = {
   'common.admin': 'Organizer',
   'common.deck': 'Deck',
   'common.home': 'Home',
+
+  'splash.enter': 'Enter the Plaza',
+  'splash.classic': 'Classic mode',
+  'splash.loading': 'Preparing the plaza…',
 
   'hero.badge': 'Bandung Innovation Week 2026',
   'hero.cta': 'Pick Your Seat',
