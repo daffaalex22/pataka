@@ -55,7 +55,7 @@ export function Joystick({ moveRef }: { moveRef: React.RefObject<MoveVector> }) 
     >
       <span
         aria-hidden
-        className="absolute left-1/2 top-1/2 size-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/80 shadow-[0_0_18px_rgba(245,197,66,0.5)]"
+        className="absolute left-1/2 top-1/2 size-12 rounded-full bg-accent/80 shadow-[0_0_18px_rgba(245,197,66,0.5)]"
         style={{ transform: `translate(calc(-50% + ${knob.x}px), calc(-50% + ${knob.y}px))` }}
       />
     </div>
