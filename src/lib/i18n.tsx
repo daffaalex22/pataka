@@ -66,6 +66,7 @@ const id = {
   'seat.preview': 'Lihat dari kursi',
   'seat.previewing': 'Pratinjau dari kursi',
   'seat.exitPreview': 'Kembali',
+  'seat.walkToSeat': 'Jalan ke kursi',
   'seat.loading3d': 'Menyiapkan venue 3D…',
 
   'form.title': 'Data peserta',
@@ -236,6 +237,7 @@ const en: Record<DictKey, string> = {
   'seat.preview': 'Preview from seat',
   'seat.previewing': 'Previews from seat',
   'seat.exitPreview': 'Exit preview',
+  'seat.walkToSeat': 'Walk to seat',
   'seat.loading3d': 'Preparing the 3D venue…',
 
   'form.title': 'Participant details',

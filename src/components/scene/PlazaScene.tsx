@@ -311,6 +311,7 @@ export default function PlazaScene({
   moveRef,
   previewSeat = null,
   maxDpr = 1.5,
+  paused = false,
   characterRef: externalCharacterRef,
 }: {
   seats: Seat[]
@@ -320,6 +321,7 @@ export default function PlazaScene({
   moveRef?: React.RefObject<MoveVector>
   previewSeat?: Seat | null
   maxDpr?: number
+  paused?: boolean
   characterRef?: React.RefObject<THREE.Group | null>
 }) {
   const [dpr, setDpr] = useState(maxDpr)
@@ -342,13 +344,13 @@ export default function PlazaScene({
         <Venue />
         <Seats seats={seats} selectedId={selectedId} onSelect={onSelect} />
         {mode === 'walk' && moveRef && (
-          <WalkRig moveRef={moveRef} paused={Boolean(previewSeat)} characterRef={characterRef} />
+          <WalkRig moveRef={moveRef} paused={paused || Boolean(previewSeat)} characterRef={characterRef} />
         )}
       </Suspense>
       {mode === 'orbit' && (
         <OrbitControls
           makeDefault
-          enabled={!previewSeat}
+          enabled={!previewSeat && !paused}
           target={[0, 1.5, -4]}
           enablePan={false}
           enableDamping
