@@ -70,6 +70,9 @@ const id = {
   'seat.exitPreview': 'Kembali',
   'seat.walkToSeat': 'Jalan ke kursi',
   'seat.loading3d': 'Menyiapkan venue 3D…',
+  'seatView.title': 'Ini pemandangan dari kursi Anda',
+  'seatView.back': 'Pilih kursi lain',
+  'seatView.continue': 'Kunci kursi ini',
 
   'form.title': 'Data peserta',
   'form.subtitle': 'Gunakan data contoh — tidak ada data pribadi sungguhan.',
@@ -243,6 +246,9 @@ const en: Record<DictKey, string> = {
   'seat.exitPreview': 'Exit preview',
   'seat.walkToSeat': 'Walk to seat',
   'seat.loading3d': 'Preparing the 3D venue…',
+  'seatView.title': 'This is your view from your seat',
+  'seatView.back': 'Pick another seat',
+  'seatView.continue': 'Lock this seat',
 
   'form.title': 'Participant details',
   'form.subtitle': 'Use sample data — no real personal data.',

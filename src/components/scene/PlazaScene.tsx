@@ -6,6 +6,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import type { Category, EventInfo, Lang, Seat } from '@/lib/types'
 import { Character, FollowCamera, useKeyboard, type KeysState, type MoveVector } from '@/components/scene/Character'
+import { AutoWalk } from '@/components/scene/AutoWalk'
 import { PreviewCamera } from '@/components/scene/PreviewCamera'
 import { Board, Booth } from '@/components/world/Interactables'
 
@@ -277,10 +278,16 @@ function WalkRig({
   moveRef,
   paused,
   characterRef,
+  autoWalkSeat,
+  onAutoWalkArrived,
+  onAutoWalkCancel,
 }: {
   moveRef: React.RefObject<MoveVector>
   paused: boolean
   characterRef: React.RefObject<THREE.Group | null>
+  autoWalkSeat?: Seat | null
+  onAutoWalkArrived?: (seat: Seat) => void
+  onAutoWalkCancel?: () => void
 }) {
   const keysRef = useRef<KeysState>({})
   useKeyboard(keysRef)
@@ -288,6 +295,16 @@ function WalkRig({
     <>
       <Character moveRef={moveRef} keysRef={keysRef} characterRef={characterRef} paused={paused} />
       {!paused && <FollowCamera characterRef={characterRef} />}
+      {autoWalkSeat && (
+        <AutoWalk
+          characterRef={characterRef}
+          moveRef={moveRef}
+          keysRef={keysRef}
+          seat={autoWalkSeat}
+          onArrived={(seat) => onAutoWalkArrived?.(seat)}
+          onCancel={() => onAutoWalkCancel?.()}
+        />
+      )}
     </>
   )
 }
@@ -321,6 +338,9 @@ export default function PlazaScene({
   boardData,
   onBoothTap,
   highlightCategory = null,
+  autoWalkSeat = null,
+  onAutoWalkArrived,
+  onAutoWalkCancel,
   characterRef: externalCharacterRef,
 }: {
   seats: Seat[]
@@ -335,6 +355,9 @@ export default function PlazaScene({
   boardData?: { event: EventInfo; categories: Category[]; lang: Lang }
   onBoothTap?: () => void
   highlightCategory?: string | null
+  autoWalkSeat?: Seat | null
+  onAutoWalkArrived?: (seat: Seat) => void
+  onAutoWalkCancel?: () => void
   characterRef?: React.RefObject<THREE.Group | null>
 }) {
   const [dpr, setDpr] = useState(maxDpr)
@@ -366,7 +389,14 @@ export default function PlazaScene({
         )}
         {showInteractables && onBoothTap && <Booth onTap={onBoothTap} />}
         {mode === 'walk' && moveRef && (
-          <WalkRig moveRef={moveRef} paused={paused || Boolean(previewSeat)} characterRef={characterRef} />
+          <WalkRig
+            moveRef={moveRef}
+            paused={paused || Boolean(previewSeat)}
+            characterRef={characterRef}
+            autoWalkSeat={autoWalkSeat}
+            onAutoWalkArrived={onAutoWalkArrived}
+            onAutoWalkCancel={onAutoWalkCancel}
+          />
         )}
       </Suspense>
       {mode === 'orbit' && (

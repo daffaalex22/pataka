@@ -7,8 +7,10 @@ import { Joystick } from '@/components/scene/Joystick'
 import { PaymentStep } from '@/components/visitor/PaymentStep'
 import { FormStep } from '@/components/visitor/FormStep'
 import { SummaryStep } from '@/components/visitor/SummaryStep'
+import type { Group } from 'three'
 import { BoothOverlay } from '@/components/world/BoothOverlay'
 import { SeatBar } from '@/components/world/SeatBar'
+import { SeatViewPanel } from '@/components/world/SeatViewPanel'
 import { StepOverlay } from '@/components/world/StepOverlay'
 import { WorldHud } from '@/components/world/WorldHud'
 import { useLang, useT } from '@/lib/i18n'
@@ -41,7 +43,9 @@ export function WorldView() {
     typeof window !== 'undefined' && window.innerWidth < 768 ? 1.25 : 1.5,
   )
   const moveRef = useRef<MoveVector>({ x: 0, y: 0 })
+  const characterRef = useRef<Group | null>(null)
   const [previewSeat, setPreviewSeat] = useState<Seat | null>(null)
+  const [autoWalkSeat, setAutoWalkSeat] = useState<Seat | null>(null)
   const [boothOpen, setBoothOpen] = useState(false)
   const [highlightCategory, setHighlightCategory] = useState<string | null>(null)
   const [hint, setHint] = useState<string | null>(null)
@@ -80,6 +84,21 @@ export function WorldView() {
   }, [seats, seat, setSeat])
 
   useEffect(() => {
+    const character = characterRef.current
+    if (character) character.visible = !previewSeat
+  }, [previewSeat])
+
+  const exitPreview = () => {
+    setPreviewSeat(null)
+    setAutoWalkSeat(null)
+    const character = characterRef.current
+    if (character) {
+      character.visible = true
+      character.position.set(0, 0, 14)
+    }
+  }
+
+  useEffect(() => {
     if (step === 'form' && !holdToken) setStep('seat')
     if ((step === 'summary' || step === 'payment') && !orderCode) setStep('seat')
   }, [step, holdToken, orderCode, setStep])
@@ -94,6 +113,7 @@ export function WorldView() {
       setHold(null, null, null)
     }
     setPreviewSeat(null)
+    setAutoWalkSeat(null)
     setHighlightCategory(null)
     setError(null)
     setSeat(next)
@@ -129,6 +149,13 @@ export function WorldView() {
           boardData={data ? { event: data.event, categories: data.categories, lang } : undefined}
           onBoothTap={() => setBoothOpen(true)}
           highlightCategory={highlightCategory}
+          characterRef={characterRef}
+          autoWalkSeat={autoWalkSeat}
+          onAutoWalkArrived={(arrived) => {
+            setAutoWalkSeat(null)
+            setPreviewSeat(arrived)
+          }}
+          onAutoWalkCancel={() => setAutoWalkSeat(null)}
         />
       </div>
 
@@ -141,19 +168,37 @@ export function WorldView() {
         hint={hint}
       />
 
-      {mode === 'walk' && !overlayOpen && !mapOpen && <Joystick moveRef={moveRef} />}
+      {mode === 'walk' && !overlayOpen && !mapOpen && !previewSeat && !boothOpen && (
+        <Joystick moveRef={moveRef} />
+      )}
 
-      {!overlayOpen && !mapOpen && (
+      {!overlayOpen && !mapOpen && !previewSeat && !boothOpen && (
         <SeatBar
           seat={seat}
           busy={busy}
           error={error}
           holdActive={Boolean(holdExpiresAt && holdSeatId && seat && holdSeatId === seat.id)}
           holdExpiresAt={holdExpiresAt}
-          onPreview={() => {}}
-          onWalkToSeat={() => {}}
+          onPreview={() => seat && setPreviewSeat(seat)}
+          onWalkToSeat={() => {
+            if (!seat) return
+            setMode('walk')
+            setAutoWalkSeat(seat)
+          }}
           onHold={handleHold}
           onResume={() => setStep('form')}
+        />
+      )}
+
+      {previewSeat && !overlayOpen && !mapOpen && !boothOpen && (
+        <SeatViewPanel
+          seat={previewSeat}
+          busy={busy}
+          onBack={exitPreview}
+          onContinue={() => {
+            exitPreview()
+            handleHold()
+          }}
         />
       )}
 
