@@ -6,6 +6,7 @@ import type { MoveVector } from '@/components/scene/Character'
 import { Joystick } from '@/components/scene/Joystick'
 import { PaymentStep } from '@/components/visitor/PaymentStep'
 import { FormStep } from '@/components/visitor/FormStep'
+import { SeatMap2D } from '@/components/visitor/SeatMap2D'
 import { SummaryStep } from '@/components/visitor/SummaryStep'
 import type { Group } from 'three'
 import { BoothOverlay } from '@/components/world/BoothOverlay'
@@ -33,7 +34,7 @@ export function WorldView() {
   const { lang } = useLang()
   const { data, seats, busy, error, loadSeats, setError, handleHold, handleOrder, handlePay } = useBookingFlow()
   const {
-    step, seat, holdToken, holdExpiresAt, holdSeatId, orderCode, totalIdr,
+    step, categoryKey, seat, holdToken, holdExpiresAt, holdSeatId, orderCode, totalIdr,
     setStep, setCategory, setSeat, setHold,
   } = useBooking((state) => state)
 
@@ -162,7 +163,7 @@ export function WorldView() {
       <WorldHud
         mode={mode}
         onMode={setMode}
-        mapEnabled={false}
+        mapEnabled
         mapOpen={mapOpen}
         onToggleMap={() => setMapOpen((open) => !open)}
         hint={hint}
@@ -240,6 +241,38 @@ export function WorldView() {
           onPay={handlePay}
         />
       </StepOverlay>
+
+      {mapOpen && (
+        <div className="fixed inset-0 z-20 overflow-y-auto bg-[#07060d]/95 backdrop-blur">
+          <div className="mx-auto w-full max-w-3xl px-4 pb-10 pt-[max(1rem,env(safe-area-inset-top))]">
+            <div className="flex items-center justify-between gap-3 py-2">
+              <div>
+                <h2 className="text-lg font-semibold tracking-tight">{t('seat.title')}</h2>
+                <p className="text-xs text-muted">{t('seat.subtitle')}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMapOpen(false)}
+                className="rounded-full border border-line px-3 py-1.5 text-xs font-medium text-muted transition hover:border-white/30 hover:text-foreground"
+              >
+                ✕ {t('common.back')}
+              </button>
+            </div>
+            <div className="mt-3 overflow-hidden rounded-2xl border border-line bg-white/[0.03] p-3">
+              <SeatMap2D
+                seats={seats}
+                categoryKey={categoryKey}
+                selectedId={seat?.id ?? null}
+                onSelect={(next) => {
+                  selectSeat(next)
+                  setMapOpen(false)
+                }}
+                stageLabel={t('seat.stage')}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <BoothOverlay
         open={boothOpen}
