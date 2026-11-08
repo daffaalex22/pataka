@@ -1,0 +1,42 @@
+@media print {
+  @page deck {
+    size: 13.333in 7.5in;
+    margin: 0;
+  }
+
+  html,
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .deck-scroll,
+  .deck-slide {
+    background: #07060d !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .deck-scroll {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .deck-slide {
+    page: deck;
+    height: 7.5in !important;
+    min-height: 7.5in !important;
+    break-after: page;
+    page-break-after: always;
+    overflow: hidden;
+  }
+
+  .deck-slide:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .deck-chrome {
+    display: none !important;
+  }
+}
