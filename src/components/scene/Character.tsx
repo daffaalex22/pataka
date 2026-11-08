@@ -84,7 +84,7 @@ export function Character({
   })
 
   return (
-    <group ref={characterRef} position={[0, 0, 14]}>
+    <group ref={characterRef} position={[0, 0, 19]}>
       <group ref={bodyRef} position={[0, 1.05, 0]}>
         {/* hoodie */}
         <mesh castShadow={false}>

@@ -99,7 +99,7 @@ export function WorldView() {
     const character = characterRef.current
     if (character) {
       character.visible = true
-      character.position.set(0, 0, 14)
+      character.position.set(0, 0, 19)
     }
   }
 

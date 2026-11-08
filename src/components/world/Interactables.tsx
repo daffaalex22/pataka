@@ -91,7 +91,7 @@ export function Board({ event, categories, lang }: { event: EventInfo; categorie
   if (!texture) return null
 
   return (
-    <group position={[-9, 0, 11]} rotation-y={1.25}>
+    <group position={[-9, 0, 19]} rotation-y={2.3}>
       {[-2.3, 2.3].map((x) => (
         <mesh key={x} position={[x, 0.6, 0]}>
           <cylinderGeometry args={[0.08, 0.08, 1.2, 8]} />
@@ -152,8 +152,8 @@ export function Booth({
 
   return (
     <group
-      position={[9, 0, 12]}
-      rotation-y={-1.35}
+      position={[9, 0, 19]}
+      rotation-y={-2.3}
       scale={hovered ? 1.05 : 1}
       onPointerOver={(event) => {
         event.stopPropagation()

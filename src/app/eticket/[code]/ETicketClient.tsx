@@ -131,6 +131,9 @@ export function ETicketClient() {
               {lang === 'id' ? event.name : event.nameEn} · {formatEventDate(event.startsAt, lang)} WIB
             </p>
           )}
+          {event && (
+            <p className="text-sm text-muted">{lang === 'id' ? event.venue : event.venueEn}</p>
+          )}
 
           <div className="accent-glow mt-6 overflow-hidden rounded-3xl border border-accent/30 bg-gradient-to-b from-white/[0.07] to-white/[0.02]">
             <div className="grid gap-6 p-6 sm:grid-cols-[1fr_auto] sm:p-8">

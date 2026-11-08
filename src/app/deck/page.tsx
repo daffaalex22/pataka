@@ -56,7 +56,7 @@ export default function DeckPage() {
           />
         </div>
         <p className="mt-6 text-sm text-muted">
-          Peluangnya: acara malam terbuka di Central Plaza Summarecon Mall Bandung — pengunjung butuh rasa yakin sebelum membeli,
+          Peluangnya: acara malam terbuka di Sawarga Courtyard, Summarecon Mall Bandung — pengunjung butuh rasa yakin sebelum membeli,
           panitia butuh data yang bisa dipercaya.
         </p>
       </Slide>
@@ -184,7 +184,7 @@ export default function DeckPage() {
           <table className="w-full min-w-[34rem] text-sm">
             <tbody>
               {[
-                ['Acara', 'Konser malam penutupan Bandung Innovation Week 2026, 14 November, Central Plaza Summarecon Mall Bandung (ruang terbuka).'],
+                ['Acara', 'Konser malam penutupan Bandung Innovation Week 2026, 14 November, Sawarga Courtyard, Summarecon Mall Bandung (ruang terbuka).'],
                 ['Kapasitas', '446 kursi bernomor: VIP Depan 48, CAT 1 128, Tribun 120, Reguler 150.'],
                 ['Harga', 'Rp 1.500.000 / 900.000 / 600.000 / 350.000 per kursi.'],
                 ['Pemesanan', 'Satu kursi per pesanan; kursi ditahan 10 menit sebelum dibayar.'],

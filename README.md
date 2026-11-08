@@ -53,7 +53,7 @@ Optional ticket email: set `RESEND_API_KEY` and `EMAIL_FROM` to send e-ticket li
 
 ## Prototype assumptions (also on the deck)
 
-- Closing Night Concert, Central Plaza (open-air), Summarecon Mall Bandung, 14 Nov 2026, 19:00 WIB.
+- Closing Night Concert, Sawarga Courtyard (open-air), Summarecon Mall Bandung, 14 Nov 2026, 19:00 WIB.
 - 446 numbered seats: VIP Front 48, CAT 1 128, Tribune 120, Regular 150; Rp 350k–1.5M.
 - One seat per order; 10-minute server-side hold before payment.
 - Payments and WhatsApp reminders are simulated; calendar `.ics` works. E-ticket email uses a Resend-compatible API when configured, otherwise it reports “not configured”.

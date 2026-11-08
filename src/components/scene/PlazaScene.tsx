@@ -210,9 +210,9 @@ function CameraReset({ mode }: { mode: 'orbit' | 'walk' }) {
     | null
   useEffect(() => {
     if (mode === 'walk') return
-    camera.position.set(0, 20, 34)
+    camera.position.set(0, 24, 46)
     if (controls) {
-      controls.target.set(0, 1.5, -4)
+      controls.target.set(0, 2, 2)
       controls.update?.()
     }
   }, [mode, camera, controls])
@@ -263,7 +263,7 @@ export default function PlazaScene({
   return (
     <Canvas
       dpr={dpr}
-      camera={{ position: [0, 20, 34], fov: 42 }}
+      camera={{ position: [0, 24, 46], fov: 42 }}
       gl={{ antialias: true, powerPreference: 'high-performance' }}
     >
       <PerformanceMonitor
@@ -302,12 +302,12 @@ export default function PlazaScene({
         <OrbitControls
           makeDefault
           enabled={!previewSeat && !paused}
-          target={[0, 1.5, -4]}
+          target={[0, 2, 2]}
           enablePan={false}
           enableDamping
           dampingFactor={0.08}
-          minDistance={12}
-          maxDistance={60}
+          minDistance={15}
+          maxDistance={80}
           minPolarAngle={0.25}
           maxPolarAngle={Math.PI / 2.05}
         />
