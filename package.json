@@ -11,7 +11,8 @@
     "db:migrate": "tsx src/lib/cli.ts migrate",
     "db:seed": "tsx src/lib/cli.ts seed",
     "db:reset": "tsx src/lib/cli.ts reset",
-    "db:demo": "tsx src/lib/cli.ts demo"
+    "db:demo": "tsx src/lib/cli.ts demo",
+    "deck:shots": "node scripts/capture-deck-shots.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.15",

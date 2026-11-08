@@ -83,6 +83,7 @@ export function SeatMap2D({
         return (
           <circle
             key={seat.id}
+            data-seat-id={seat.id}
             cx={x}
             cy={y}
             r={selected ? 7.5 : 5.4}
