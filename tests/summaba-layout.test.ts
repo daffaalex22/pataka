@@ -40,6 +40,11 @@ describe('resolveWalkable', () => {
     resolveWalkable(pos)
     expect(pos.x).toBeGreaterThanOrEqual(14)
   })
+  it('keeps the character off the stage platform', () => {
+    const pos = { x: 0, y: 0, z: -12 }
+    resolveWalkable(pos)
+    expect(pos.z).toBeGreaterThanOrEqual(-8.5)
+  })
 })
 
 describe('planWalkRoute', () => {

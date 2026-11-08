@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react'
 import type * as THREE from 'three'
 import type { KeysState, MoveVector } from '@/components/scene/Character'
 import { standTarget, stepTowards } from '@/components/scene/walkPath'
+import { planWalkRoute, type Vec3 } from '@/components/scene/summaba/layout'
 import type { Seat } from '@/lib/types'
 
 const CHARACTER_SPEED = 7
@@ -33,6 +34,8 @@ export function AutoWalk({
 }) {
   const done = useRef(false)
   const last = useRef<MoveVector>({ x: 0, y: 0 })
+  const route = useRef<Vec3[] | null>(null)
+  const waypoint = useRef(0)
 
   useEffect(
     () => () => {
@@ -61,25 +64,37 @@ export function AutoWalk({
       return
     }
 
-    const target = standTarget(seat)
-    const dx = target.x - character.position.x
-    const dz = target.z - character.position.z
-    const distance = Math.hypot(dx, dz)
+    const stand = standTarget(seat)
+    if (!route.current) {
+      route.current = planWalkRoute(
+        { x: character.position.x, y: character.position.y, z: character.position.z },
+        stand,
+      )
+      waypoint.current = 0
+    }
+
+    let target: Vec3 = route.current[waypoint.current]
+    let distance = Math.hypot(target.x - character.position.x, target.z - character.position.z)
 
     if (distance < 0.3) {
-      done.current = true
-      moveRef.current = { x: 0, y: 0 }
-      last.current = { x: 0, y: 0 }
-      character.position.set(target.x, target.y, target.z)
-      character.rotation.y = Math.PI
-      onArrived(seat)
-      return
+      if (waypoint.current >= route.current.length - 1) {
+        done.current = true
+        moveRef.current = { x: 0, y: 0 }
+        last.current = { x: 0, y: 0 }
+        character.position.set(stand.x, stand.y, stand.z)
+        character.rotation.y = Math.PI
+        onArrived(seat)
+        return
+      }
+      waypoint.current += 1
+      target = route.current[waypoint.current]
+      distance = Math.hypot(target.x - character.position.x, target.z - character.position.z)
     }
 
     const next = stepTowards(
       { x: character.position.x, y: character.position.y, z: character.position.z },
       target,
-      delta,
+      Math.min(delta, 0.1),
       CHARACTER_SPEED,
     )
     const stepX = next.x - character.position.x

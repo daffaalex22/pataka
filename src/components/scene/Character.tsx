@@ -3,6 +3,7 @@
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { floorHeightAt, resolveWalkable, WORLD } from '@/components/scene/summaba/layout'
 
 export type MoveVector = { x: number; y: number }
 export type KeysState = Record<string, boolean>
@@ -37,6 +38,9 @@ export function Character({
     const group = characterRef.current
     if (!group) return
 
+    // Cap the integration step: a stalled frame (shader compile, tab wake)
+    // must not teleport the character through a collider.
+    const dt = Math.min(delta, 0.1)
     const keys = keysRef.current ?? {}
     const stick = paused ? { x: 0, y: 0 } : (moveRef.current ?? { x: 0, y: 0 })
     const inputX = paused ? 0 : stick.x + (keys['d'] || keys['arrowright'] ? 1 : 0) - (keys['a'] || keys['arrowleft'] ? 1 : 0)
@@ -47,12 +51,14 @@ export function Character({
     const speed = 7
     target.multiplyScalar(speed)
 
-    velocity.lerp(target, 1 - Math.exp(-8 * delta))
-    group.position.addScaledVector(velocity, delta)
+    velocity.lerp(target, 1 - Math.exp(-8 * dt))
+    group.position.addScaledVector(velocity, dt)
 
-    group.position.x = THREE.MathUtils.clamp(group.position.x, -25, 25)
-    group.position.z = THREE.MathUtils.clamp(group.position.z, -19.5, 22)
-    group.position.y = 0
+    resolveWalkable(group.position)
+    const surface = floorHeightAt(group.position.x, group.position.z)
+    const elevated = group.position.y > 1 || surface < WORLD.balcony.y - 0.05
+    const targetHeight = elevated ? surface : 0
+    group.position.y += (targetHeight - group.position.y) * (1 - Math.exp(-10 * dt))
 
     const moving = velocity.length() > 0.4
     if (moving) {
@@ -60,10 +66,10 @@ export function Character({
       let difference = desired - group.rotation.y
       while (difference > Math.PI) difference -= Math.PI * 2
       while (difference < -Math.PI) difference += Math.PI * 2
-      group.rotation.y += difference * Math.min(1, delta * 12)
-      walkTime.current += delta * 9
+      group.rotation.y += difference * Math.min(1, dt * 12)
+      walkTime.current += dt * 9
     } else {
-      walkTime.current += delta * 2
+      walkTime.current += dt * 2
     }
 
     if (bodyRef.current) {

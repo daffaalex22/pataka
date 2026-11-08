@@ -13,6 +13,7 @@ export const WORLD = {
   bounds: { minX: -48, maxX: 48, minZ: -40, maxZ: 40 },
   courtyard: { minX: -22, maxX: 22, minZ: -18, maxZ: 20 },
   stage: { x: 0, z: -13, width: 24, depth: 9 },
+  stageObstacle: { minX: -15, maxX: 15, minZ: -18, maxZ: -8.5 },
   ringNorth: { minX: -48, maxX: 48, minZ: -40, maxZ: -18, height: 11 },
   ringEast: { minX: 22, maxX: 48, minZ: -40, maxZ: 20 },
   ringWest: { minX: -48, maxX: -22, minZ: -40, maxZ: 20 },
@@ -173,6 +174,12 @@ export function resolveWalkable(pos: Vec3): void {
       }
     }
     clampIntoRect(nearest, pos)
+    return
+  }
+
+  // The stage platform and its backdrop wall sit inside the courtyard rect.
+  if (insideRect(WORLD.stageObstacle, pos.x, pos.z)) {
+    pushOutOfRect(WORLD.stageObstacle, pos)
     return
   }
 
