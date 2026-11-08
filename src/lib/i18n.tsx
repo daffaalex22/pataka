@@ -14,6 +14,7 @@ const id = {
   'splash.enter': 'Masuk ke Plaza',
   'splash.classic': 'Mode klasik',
   'splash.loading': 'Menyiapkan plaza…',
+  'world.hint': 'Jelajahi plaza — ketuk kursi, atau kunjungi booth tiket',
 
   'hero.badge': 'Bandung Innovation Week 2026',
   'hero.cta': 'Pilih Kursi Sekarang',
@@ -183,6 +184,7 @@ const en: Record<DictKey, string> = {
   'splash.enter': 'Enter the Plaza',
   'splash.classic': 'Classic mode',
   'splash.loading': 'Preparing the plaza…',
+  'world.hint': 'Explore the plaza — tap a seat, or visit the ticket booth',
 
   'hero.badge': 'Bandung Innovation Week 2026',
   'hero.cta': 'Pick Your Seat',

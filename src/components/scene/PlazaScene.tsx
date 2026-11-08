@@ -268,10 +268,17 @@ function Seats({
   )
 }
 
-function WalkRig({ moveRef, paused }: { moveRef: React.RefObject<MoveVector>; paused: boolean }) {
+function WalkRig({
+  moveRef,
+  paused,
+  characterRef,
+}: {
+  moveRef: React.RefObject<MoveVector>
+  paused: boolean
+  characterRef: React.RefObject<THREE.Group | null>
+}) {
   const keysRef = useRef<KeysState>({})
   useKeyboard(keysRef)
-  const characterRef = useRef<THREE.Group>(null)
   return (
     <>
       <Character moveRef={moveRef} keysRef={keysRef} characterRef={characterRef} paused={paused} />
@@ -303,6 +310,8 @@ export default function PlazaScene({
   mode = 'orbit',
   moveRef,
   previewSeat = null,
+  maxDpr = 1.5,
+  characterRef: externalCharacterRef,
 }: {
   seats: Seat[]
   selectedId: string | null
@@ -310,8 +319,12 @@ export default function PlazaScene({
   mode?: 'orbit' | 'walk'
   moveRef?: React.RefObject<MoveVector>
   previewSeat?: Seat | null
+  maxDpr?: number
+  characterRef?: React.RefObject<THREE.Group | null>
 }) {
-  const [dpr, setDpr] = useState(1.5)
+  const [dpr, setDpr] = useState(maxDpr)
+  const internalCharacterRef = useRef<THREE.Group | null>(null)
+  const characterRef = externalCharacterRef ?? internalCharacterRef
 
   return (
     <Canvas
@@ -321,14 +334,16 @@ export default function PlazaScene({
     >
       <PerformanceMonitor
         onDecline={() => setDpr(1)}
-        onIncline={() => setDpr(1.5)}
+        onIncline={() => setDpr(maxDpr)}
         onFallback={() => setDpr(1)}
       />
       <CameraReset mode={mode} />
       <Suspense fallback={null}>
         <Venue />
         <Seats seats={seats} selectedId={selectedId} onSelect={onSelect} />
-        {mode === 'walk' && moveRef && <WalkRig moveRef={moveRef} paused={Boolean(previewSeat)} />}
+        {mode === 'walk' && moveRef && (
+          <WalkRig moveRef={moveRef} paused={Boolean(previewSeat)} characterRef={characterRef} />
+        )}
       </Suspense>
       {mode === 'orbit' && (
         <OrbitControls

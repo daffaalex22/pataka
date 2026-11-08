@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { EntrySplash } from '@/components/world/EntrySplash'
-import { useT } from '@/lib/i18n'
+import { WorldView } from '@/components/world/WorldView'
 import type { EventInfo } from '@/lib/types'
 import { hasWebGL } from '@/lib/webgl'
 
@@ -11,7 +11,6 @@ type EventResponse = { event: EventInfo }
 
 export default function Home() {
   const router = useRouter()
-  const t = useT()
   const [phase, setPhase] = useState<'splash' | 'world'>('splash')
   const [event, setEvent] = useState<EventInfo | null>(null)
   const [failed, setFailed] = useState(false)
@@ -34,11 +33,7 @@ export default function Home() {
   }, [])
 
   if (phase === 'world') {
-    return (
-      <div className="fixed inset-0 grid place-items-center bg-[#07060d] text-sm text-muted">
-        {t('splash.loading')}
-      </div>
-    )
+    return <WorldView />
   }
 
   return <EntrySplash event={event} failed={failed} onEnter={() => setPhase('world')} entering={false} />
