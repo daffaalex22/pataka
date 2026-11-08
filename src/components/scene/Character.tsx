@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { floorHeightAt, resolveWalkable, targetFloorHeight, clearCameraPosition } from '@/components/scene/summaba/layout'
 import { hasMoved, recenterLookYaw } from '@/components/scene/lookYaw'
-import { resolveMoveInput } from '@/components/scene/inputSpace'
+import { isMovingAway, nextFollowYaw, resolveMoveInput } from '@/components/scene/inputSpace'
 
 export type MoveVector = { x: number; y: number }
 export type KeysState = Record<string, boolean>
@@ -152,12 +152,15 @@ export function FollowCamera({
   const desired = useMemo(() => new THREE.Vector3(), [])
   const lookAt = useMemo(() => new THREE.Vector3(), [])
   const lastPosition = useMemo(() => new THREE.Vector3(Number.NaN, 0, 0), [])
+  const followYawRef = useRef<number | null>(null)
 
   useFrame((_, delta) => {
     const character = characterRef.current
     if (!character) return
 
     const dt = Math.min(delta, 0.1)
+    const stepX = character.position.x - lastPosition.x
+    const stepZ = character.position.z - lastPosition.z
     const moved = hasMoved(lastPosition.x, lastPosition.z, character.position.x, character.position.z, dt)
     lastPosition.set(character.position.x, 0, character.position.z)
 
@@ -166,7 +169,15 @@ export function FollowCamera({
     lookYawRef.current = yaw
     pitchRef.current = pitch
 
-    const facing = character.rotation.y + yaw
+    // Walk away from the camera and it eases back behind the heading; walk
+    // toward it and it holds its yaw and backs away instead of orbiting.
+    if (followYawRef.current === null) followYawRef.current = character.rotation.y
+    const viewYaw = followYawRef.current + yaw // includes the drag-look offset
+    const movingAway = moved && isMovingAway(stepX, stepZ, viewYaw)
+    const followYaw = nextFollowYaw(followYawRef.current, character.rotation.y, movingAway, dt)
+    followYawRef.current = followYaw
+
+    const facing = followYaw + yaw
     const sin = Math.sin(facing)
     const cos = Math.cos(facing)
     const horiz = 6.6 * Math.cos(pitch)
