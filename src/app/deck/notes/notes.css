@@ -1,0 +1,28 @@
+@media print {
+  @page notes {
+    size: A4;
+    margin: 16mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .notes-page {
+    page: notes;
+  }
+
+  .notes-block {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .notes-block:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}
