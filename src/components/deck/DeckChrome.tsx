@@ -86,7 +86,7 @@ export function DeckChrome({ count }: { count: number }) {
       }
 
       let delta = 0
-      if (['ArrowRight', 'ArrowDown', 'Space', 'PageDown'].includes(event.key)) delta = 1
+      if (['ArrowRight', 'ArrowDown', ' ', 'Space', 'PageDown'].includes(event.key)) delta = 1
       else if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(event.key)) delta = -1
       else return
 

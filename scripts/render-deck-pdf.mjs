@@ -26,6 +26,12 @@ async function main() {
       margin: { top: '0', right: '0', bottom: '0', left: '0' },
     })
 
+    const bytes = await fs.readFile(out)
+    if (bytes.includes('localhost') || bytes.includes('127.0.0.1')) {
+      await fs.unlink(out)
+      throw new Error('PDF contains a localhost or 127.0.0.1 link/text')
+    }
+
     console.log('wrote', out)
     console.log('QR URL', href)
   } finally {

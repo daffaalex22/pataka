@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useSyncExternalStore } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { resolveDeckUrl } from '@/lib/deck'
@@ -17,18 +16,22 @@ export function DemoLinks() {
   return (
     <div className="mt-8 flex flex-col items-start gap-6 sm:flex-row sm:items-center">
       <div className="flex flex-wrap gap-3">
-        <Link
-          href="/"
+        <a
+          href={url || '/'}
+          target="_blank"
+          rel="noreferrer"
           className="accent-glow rounded-full bg-accent px-6 py-3 text-sm font-semibold text-black transition hover:brightness-110"
         >
           Buka Prototype →
-        </Link>
-        <Link
-          href="/admin"
+        </a>
+        <a
+          href={url ? `${url}/admin` : '/admin'}
+          target="_blank"
+          rel="noreferrer"
           className="rounded-full border border-line px-6 py-3 text-sm font-medium text-muted transition hover:border-white/30 hover:text-foreground"
         >
           Panel Panitia (demo: panitia2026)
-        </Link>
+        </a>
       </div>
       {url && (
         <div className="flex items-center gap-3">

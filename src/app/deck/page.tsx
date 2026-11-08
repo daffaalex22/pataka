@@ -1,5 +1,4 @@
 import Image from 'next/image'
-import Link from 'next/link'
 import { DemoLinks } from '@/components/deck/DemoLinks'
 import { DeckChrome } from '@/components/deck/DeckChrome'
 import { DeckSlide } from '@/components/deck/DeckSlide'
@@ -203,8 +202,8 @@ export default function DeckPage() {
         </DeckSlide>
 
         <DeckSlide slide={DECK_SLIDES[7]}>
-          <div className="panel overflow-x-auto rounded-2xl">
-            <table className="w-full min-w-[34rem] text-sm">
+          <div className="panel overflow-hidden rounded-2xl">
+            <table className="w-full text-sm">
               <tbody>
                 {[
                   ['Acara', 'Konser malam penutupan Bandung Innovation Week 2026, 14 November, Sawarga Courtyard, Summarecon Mall Bandung.'],
@@ -217,7 +216,7 @@ export default function DeckPage() {
                   ['Denah', 'Tata letak kursi ditetapkan per acara; panitia mengatur harga, kuota, dan periode jual.'],
                 ].map(([key, value]) => (
                   <tr key={key} className="border-b border-line/60 last:border-0">
-                    <td className="w-36 px-4 py-3 align-top text-[11px] uppercase tracking-[0.12em] text-muted">{key}</td>
+                    <td className="w-24 px-4 py-3 align-top text-[11px] uppercase tracking-[0.12em] text-muted sm:w-36">{key}</td>
                     <td className="px-4 py-3 leading-relaxed">{value}</td>
                   </tr>
                 ))}
@@ -265,10 +264,6 @@ export default function DeckPage() {
           </div>
           <p className="mt-3 text-xs text-muted">Jika demo gagal, gunakan screenshot di slide 04.</p>
           <DemoLinks />
-          <div className="mt-10 flex flex-wrap gap-3 text-sm">
-            <Link href="/" className="text-accent hover:underline">← Prototype</Link>
-            <Link href="/admin" className="text-muted hover:text-foreground">Panel Panitia</Link>
-          </div>
         </DeckSlide>
       </main>
       <DeckChrome count={DECK_SLIDES.length} />
