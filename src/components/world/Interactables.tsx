@@ -1,10 +1,12 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { RefObject } from 'react'
+import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useT } from '@/lib/i18n'
 import { formatEventDate, type Category, type EventInfo, type Lang } from '@/lib/types'
+import { useSignage } from '@/components/scene/summaba/signage'
 
 function drawFittedText(
   ctx: CanvasRenderingContext2D,
@@ -27,6 +29,47 @@ function drawFittedText(
     output = `${output}…`
   }
   ctx.fillText(output, x, y)
+}
+
+/** Slow pulsing gold ring under an interactable so it reads as tappable. */
+function PulseRing({ position, radius = 2 }: { position: [number, number, number]; radius?: number }) {
+  const meshRef = useRef<THREE.Mesh>(null)
+  const materialRef = useRef<THREE.MeshBasicMaterial>(null)
+
+  useFrame(({ clock }) => {
+    const pulse = (Math.sin(clock.elapsedTime * Math.PI) + 1) / 2
+    if (materialRef.current) materialRef.current.opacity = 0.12 + pulse * 0.3
+    if (meshRef.current) meshRef.current.scale.setScalar(1 + pulse * 0.05)
+  })
+
+  return (
+    <mesh ref={meshRef} rotation-x={-Math.PI / 2} position={position}>
+      <ringGeometry args={[radius - 0.12, radius, 48]} />
+      <meshBasicMaterial ref={materialRef} color="#f5c542" transparent opacity={0.2} toneMapped={false} depthWrite={false} />
+    </mesh>
+  )
+}
+
+/** Floating sign that always turns to face the camera horizontally. */
+function BillboardTag({ texture, position }: { texture: THREE.Texture; position: [number, number, number] }) {
+  const groupRef = useRef<THREE.Group>(null)
+  const world = useMemo(() => new THREE.Vector3(), [])
+
+  useFrame(({ camera }) => {
+    const group = groupRef.current
+    if (!group) return
+    group.getWorldPosition(world)
+    group.rotation.y = Math.atan2(camera.position.x - world.x, camera.position.z - world.z)
+  })
+
+  return (
+    <group ref={groupRef} position={position}>
+      <mesh>
+        <planeGeometry args={[2.4, 0.6]} />
+        <meshBasicMaterial map={texture} toneMapped={false} side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  )
 }
 
 /** Freestanding LED board near the spawn: live event info and per-category availability. */
@@ -92,6 +135,7 @@ export function Board({ event, categories, lang }: { event: EventInfo; categorie
 
   return (
     <group position={[-9, 0, 19]} rotation-y={2.3}>
+      <PulseRing position={[0, 0.02, 0]} />
       {[-2.3, 2.3].map((x) => (
         <mesh key={x} position={[x, 0.6, 0]}>
           <cylinderGeometry args={[0.08, 0.08, 1.2, 8]} />
@@ -119,6 +163,7 @@ export function Booth({
   dragStateRef?: RefObject<{ dragging: boolean }>
 }) {
   const [hovered, setHovered] = useState(false)
+  const tapTag = useSignage('KETUK', 'TAP')
 
   const sign = useMemo(() => {
     const canvas = document.createElement('canvas')
@@ -151,10 +196,11 @@ export function Booth({
   )
 
   return (
-    <group
-      position={[9, 0, 19]}
-      rotation-y={-2.3}
-      scale={hovered ? 1.05 : 1}
+    <group>
+      <group
+        position={[9, 0, 19]}
+        rotation-y={-2.3}
+        scale={hovered ? 1.05 : 1}
       onPointerOver={(event) => {
         event.stopPropagation()
         setHovered(true)
@@ -195,7 +241,10 @@ export function Booth({
         <planeGeometry args={[2.6, 0.16]} />
         <meshBasicMaterial color="#f5c542" toneMapped={false} transparent opacity={0.85} />
       </mesh>
+      <PulseRing position={[0, 0.02, 0]} radius={1.8} />
       <pointLight position={[0, 1.9, 1.1]} intensity={10} distance={10} color="#f5c542" />
+      </group>
+      {tapTag && <BillboardTag texture={tapTag} position={[9, 3.55, 19]} />}
     </group>
   )
 }
