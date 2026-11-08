@@ -121,9 +121,13 @@ export function targetFloorHeight(currentY: number, surface: number): number {
 
 const CAMERA_BLOCKERS: Rect[] = [WORLD.ringNorth, WORLD.ringEast, WORLD.ringWest, WORLD.stageObstacle]
 
-function isCameraBlocked(point: Vec3): boolean {
+function isCameraBlocked(point: Vec3, levelY: number): boolean {
   if (CAMERA_BLOCKERS.some((rect) => insideRect(rect, point.x, point.z))) return true
-  return point.y < floorHeightAt(point.x, point.z) + 0.35
+  if (point.y < 0.35) return true
+  // The surface floor only applies to a camera whose character is elevated;
+  // from is the character's head, so ground level sits at y = 1.6.
+  if (levelY > 2.6) return point.y < floorHeightAt(point.x, point.z) + 0.35
+  return false
 }
 
 /**
@@ -132,14 +136,14 @@ function isCameraBlocked(point: Vec3): boolean {
  * and return the closest clear point.
  */
 export function clearCameraPosition(from: Vec3, to: Vec3): Vec3 {
-  if (!isCameraBlocked(to)) return to
+  if (!isCameraBlocked(to, from.y)) return to
   for (let t = 0.85; t >= 0.1; t -= 0.15) {
     const candidate: Vec3 = {
       x: from.x + (to.x - from.x) * t,
       y: from.y + (to.y - from.y) * t,
       z: from.z + (to.z - from.z) * t,
     }
-    if (!isCameraBlocked(candidate)) return candidate
+    if (!isCameraBlocked(candidate, from.y)) return candidate
   }
   return { ...from }
 }

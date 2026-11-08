@@ -61,6 +61,8 @@ export function LookDrag({
     window.addEventListener('pointercancel', end)
 
     return () => {
+      tracker.current = null
+      dragStateRef.current.dragging = false
       element.removeEventListener('pointerdown', down)
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', end)

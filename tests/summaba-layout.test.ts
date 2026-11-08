@@ -130,4 +130,13 @@ describe('clearCameraPosition', () => {
     const result = clearCameraPosition({ x: 0, y: 1.6, z: 0 }, { x: 0, y: 0.1, z: 6.6 })
     expect(result.y).toBeGreaterThanOrEqual(0.35)
   })
+  it('allows a ground-level camera under the balcony overhang', () => {
+    const from = { x: 15, y: 1.6, z: 0 }
+    const to = { x: 15, y: 3.6, z: 6.6 }
+    expect(clearCameraPosition(from, to)).toEqual(to)
+  })
+  it('keeps an elevated camera above the balcony deck', () => {
+    const result = clearCameraPosition({ x: 17, y: 6.8, z: 0 }, { x: 17, y: 2.0, z: 0 })
+    expect(result.y).toBeGreaterThanOrEqual(5.55)
+  })
 })

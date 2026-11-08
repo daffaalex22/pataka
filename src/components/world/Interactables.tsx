@@ -237,11 +237,7 @@ export function Booth({
   )
 
   return (
-    <group>
-      <group
-        position={[9, 0, 19]}
-        rotation-y={-2.3}
-        scale={hovered ? 1.05 : 1}
+    <group
       onPointerOver={(event) => {
         event.stopPropagation()
         setHovered(true)
@@ -258,6 +254,7 @@ export function Booth({
         onTap()
       }}
     >
+      <group position={[9, 0, 19]} rotation-y={-2.3} scale={hovered ? 1.05 : 1}>
       <mesh position={[0, 0.55, 0]}>
         <boxGeometry args={[3, 1.1, 1]} />
         <meshStandardMaterial color="#1a1426" roughness={0.5} metalness={0.3} />
