@@ -15,6 +15,8 @@ import { MallRing } from '@/components/scene/summaba/MallRing'
 import { Atriums } from '@/components/scene/summaba/Atriums'
 import { Stage } from '@/components/scene/summaba/Stage'
 import { Balconies } from '@/components/scene/summaba/Balconies'
+import { DowntownWalk } from '@/components/scene/summaba/DowntownWalk'
+import { Sawarga } from '@/components/scene/summaba/Sawarga'
 
 const STATUS_3D: Record<string, string> = {
   available: '#2dd4bf',
@@ -61,6 +63,8 @@ function Venue() {
       <Atriums />
       <Stage />
       <Balconies />
+      <Sawarga />
+      <DowntownWalk />
 
       {/* string lights */}
       <instancedMesh ref={bulbsRef} args={[undefined, undefined, lightPoints.length]}>
