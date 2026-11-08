@@ -1,0 +1,39 @@
+import { chromium } from 'playwright'
+import fs from 'node:fs/promises'
+
+const base = process.env.DECK_BASE_URL ?? 'http://localhost:3000'
+const out = 'public/deck/pataka-pitch.pdf'
+
+async function main() {
+  const browser = await chromium.launch()
+
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
+    await page.goto(`${base}/deck`, { waitUntil: 'networkidle' })
+
+    const link = page.locator('a[href^="https://"]').last()
+    await link.waitFor({ timeout: 20000 })
+    const href = await link.getAttribute('href')
+    if (!href) throw new Error('Closing production link not found')
+    if (href.includes('localhost')) throw new Error(`PDF would contain a localhost QR: ${href}`)
+
+    await fs.mkdir('public/deck', { recursive: true })
+    await page.pdf({
+      path: out,
+      width: '13.333in',
+      height: '7.5in',
+      printBackground: true,
+      margin: { top: '0', right: '0', bottom: '0', left: '0' },
+    })
+
+    console.log('wrote', out)
+    console.log('QR URL', href)
+  } finally {
+    await browser.close()
+  }
+}
+
+main().catch((error) => {
+  console.error(error)
+  process.exit(1)
+})

@@ -12,7 +12,8 @@
     "db:seed": "tsx src/lib/cli.ts seed",
     "db:reset": "tsx src/lib/cli.ts reset",
     "db:demo": "tsx src/lib/cli.ts demo",
-    "deck:shots": "node scripts/capture-deck-shots.mjs"
+    "deck:shots": "node scripts/capture-deck-shots.mjs",
+    "deck:pdf": "node scripts/render-deck-pdf.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.15",

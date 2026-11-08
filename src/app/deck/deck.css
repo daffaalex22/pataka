@@ -20,6 +20,7 @@
   .deck-scroll {
     height: auto !important;
     overflow: visible !important;
+    padding-bottom: 0 !important;
   }
 
   .deck-slide {
