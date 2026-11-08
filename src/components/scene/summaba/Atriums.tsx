@@ -1,6 +1,5 @@
 'use client'
 
-import * as THREE from 'three'
 import { WORLD, type Rect } from './layout'
 import { useSignage } from './signage'
 

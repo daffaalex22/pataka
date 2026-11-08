@@ -4,6 +4,15 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { WORLD } from './layout'
 
+/** Deterministic window pattern so re-renders never reshuffle the facade. */
+function seededRandom(seed: number) {
+  let state = seed
+  return () => {
+    state = (state * 1664525 + 1013904223) % 4294967296
+    return state / 4294967296
+  }
+}
+
 /** Two-storey window texture for the courtyard-facing facades. */
 function useRingFacadeTexture() {
   const texture = useMemo(() => {
@@ -13,14 +22,16 @@ function useRingFacadeTexture() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return null
 
+    const rand = seededRandom(7)
+
     ctx.fillStyle = '#0e0b17'
     ctx.fillRect(0, 0, 1024, 512)
 
     for (let row = 0; row < 10; row++) {
       for (let col = 0; col < 40; col++) {
-        if (Math.random() > 0.62) continue
-        const warm = Math.random() > 0.55
-        const alpha = 0.25 + Math.random() * 0.6
+        if (rand() > 0.62) continue
+        const warm = rand() > 0.55
+        const alpha = 0.25 + rand() * 0.6
         ctx.fillStyle = warm ? `rgba(245, 197, 66, ${alpha})` : `rgba(140, 150, 255, ${alpha * 0.8})`
         ctx.fillRect(30 + col * 24, 26 + row * 44, 10, 18)
       }
@@ -46,11 +57,22 @@ function useRingFacadeTexture() {
   return texture
 }
 
-/** Ground-level arcade pillars along the courtyard-facing ring faces, skipping atrium entrances. */
-function useColonnade() {
-  const ref = useRef<THREE.InstancedMesh>(null)
+function FacadePlane({ position, rotationY, size }: { position: [number, number, number]; rotationY: number; size: [number, number] }) {
+  const texture = useRingFacadeTexture()
+  if (!texture) return null
+  return (
+    <mesh position={position} rotation-y={rotationY}>
+      <planeGeometry args={size} />
+      <meshBasicMaterial map={texture} toneMapped={false} />
+    </mesh>
+  )
+}
 
-  const points = useMemo(() => {
+export function MallRing() {
+  const colonnadeRef = useRef<THREE.InstancedMesh>(null)
+
+  // Ground-level arcade pillars along the courtyard-facing faces, skipping atrium entrances.
+  const colonnadePoints = useMemo(() => {
     const points: [number, number][] = []
     const skipNorth = (x: number) => x > WORLD.atriums.ciunik.minX - 2 && x < WORLD.atriums.ciunik.maxX + 2
     const skipEast = (z: number) => z > WORLD.atriums.cibadak.minZ - 2 && z < WORLD.atriums.cibadak.maxZ + 2
@@ -67,33 +89,17 @@ function useColonnade() {
   }, [])
 
   useEffect(() => {
-    const mesh = ref.current
+    const mesh = colonnadeRef.current
     if (!mesh) return
     const dummy = new THREE.Object3D()
-    points.forEach(([x, z], index) => {
+    colonnadePoints.forEach(([x, z], index) => {
       dummy.position.set(x, 2.6, z)
       dummy.updateMatrix()
       mesh.setMatrixAt(index, dummy.matrix)
     })
     mesh.instanceMatrix.needsUpdate = true
-  }, [points])
+  }, [colonnadePoints])
 
-  return { ref, count: points.length }
-}
-
-function FacadePlane({ position, rotationY, size }: { position: [number, number, number]; rotationY: number; size: [number, number] }) {
-  const texture = useRingFacadeTexture()
-  if (!texture) return null
-  return (
-    <mesh position={position} rotation-y={rotationY}>
-      <planeGeometry args={size} />
-      <meshBasicMaterial map={texture} toneMapped={false} />
-    </mesh>
-  )
-}
-
-export function MallRing() {
-  const colonnade = useColonnade()
   const massColor = '#120e1d'
 
   return (
@@ -132,7 +138,7 @@ export function MallRing() {
       ))}
 
       {/* Ground arcade pillars */}
-      <instancedMesh ref={colonnade.ref} args={[undefined, undefined, colonnade.count]}>
+      <instancedMesh ref={colonnadeRef} args={[undefined, undefined, colonnadePoints.length]}>
         <boxGeometry args={[0.45, 5.2, 0.45]} />
         <meshStandardMaterial color="#1c1729" roughness={0.8} metalness={0.15} />
       </instancedMesh>
