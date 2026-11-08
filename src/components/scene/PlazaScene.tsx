@@ -9,6 +9,8 @@ import { Character, FollowCamera, useKeyboard, type KeysState, type MoveVector }
 import { AutoWalk } from '@/components/scene/AutoWalk'
 import { PreviewCamera } from '@/components/scene/PreviewCamera'
 import { Board, Booth } from '@/components/world/Interactables'
+import { CourtyardFloor } from '@/components/scene/summaba/CourtyardFloor'
+import { MallRing } from '@/components/scene/summaba/MallRing'
 
 const STATUS_3D: Record<string, string> = {
   available: '#2dd4bf',
@@ -16,56 +18,8 @@ const STATUS_3D: Record<string, string> = {
   sold: '#3a3949',
 }
 
-function useFacadeTexture() {
-  return useMemo(() => {
-    const canvas = document.createElement('canvas')
-    canvas.width = 1024
-    canvas.height = 512
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return null
-
-    const sky = ctx.createLinearGradient(0, 0, 0, 512)
-    sky.addColorStop(0, '#07060d')
-    sky.addColorStop(0.55, '#141024')
-    sky.addColorStop(1, '#0b0912')
-    ctx.fillStyle = sky
-    ctx.fillRect(0, 0, 1024, 512)
-
-    // mall silhouette
-    ctx.fillStyle = '#0e0b17'
-    ctx.fillRect(40, 60, 944, 452)
-    ctx.fillStyle = '#120e1d'
-    ctx.fillRect(0, 30, 140, 482)
-    ctx.fillRect(884, 12, 140, 500)
-
-    // glowing windows
-    for (let row = 0; row < 12; row++) {
-      for (let col = 0; col < 40; col++) {
-        if (Math.random() > 0.62) continue
-        const warm = Math.random() > 0.55
-        const alpha = 0.25 + Math.random() * 0.6
-        ctx.fillStyle = warm ? `rgba(245, 197, 66, ${alpha})` : `rgba(140, 150, 255, ${alpha * 0.8})`
-        ctx.fillRect(60 + col * 23, 80 + row * 33, 8, 14)
-      }
-    }
-
-    // neon sign strip
-    const neon = ctx.createLinearGradient(200, 0, 824, 0)
-    neon.addColorStop(0, 'rgba(245,197,66,0)')
-    neon.addColorStop(0.5, 'rgba(245,197,66,0.9)')
-    neon.addColorStop(1, 'rgba(245,197,66,0)')
-    ctx.fillStyle = neon
-    ctx.fillRect(200, 470, 624, 4)
-
-    const texture = new THREE.CanvasTexture(canvas)
-    texture.colorSpace = THREE.SRGBColorSpace
-    return texture
-  }, [])
-}
 
 function Venue() {
-  const facade = useFacadeTexture()
-
   const lightPoints = useMemo(() => {
     const points: [number, number, number][] = []
     for (let line = 0; line < 3; line++) {
@@ -106,22 +60,10 @@ function Venue() {
   return (
     <group>
       <color attach="background" args={['#07060d']} />
-      <fog attach="fog" args={['#07060d', 38, 95]} />
+      <fog attach="fog" args={['#07060d', 55, 130]} />
 
-      {/* plaza floor */}
-      <mesh rotation-x={-Math.PI / 2} position={[0, 0, 2]}>
-        <planeGeometry args={[90, 80]} />
-        <meshStandardMaterial color="#100d1a" roughness={0.92} metalness={0.05} />
-      </mesh>
-      <gridHelper args={[90, 90, '#241f33', '#161222']} position={[0, 0.02, 2]} />
-
-      {/* mall facade backdrop */}
-      {facade && (
-        <mesh position={[0, 13, -46]}>
-          <planeGeometry args={[76, 38]} />
-          <meshBasicMaterial map={facade} toneMapped={false} />
-        </mesh>
-      )}
+      <CourtyardFloor />
+      <MallRing />
 
       {/* stage */}
       <group position={[0, 0, -27]}>
