@@ -31,3 +31,12 @@ World scale mapping, exact seat coordinates, facade/atrium/pond/greenery visual 
 
 ## Sources
 Summarecon Agung press release & project page (Sawarga Courtyard 3,600 m² tropical garden at the mall's heart; Bandung-Pisan names), summareconmallbandung.com facility page (Downtown Walk south via Jl. Sentra Raya Selatan; koi pond in Downtown Walk; Customer Care at Atrium Cileutik/Lobby Alus and Atrium Cibadak/Lobby Ageung; valet at Lobby Caang), Anggara Architeam project page (courtyard at the heart, event venue), id.wikipedia (2 storeys, 46,000 m², Star Department Store replacing Rambla Dec 2025, Happy Harvest GF, XXI/Timezone L1), Gedebage Jazz Festival International 2026 coverage (main stage Sawarga Courtyard, stages in Atrium Ciunik and Downtown Walk).
+
+## Camera & board polish addendum (2026-11-09)
+
+Decisions from the post-build review with the product owner:
+1. The walk camera is heading-relative, game-style: at rest yaw 0 it trails directly behind the character's back; drag swings it around (yaw) and tilts it (pitch, clamped ≈ −20°…+26°); both axes recenter while walking and hold while idle. A camera keep-out pulls the camera toward the character when the desired position would enter the mall masses, the stage, or sink under a walkable surface.
+2. The look drag is two-axis and pointer-id isolated; the tap threshold is 12px so sloppy taps on laggy machines still select seats.
+3. The ticket booth and LED board get a subtle pulsing base ring (emissive, no new lights) and the booth a floating KETUK · TAP tag, so both read as tappable on touch devices.
+4. The LED board is clickable and opens a detail overlay: event name, date, venue, description, and per-category price/availability in both languages; the world pauses while open.
+5. Seat selection was confirmed working end-to-end (the reported issue was machine lag); only the entry hint changes to lead with "tap any seat to book".

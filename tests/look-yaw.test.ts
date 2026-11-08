@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import {
   DRAG_THRESHOLD_PX,
+  LOOK_PITCH_SENSITIVITY,
   LOOK_SENSITIVITY,
+  PITCH_MAX,
+  PITCH_MIN,
   dragEnd,
   dragMove,
   dragStart,
   hasMoved,
   recenterLookYaw,
   updateLookYaw,
+  updatePitch,
 } from '@/components/scene/lookYaw'
 
 describe('updateLookYaw', () => {
@@ -25,7 +29,22 @@ describe('updateLookYaw', () => {
 
   it('pins the tunable constants', () => {
     expect(LOOK_SENSITIVITY).toBe(0.0035)
-    expect(DRAG_THRESHOLD_PX).toBe(8)
+    expect(LOOK_PITCH_SENSITIVITY).toBe(0.0025)
+    expect(DRAG_THRESHOLD_PX).toBe(12)
+    expect(PITCH_MIN).toBe(-0.35)
+    expect(PITCH_MAX).toBe(0.45)
+  })
+})
+
+describe('updatePitch', () => {
+  it('tilts down on drag down and up on drag up', () => {
+    expect(updatePitch(0, 100)).toBeCloseTo(0.25, 5)
+    expect(updatePitch(0, -100)).toBeCloseTo(-0.25, 5)
+  })
+
+  it('clamps to the pitch range', () => {
+    expect(updatePitch(0.4, 100)).toBe(0.45)
+    expect(updatePitch(-0.3, -100)).toBe(-0.35)
   })
 })
 
@@ -54,34 +73,37 @@ describe('hasMoved', () => {
 })
 
 describe('drag tracker', () => {
-  it('ignores moves from other pointers', () => {
-    const tracker = dragStart(5, 100)
-    const result = dragMove(tracker, 7, 300)
+  it('ignores moves from other pointers on both axes', () => {
+    const tracker = dragStart(5, 100, 200)
+    const result = dragMove(tracker, 7, 300, 400)
     expect(result.yawDeltaPx).toBe(0)
+    expect(result.pitchDeltaPx).toBe(0)
     expect(result.tracker).toBe(tracker)
   })
 
-  it('accumulates the tracked pointer and arms click suppression past the threshold', () => {
-    let tracker = dragStart(5, 100)
-    let delta = 0
+  it('accumulates both axes from the tracked pointer and arms suppression', () => {
+    let tracker = dragStart(5, 100, 200)
+    let yaw = 0
+    let pitch = 0
     for (let step = 1; step <= 3; step++) {
-      const result = dragMove(tracker, 5, 100 + step * 5)
+      const result = dragMove(tracker, 5, 100 + step * 5, 200 - step * 4)
       tracker = result.tracker
-      delta += result.yawDeltaPx
+      yaw += result.yawDeltaPx
+      pitch += result.pitchDeltaPx
     }
-    // The first 5px is swallowed below the threshold; rotation starts armed.
-    expect(delta).toBe(10)
+    expect(yaw).toBe(10)
+    expect(pitch).toBe(-8)
     expect(tracker.dragging).toBe(true)
   })
 
   it('a tap does not suppress clicks', () => {
-    const result = dragEnd(dragStart(5, 100), 5)
+    const result = dragEnd(dragStart(5, 100, 200), 5)
     expect(result.suppressClick).toBe(false)
     expect(result.tracker.pointerId).toBeNull()
   })
 
   it('other pointers cannot end the active drag', () => {
-    const result = dragEnd(dragStart(5, 100), 7)
+    const result = dragEnd(dragStart(5, 100, 200), 7)
     expect(result.tracker.pointerId).toBe(5)
   })
 })

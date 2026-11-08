@@ -26,12 +26,12 @@ export function LookDrag({
 
     const down = (event: PointerEvent) => {
       if (tracker.current) return
-      tracker.current = dragStart(event.pointerId, event.clientX)
+      tracker.current = dragStart(event.pointerId, event.clientX, event.clientY)
     }
 
     const move = (event: PointerEvent) => {
       if (!tracker.current) return
-      const result = dragMove(tracker.current, event.pointerId, event.clientX)
+      const result = dragMove(tracker.current, event.pointerId, event.clientX, event.clientY)
       tracker.current = result.tracker
       if (result.tracker.dragging) {
         dragStateRef.current.dragging = true
