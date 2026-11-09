@@ -10,6 +10,7 @@ import { SceneBoundary } from '@/components/scene/SceneBoundary'
 import { FormStep } from '@/components/visitor/FormStep'
 import { SeatMap2D } from '@/components/visitor/SeatMap2D'
 import { SummaryStep } from '@/components/visitor/SummaryStep'
+import { Dialog } from '@/components/ui/Dialog'
 import type { Group } from 'three'
 import { BoothOverlay } from '@/components/world/BoothOverlay'
 import { BoardDetail } from '@/components/world/BoardDetail'
@@ -266,9 +267,14 @@ export function WorldView() {
         />
       </StepOverlay>
 
-      {mapOpen && (
-        <div className="fixed inset-0 z-20 overflow-y-auto bg-[#07060d]/95 backdrop-blur">
-          <div className="mx-auto w-full max-w-3xl px-4 pb-10 pt-[max(1rem,env(safe-area-inset-top))]">
+      <Dialog
+        open={mapOpen}
+        onClose={() => setMapOpen(false)}
+        ariaLabel={t('seat.title')}
+        panelClassName="max-w-3xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5"
+      >
+        {mapOpen && (
+          <>
             <div className="flex items-center justify-between gap-3 py-2">
               <div>
                 <h2 className="text-lg font-semibold tracking-tight">{t('seat.title')}</h2>
@@ -294,9 +300,9 @@ export function WorldView() {
                 stageLabel={t('seat.stage')}
               />
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Dialog>
 
       <BoothOverlay
         open={boothOpen}
