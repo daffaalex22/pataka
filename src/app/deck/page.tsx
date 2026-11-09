@@ -3,7 +3,7 @@ import { DemoLinks } from '@/components/deck/DemoLinks'
 import { DeckChrome } from '@/components/deck/DeckChrome'
 import { DeckSlide } from '@/components/deck/DeckSlide'
 import { ProductProof } from '@/components/deck/ProductProof'
-import { VenueMapSvg } from '@/components/venue/VenueMapSvg'
+import { VenueMapImage } from '@/components/venue/VenueMapImage'
 import { DECK_SLIDES } from '@/lib/deck'
 
 function Card({ label, body }: { label: string; body: string }) {
@@ -141,12 +141,12 @@ export default function DeckPage() {
         <DeckSlide slide={DECK_SLIDES[5]}>
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="overflow-hidden rounded-2xl border border-line bg-[#f7f5f0] p-3">
-              <VenueMapSvg
+              <VenueMapImage
                 title="Denah Summarecon Mall Bandung"
-                description="Denah skematis Lantai Dasar dengan Sawarga Courtyard ditandai."
+                description="Denah Lantai Dasar dengan Sawarga Courtyard ditandai."
               />
               <p className="mt-2 px-1 text-[11px] text-[#6b6b6b]">
-                Berdasarkan denah Summarecon Mall Bandung · Ground Floor
+                Sumber: Summarecon Mall Bandung · Ground Floor
               </p>
             </div>
             <div className="relative min-h-[260px] overflow-hidden rounded-2xl border border-line bg-black/40">

@@ -137,9 +137,9 @@ const id = {
 
   'venue.title': 'Cara ke Sawarga Courtyard',
   'venue.subtitle': 'Ground Floor · Summarecon Mall Bandung',
-  'venue.caption': 'Denah skematis untuk orientasi di dalam mal.',
+  'venue.caption': 'Peta Lantai Dasar untuk orientasi di dalam mal.',
   'venue.enlarge': 'Perbesar denah',
-  'venue.source': 'Berdasarkan denah Summarecon Mall Bandung',
+  'venue.source': 'Sumber: Summarecon Mall Bandung',
   'venue.eventHere': 'Acara di sini',
   'eticket.pendingTitle': 'Selesaikan pembayaran',
   'eticket.pendingBody': 'Kursi masih ditahan untukmu. Selesaikan sebelum hitungan mundur berakhir.',
@@ -350,9 +350,9 @@ const en: Record<DictKey, string> = {
 
   'venue.title': 'Getting to Sawarga Courtyard',
   'venue.subtitle': 'Ground Floor · Summarecon Mall Bandung',
-  'venue.caption': 'A schematic map for orientation inside the mall.',
+  'venue.caption': 'Ground-floor map for orientation inside the mall.',
   'venue.enlarge': 'Enlarge map',
-  'venue.source': 'Based on the Summarecon Mall Bandung floor plan',
+  'venue.source': 'Source: Summarecon Mall Bandung',
   'venue.eventHere': 'Event here',
   'eticket.pendingTitle': 'Finish your payment',
   'eticket.pendingBody': 'Your seat is still held. Complete payment before the countdown ends.',

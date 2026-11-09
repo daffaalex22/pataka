@@ -1,7 +1,7 @@
 'use client'
 
 import { useT } from '@/lib/i18n'
-import { VenueMapSvg } from './VenueMapSvg'
+import { VenueMapImage } from './VenueMapImage'
 
 /** Light map surface used inside the dark app. */
 export function VenueMapCard({
@@ -47,7 +47,7 @@ export function VenueMapCard({
       )}
 
       <div className={compact ? 'px-2 pb-2 pt-1.5' : 'px-3 pt-2'}>
-        <VenueMapSvg
+        <VenueMapImage
           variant={variant}
           title={t('venue.title')}
           description={t('venue.caption')}
