@@ -1,6 +1,6 @@
 'use client'
 
-import { Canvas, useThree } from '@react-three/fiber'
+import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber'
 import { OrbitControls, PerformanceMonitor } from '@react-three/drei'
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
@@ -117,7 +117,7 @@ function Seats({
       dummy.updateMatrix()
       pads.setMatrixAt(index, dummy.matrix)
 
-      dummy.position.set(seat.x, seat.y + 0.95 + lift, seat.z + 0.42)
+      dummy.position.set(seat.x, seat.y + 0.78 + lift, seat.z + 0.42)
       dummy.updateMatrix()
       backs.setMatrixAt(index, dummy.matrix)
 
@@ -135,28 +135,38 @@ function Seats({
     if (backs.instanceColor) backs.instanceColor.needsUpdate = true
   }, [seats, selectedId, hovered, highlightCategory, dummy, color])
 
+  const handlePointerMove = (event: ThreeEvent<PointerEvent>) => {
+    event.stopPropagation()
+    if (event.instanceId !== undefined && event.instanceId !== hovered) setHovered(event.instanceId)
+  }
+  const handlePointerOut = () => setHovered(null)
+  const handleClick = (event: ThreeEvent<MouseEvent>) => {
+    event.stopPropagation()
+    if (dragStateRef?.current.dragging) return
+    if (event.instanceId !== undefined) onSelect(seats[event.instanceId])
+  }
+
   return (
     <group>
       <instancedMesh
         ref={padsRef}
         args={[undefined, undefined, seats.length]}
-        onPointerMove={(event) => {
-          event.stopPropagation()
-          if (event.instanceId !== undefined && event.instanceId !== hovered) setHovered(event.instanceId)
-        }}
-        onPointerOut={() => setHovered(null)}
-        onClick={(event) => {
-          event.stopPropagation()
-          if (dragStateRef?.current.dragging) return
-          if (event.instanceId !== undefined) onSelect(seats[event.instanceId])
-        }}
+        onPointerMove={handlePointerMove}
+        onPointerOut={handlePointerOut}
+        onClick={handleClick}
       >
         <boxGeometry args={[0.78, 0.24, 0.78]} />
         <meshStandardMaterial roughness={0.5} metalness={0.15} />
       </instancedMesh>
 
-      <instancedMesh ref={backsRef} args={[undefined, undefined, seats.length]} raycast={() => null}>
-        <boxGeometry args={[0.78, 0.52, 0.14]} />
+      <instancedMesh
+        ref={backsRef}
+        args={[undefined, undefined, seats.length]}
+        onPointerMove={handlePointerMove}
+        onPointerOut={handlePointerOut}
+        onClick={handleClick}
+      >
+        <boxGeometry args={[0.78, 0.4, 0.14]} />
         <meshStandardMaterial roughness={0.6} metalness={0.1} />
       </instancedMesh>
     </group>

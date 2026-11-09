@@ -33,30 +33,40 @@ async function main() {
     await desktop.waitForTimeout(1500)
     await clickFirstEnabled(desktop, /Masuk ke Plaza|Enter the Plaza/)
     await desktop.waitForSelector('canvas', { timeout: 30000 })
-    await desktop.waitForTimeout(3000)
+    await desktop.waitForTimeout(1200)
+    // Compose the venue from the orbit camera instead of the player's eye.
+    await clickFirstEnabled(desktop, /Putar|Orbit/)
+    // Let the camera reset finish and the intro hint fade before capturing.
+    await desktop.waitForTimeout(6000)
     await desktop.screenshot({ path: path.join(outDir, 'venue.png') })
     console.log('wrote', path.join(outDir, 'venue.png'))
 
-    await desktop.goto(`${base}/book`, { waitUntil: 'domcontentloaded' })
-    await desktop.waitForTimeout(1000)
-    await clickFirstEnabled(desktop, /Pilih|Choose/)
+    // Full-bleed seat proof from the 3D world: open the map, pick a mid-row
+    // CAT 1 seat near the centre line, then switch to the eye-level preview.
     await desktop.getByRole('button', { name: /Peta|Map/ }).click()
+    await desktop.locator('[data-seat-id]').first().waitFor({ timeout: 10000 })
     const seat = await desktop.evaluate(async () => {
       const seats = await (await fetch('/api/seats')).json()
-      const available = seats.filter((item) => item.status === 'available')
+      const available = seats.filter((item) => item.status === 'available' && item.y === 0)
+      const cat1 = available.filter((item) => item.categoryKey === 'CAT1')
+      const pool = cat1.length > 0 ? cat1 : available
+      const target = { x: 0, z: 3.9 }
       return (
-        available.find((item) => Math.abs(item.x) < 2 && Math.abs(item.z) < 2) ??
-        available[0] ??
-        null
+        pool
+          .slice()
+          .sort((a, b) => {
+            const da = (a.x - target.x) ** 2 + (a.z - target.z) ** 2
+            const db = (b.x - target.x) ** 2 + (b.z - target.z) ** 2
+            return da - db
+          })[0] ?? null
       )
     })
     if (!seat) throw new Error('No available seat found; run npm run db:demo first')
     await desktop.locator(`[data-seat-id="${seat.id}"]`).click()
     await desktop.getByRole('button', { name: /Lihat dari kursi|Preview from seat/ }).click()
-    await desktop.waitForSelector('canvas', { timeout: 30000 })
     await desktop.waitForTimeout(5000)
     await desktop.screenshot({ path: path.join(outDir, 'seat-view.png') })
-    console.log('wrote', path.join(outDir, 'seat-view.png'))
+    console.log('wrote', path.join(outDir, 'seat-view.png'), `(${seat.id})`)
 
     await desktop.goto(`${base}/admin`, { waitUntil: 'domcontentloaded' })
     await desktop.waitForTimeout(500)

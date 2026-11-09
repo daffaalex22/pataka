@@ -49,6 +49,13 @@ export function PaymentStep({
           <span className="text-2xl font-semibold text-accent">{formatIdr(totalIdr, lang)}</span>
         </div>
 
+        <div className="mt-2 flex items-center justify-between text-xs">
+          <span className="text-muted">{t('summary.hold')}</span>
+          <span className={`font-mono font-medium ${countdown.expired ? 'text-red-300' : 'text-amber-200'}`}>
+            {countdown.formatted}
+          </span>
+        </div>
+
         <div className="mt-4 grid gap-2">
           {METHODS.map((option) => (
             <button

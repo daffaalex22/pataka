@@ -18,8 +18,8 @@ const PRODUCT_PROOF = [
   {
     src: '/deck/venue.png',
     alt: 'Pataka 3D venue at Sawarga Courtyard',
-    label: 'Venue 3D + karakter',
-    caption: 'Plaza malam Sawarga Courtyard; joystick di ponsel, WASD di desktop.',
+    label: 'Venue 3D · kamera orbit',
+    caption: 'Plaza malam Sawarga Courtyard: panggung, tribun, signage, dan taman dalam satu pandangan.',
   },
   {
     src: '/deck/seat-view.png',

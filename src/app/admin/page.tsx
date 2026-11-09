@@ -86,7 +86,9 @@ export default function AdminPage() {
           >
             {checking ? t('common.loading') : t('admin.enter')}
           </button>
-          <p className="mt-4 text-center text-[11px] text-muted">{t('admin.demoHint')}</p>
+          {(process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_DEMO_MODE === 'true') && (
+            <p className="mt-4 text-center text-[11px] text-muted">{t('admin.demoHint')}</p>
+          )}
         </form>
       </div>
     )

@@ -91,6 +91,7 @@ export function useBookingFlow(options: { eventPollMs?: number } = {}) {
       })
       if (res.status === 201) {
         const order = (await res.json()) as { orderCode: string; totalIdr: number }
+        saveTicket(order.orderCode)
         setOrder(order.orderCode, order.totalIdr)
         setStep('summary')
       } else if (res.status === 409) {

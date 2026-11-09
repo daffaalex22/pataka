@@ -225,9 +225,11 @@ export function WorldView() {
         />
       )}
 
-      <p className="pointer-events-none absolute inset-x-0 bottom-2 z-10 text-center text-[10px] text-white/45">
-        {mode === 'walk' ? t('seat.walkHint') : t('seat.dragHint')}
-      </p>
+      {!previewSeat && !overlayOpen && !mapOpen && !boothOpen && !boardDetailOpen && (
+        <p className="pointer-events-none absolute inset-x-0 bottom-2 z-10 text-center text-[10px] text-white/45">
+          {mode === 'walk' ? t('seat.walkHint') : t('seat.dragHint')}
+        </p>
+      )}
 
       <StepOverlay open={formOpen} onBack={() => setStep('seat')}>
         <FormStep

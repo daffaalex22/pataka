@@ -1,10 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { LangToggle } from '@/components/ui/LangToggle'
+import { useCountdown } from '@/components/ui/useCountdown'
+import { PaymentStep } from '@/components/visitor/PaymentStep'
 import { useLang, useT } from '@/lib/i18n'
 import { saveTicket } from '@/lib/ticketStore'
 import { formatEventDate, formatIdr, type EventInfo } from '@/lib/types'
@@ -15,6 +17,8 @@ type Ticket = {
   status: 'pending' | 'paid' | 'cancelled'
   paymentMethod: string | null
   totalIdr: number
+  holdExpiresAt: string | null
+  holdActive: boolean
   seatLabel: string
   categoryName: string
   categoryNameEn: string
@@ -30,6 +34,7 @@ const METHOD_LABELS: Record<string, string> = {
 
 export function ETicketClient() {
   const { code } = useParams<{ code: string }>()
+  const router = useRouter()
   const { lang } = useLang()
   const t = useT()
   const [ticket, setTicket] = useState<Ticket | null>(null)
@@ -37,6 +42,10 @@ export function ETicketClient() {
   const [notFound, setNotFound] = useState(false)
   const [copied, setCopied] = useState(false)
   const [emailState, setEmailState] = useState<'idle' | 'sending' | 'sent' | 'not_configured' | 'failed'>('idle')
+  const [paying, setPaying] = useState(false)
+  const [payError, setPayError] = useState<string | null>(null)
+  const [holdLost, setHoldLost] = useState(false)
+  const holdCountdown = useCountdown(ticket?.holdExpiresAt ?? null)
 
   useEffect(() => {
     if (!code) return
@@ -71,6 +80,45 @@ export function ETicketClient() {
       setEmailState('failed')
     }
   }
+
+  const refreshTicket = async (orderCode: string) => {
+    try {
+      const res = await fetch(`/api/orders/${encodeURIComponent(orderCode)}`)
+      if (res.ok) setTicket((await res.json()) as Ticket)
+    } catch {
+      // the payment call already told us the outcome; the next visit refetches
+    }
+  }
+
+  const payPending = async (method: 'ewallet' | 'va' | 'qrpay') => {
+    if (!ticket) return
+    setPaying(true)
+    setPayError(null)
+    try {
+      const res = await fetch(`/api/orders/${encodeURIComponent(ticket.orderCode)}/pay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method }),
+      })
+      if (res.ok) {
+        saveTicket(ticket.orderCode)
+        await refreshTicket(ticket.orderCode)
+      } else if (res.status === 409) {
+        setHoldLost(true)
+        setPayError(t('error.holdExpired'))
+        await refreshTicket(ticket.orderCode)
+      } else {
+        setPayError(t('error.generic'))
+      }
+    } catch {
+      setPayError(t('error.generic'))
+    } finally {
+      setPaying(false)
+    }
+  }
+
+  const pendingExpired =
+    ticket?.status === 'pending' && (holdLost || !ticket.holdActive || holdCountdown.expired)
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 pb-16 sm:px-6">
@@ -109,12 +157,43 @@ export function ETicketClient() {
         </div>
       )}
 
-      {ticket && ticket.status === 'pending' && (
+      {ticket && ticket.status === 'pending' && !pendingExpired && (
+        <div className="mt-6">
+          <div className="panel flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.16em] text-amber-300">{t('summary.statusPending')}</p>
+              <p className="mt-1 text-sm font-medium">
+                {ticket.seatLabel} · {lang === 'id' ? ticket.categoryName : ticket.categoryNameEn}
+              </p>
+            </div>
+            <p className="font-mono text-xs text-muted">{ticket.orderCode}</p>
+          </div>
+          <p className="mt-3 text-sm text-muted">{t('eticket.pendingBody')}</p>
+          <div className="mt-4">
+            <PaymentStep
+              totalIdr={ticket.totalIdr}
+              holdExpiresAt={ticket.holdExpiresAt}
+              paying={paying}
+              error={payError}
+              onBack={() => router.push('/tickets')}
+              onPay={payPending}
+            />
+          </div>
+        </div>
+      )}
+
+      {ticket && ticket.status === 'pending' && pendingExpired && (
         <div className="panel mt-10 rounded-2xl p-8 text-center">
-          <p className="text-sm uppercase tracking-[0.16em] text-amber-300">{t('summary.statusPending')}</p>
-          <p className="mt-2 text-lg font-medium">{ticket.orderCode}</p>
-          <Link href="/" className="mt-3 inline-block text-sm text-accent hover:underline">
-            {t('eticket.backHome')} →
+          <p className="text-sm uppercase tracking-[0.16em] text-red-300">{t('eticket.expiredTitle')}</p>
+          <p className="mt-2 text-sm leading-relaxed text-muted">{t('eticket.expiredBody')}</p>
+          <p className="mt-2 font-mono text-xs text-muted">
+            {ticket.seatLabel} · {ticket.orderCode}
+          </p>
+          <Link
+            href="/"
+            className="mt-5 inline-block rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-black transition hover:brightness-110"
+          >
+            {t('eticket.chooseSeat')} →
           </Link>
         </div>
       )}

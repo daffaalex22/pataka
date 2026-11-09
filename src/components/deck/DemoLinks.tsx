@@ -30,7 +30,7 @@ export function DemoLinks() {
           rel="noreferrer"
           className="rounded-full border border-line px-6 py-3 text-sm font-medium text-muted transition hover:border-white/30 hover:text-foreground"
         >
-          Panel Panitia (demo: panitia2026)
+          Panel Panitia
         </a>
       </div>
       {url && (
