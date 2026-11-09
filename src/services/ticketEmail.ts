@@ -20,6 +20,10 @@ type OrderRow = {
   status: string
   seat_label: string
   event_name: string
+  starts_at: string
+  venue: string
+  category_name: string
+  total_idr: number
 }
 
 /** Loads the data needed to email an e-ticket link for an order. */
@@ -31,7 +35,11 @@ export async function loadTicketEmail(
   const rows = await db.query<OrderRow>(
     `SELECT o.name, o.email, o.status,
             s.id AS seat_label,
-            e.name AS event_name
+            e.name AS event_name,
+            e.starts_at,
+            e.venue,
+            c.name AS category_name,
+            o.total_idr
      FROM orders o
      JOIN seats s ON s.id = o.seat_id
      JOIN ticket_categories c ON c.id = s.category_id
@@ -49,8 +57,12 @@ export async function loadTicketEmail(
       to: order.email,
       name: order.name,
       eventName: order.event_name,
+      eventDateIso: new Date(order.starts_at).toISOString(),
+      venue: order.venue,
       seatLabel: order.seat_label,
+      categoryName: order.category_name,
       orderCode: code,
+      totalIdr: Number(order.total_idr),
       ticketUrl: `${origin}/eticket/${encodeURIComponent(code)}`,
     },
   }

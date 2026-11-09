@@ -2,8 +2,12 @@ export type TicketEmail = {
   to: string
   name: string
   eventName: string
+  eventDateIso: string
+  venue: string
   seatLabel: string
+  categoryName: string
   orderCode: string
+  totalIdr: number
   ticketUrl: string
 }
 
