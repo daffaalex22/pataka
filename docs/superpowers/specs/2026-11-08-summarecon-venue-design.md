@@ -40,7 +40,3 @@ Decisions from the post-build review with the product owner:
 3. The ticket booth and LED board get a subtle pulsing base ring (emissive, no new lights) and the booth a floating KETUK · TAP tag, so both read as tappable on touch devices.
 4. The LED board is clickable and opens a detail overlay: event name, date, venue, description, and per-category price/availability in both languages; the world pauses while open.
 5. Seat selection was confirmed working end-to-end (the reported issue was machine lag); only the entry hint changes to lead with "tap any seat to book".
-
-## Camera-relative movement addendum (2026-11-09)
-
-The walk controls are camera-relative, Genshin/Zelda-style: forward is always "away from the camera", back turns the character to walk toward the camera, and left/right are screen-relative. The raw input vector is rotated by the camera's horizontal look angle each frame via a pure helper; the character still turns to face its movement, the camera still trails the heading, drag-look still overrides while held and recenters while walking. The default north-facing view produces byte-identical vectors to the previous compass-absolute behavior.
