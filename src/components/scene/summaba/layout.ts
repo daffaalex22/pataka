@@ -11,7 +11,7 @@ export type Rect = { minX: number; maxX: number; minZ: number; maxZ: number }
 
 export const WORLD = {
   bounds: { minX: -48, maxX: 48, minZ: -40, maxZ: 40 },
-  courtyard: { minX: -22, maxX: 22, minZ: -18, maxZ: 20 },
+  courtyard: { minX: -22, maxX: 22, minZ: -18, maxZ: 23 },
   stage: { x: 0, z: -13, width: 24, depth: 9 },
   stageObstacle: { minX: -15, maxX: 15, minZ: -18, maxZ: -8.5 },
   ringNorth: { minX: -48, maxX: 48, minZ: -40, maxZ: -18, height: 11 },
@@ -33,7 +33,27 @@ export const WORLD = {
   liveMusic: { x: 16, z: 27 },
   lobbyCaang: { x: 26, z: 22 },
   spawn: { x: 0, z: 19 },
+  /**
+   * Walkway behind the last seat row (row Q pads at z 17.7, backs at 18.3).
+   * Both structures face the plaza centre (0, 0, 2) and stay clear of seats.
+   */
+  southEdge: {
+    board: { x: -9, z: 22, rotationY: 2.72, halfWidth: 2.8, halfDepth: 0.3 },
+    booth: { x: 9, z: 22, rotationY: -2.72, halfWidth: 1.8, halfDepth: 0.9 },
+  },
 } as const
+
+/**
+ * Courtyard trees. Side rows hug the balcony edge; the back row sits behind
+ * the booth and board so it frames the south walkway without blocking them.
+ * Kept off the stair ramps (x ±18..21, z 14..20).
+ */
+export const TREES: [number, number][] = [
+  [20.5, -13], [20.5, -7], [20.5, -1], [20.5, 5], [20.5, 11], [20.5, 13],
+  [-20.5, -13], [-20.5, -7], [-20.5, -1], [-20.5, 5], [-20.5, 11], [-20.5, 13],
+  [-18, 24.8], [-15, 24.8], [-2.5, 24.8], [2.5, 24.8], [15, 24.8], [18, 24.8],
+  [-18, -15], [18, -15],
+]
 
 const BALCONIES: Rect[] = [
   {

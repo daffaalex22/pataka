@@ -2,14 +2,7 @@
 
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-
-// Trees hug the courtyard edge, clear of the seat field (|x| <= 16, z -7.3..17.7).
-const TREES: [number, number][] = [
-  [20.5, -13], [20.5, -7], [20.5, -1], [20.5, 5], [20.5, 11], [20.5, 16],
-  [-20.5, -13], [-20.5, -7], [-20.5, -1], [-20.5, 5], [-20.5, 11], [-20.5, 16],
-  [-18, 18.8], [-15, 18.8], [-6, 18.8], [6, 18.8], [12, 18.8], [18, 18.8],
-  [-18, -15], [18, -15],
-]
+import { TREES } from './layout'
 
 const HEDGES: [number, number][] = [
   [-16, 19.6], [-12, 19.6], [-4, 19.6], [4, 19.6], [12, 19.6], [16, 19.6],

@@ -6,6 +6,7 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useT } from '@/lib/i18n'
 import { formatEventDate, type Category, type EventInfo, type Lang } from '@/lib/types'
+import { WORLD } from '@/components/scene/summaba/layout'
 import { useSignage } from '@/components/scene/summaba/signage'
 
 function drawFittedText(
@@ -155,8 +156,8 @@ export function Board({
 
   return (
     <group
-      position={[-9, 0, 19]}
-      rotation-y={2.3}
+      position={[WORLD.southEdge.board.x, 0, WORLD.southEdge.board.z]}
+      rotation-y={WORLD.southEdge.board.rotationY}
       scale={hovered ? 1.03 : 1}
       onPointerOver={(event_) => {
         if (!onTap) return
@@ -254,7 +255,11 @@ export function Booth({
         onTap()
       }}
     >
-      <group position={[9, 0, 19]} rotation-y={-2.3} scale={hovered ? 1.05 : 1}>
+      <group
+        position={[WORLD.southEdge.booth.x, 0, WORLD.southEdge.booth.z]}
+        rotation-y={WORLD.southEdge.booth.rotationY}
+        scale={hovered ? 1.05 : 1}
+      >
       <mesh position={[0, 0.55, 0]}>
         <boxGeometry args={[3, 1.1, 1]} />
         <meshStandardMaterial color="#1a1426" roughness={0.5} metalness={0.3} />
@@ -282,7 +287,12 @@ export function Booth({
       <PulseRing position={[0, 0.02, 0]} radius={1.8} />
       <pointLight position={[0, 1.9, 1.1]} intensity={10} distance={10} color="#f5c542" />
       </group>
-      {tapTag && <BillboardTag texture={tapTag} position={[9, 3.55, 19]} />}
+      {tapTag && (
+        <BillboardTag
+          texture={tapTag}
+          position={[WORLD.southEdge.booth.x, 3.55, WORLD.southEdge.booth.z]}
+        />
+      )}
     </group>
   )
 }

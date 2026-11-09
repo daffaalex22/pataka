@@ -39,9 +39,9 @@ export function DowntownWalk() {
 
   return (
     <group>
-      {/* Paving */}
-      <mesh rotation-x={-Math.PI / 2} position={[0, 0.03, 31]}>
-        <planeGeometry args={[76, 18]} />
+      {/* Paving — starts behind the south walkway tree line at z 24 */}
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0.03, 32]}>
+        <planeGeometry args={[76, 16]} />
         <meshStandardMaterial color="#141020" roughness={0.9} metalness={0.05} />
       </mesh>
 
