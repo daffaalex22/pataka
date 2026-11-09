@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { floorHeightAt, resolveWalkable, targetFloorHeight, clearCameraPosition } from '@/components/scene/summaba/layout'
 import { hasMoved, recenterLookYaw } from '@/components/scene/lookYaw'
+import { isMovingAway, nextFollowYaw, resolveMoveInput } from '@/components/scene/inputSpace'
 
 export type MoveVector = { x: number; y: number }
 export type KeysState = Record<string, boolean>
@@ -20,11 +21,14 @@ export function Character({
   keysRef,
   characterRef,
   paused = false,
+  scripted = false,
 }: {
   moveRef: React.RefObject<MoveVector>
   keysRef: React.RefObject<KeysState>
   characterRef: React.RefObject<THREE.Group | null>
   paused?: boolean
+  /** AutoWalk drives `moveRef` in world space; manual input is screen space. */
+  scripted?: boolean
 }) {
   const bodyRef = useRef<THREE.Group>(null)
   const armL = useRef<THREE.Mesh>(null)
@@ -33,9 +37,10 @@ export function Character({
   const legR = useRef<THREE.Mesh>(null)
   const velocity = useMemo(() => new THREE.Vector3(), [])
   const target = useMemo(() => new THREE.Vector3(), [])
+  const camDir = useMemo(() => new THREE.Vector3(), [])
   const walkTime = useRef(0)
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const group = characterRef.current
     if (!group) return
 
@@ -47,7 +52,12 @@ export function Character({
     const inputX = paused ? 0 : stick.x + (keys['d'] || keys['arrowright'] ? 1 : 0) - (keys['a'] || keys['arrowleft'] ? 1 : 0)
     const inputZ = paused ? 0 : -stick.y + (keys['s'] || keys['arrowdown'] ? 1 : 0) - (keys['w'] || keys['arrowup'] ? 1 : 0)
 
-    target.set(inputX, 0, inputZ)
+    // Arrows/joystick are screen space: rotate by the camera yaw so "down"
+    // always walks toward the viewer, whatever way the camera faces.
+    state.camera.getWorldDirection(camDir)
+    const camYaw = Math.atan2(camDir.x, camDir.z)
+    const world = resolveMoveInput(inputX, inputZ, camYaw, scripted)
+    target.set(world.x, 0, world.z)
     if (target.lengthSq() > 1) target.normalize()
     const speed = 7
     target.multiplyScalar(speed)
@@ -133,21 +143,27 @@ export function FollowCamera({
   characterRef,
   lookYawRef,
   pitchRef,
+  scripted = false,
 }: {
   characterRef: React.RefObject<THREE.Group | null>
   lookYawRef: React.RefObject<number>
   pitchRef: React.RefObject<number>
+  /** AutoWalk steers in world space: always realign behind the route. */
+  scripted?: boolean
 }) {
   const camera = useThree((state) => state.camera)
   const desired = useMemo(() => new THREE.Vector3(), [])
   const lookAt = useMemo(() => new THREE.Vector3(), [])
   const lastPosition = useMemo(() => new THREE.Vector3(Number.NaN, 0, 0), [])
+  const followYawRef = useRef<number | null>(null)
 
   useFrame((_, delta) => {
     const character = characterRef.current
     if (!character) return
 
     const dt = Math.min(delta, 0.1)
+    const stepX = character.position.x - lastPosition.x
+    const stepZ = character.position.z - lastPosition.z
     const moved = hasMoved(lastPosition.x, lastPosition.z, character.position.x, character.position.z, dt)
     lastPosition.set(character.position.x, 0, character.position.z)
 
@@ -156,7 +172,17 @@ export function FollowCamera({
     lookYawRef.current = yaw
     pitchRef.current = pitch
 
-    const facing = character.rotation.y + yaw
+    // Walk away from the camera and it eases back behind the movement
+    // direction; walk toward it (or sideways) and it holds its yaw and backs
+    // away instead of orbiting. Scripted walks always follow the route.
+    if (followYawRef.current === null) followYawRef.current = character.rotation.y
+    const viewYaw = followYawRef.current + yaw // includes the drag-look offset
+    const moveYaw = Math.atan2(stepX, stepZ)
+    const movingAway = moved && (scripted || isMovingAway(stepX, stepZ, viewYaw))
+    const followYaw = nextFollowYaw(followYawRef.current, moveYaw, movingAway, dt)
+    followYawRef.current = followYaw
+
+    const facing = followYaw + yaw
     const sin = Math.sin(facing)
     const cos = Math.cos(facing)
     const horiz = 6.6 * Math.cos(pitch)
