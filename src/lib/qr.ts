@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
+import { toBuffer } from 'qrcode'
 
 function secret() {
   const value = process.env.CHECKIN_SECRET
@@ -18,6 +19,17 @@ function sign(orderCode: string) {
 /** Signed QR payload: PTK|<orderCode>|<hmac16> — check-in validates the signature offline. */
 export function qrPayload(orderCode: string): string {
   return `PTK|${orderCode}|${sign(orderCode)}`
+}
+
+/** Renders a QR payload as a base64 PNG for email embedding (dark modules on white). */
+export async function renderQrPngBase64(payload: string): Promise<string> {
+  const buffer = await toBuffer(payload, {
+    errorCorrectionLevel: 'M',
+    width: 360,
+    margin: 2,
+    color: { dark: '#07060d', light: '#ffffff' },
+  })
+  return buffer.toString('base64')
 }
 
 export function parseQrPayload(payload: string): { orderCode: string } | null {
