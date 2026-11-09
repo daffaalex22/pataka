@@ -5,6 +5,7 @@ export type DeckSlide = {
     | 'users'
     | 'solution'
     | 'product-proof'
+    | 'venue-proof'
     | 'seat-logic'
     | 'technical'
     | 'assumptions'
@@ -64,8 +65,17 @@ export const DECK_SLIDES: readonly DeckSlide[] = [
       'Ini produknya. Di kiri atas, venue 3D: pengunjung bisa berjalan sebagai karakter atau melihat seluruh plaza. Di kanan atas, pratinjau dari kursi: kamera turun ke ketinggian mata dan menghadap panggung. Di kiri bawah, e-ticket dengan QR bertanda tangan. Di kanan bawah, panel panitia: penjualan, kursi, pesanan, check-in, dan ekspor CSV. Semua dalam satu aplikasi.',
   },
   {
-    id: 'seat-logic',
+    id: 'venue-proof',
     number: '05',
+    kicker: 'DENAH ASLI',
+    title: 'Dari denah asli ke venue 3D.',
+    subtitle: 'From the real floor plan to the 3D venue.',
+    notes:
+      'Kami tidak mengarang venue. Denah Summarecon Lantai Dasar menjadi acuan: Sawarga Courtyard ditandai, tiga atrium menjadi akses utama, dan pengunjung dari luar kota bisa berorientasi sebelum berangkat. Venue 3D adalah cara kami membuat lokasi nyata itu terasa sebelum tiket dibeli.',
+  },
+  {
+    id: 'seat-logic',
+    number: '06',
     kicker: 'LOGIKA KURSI',
     title: 'Anti double-booking, bukan sekadar janji.',
     subtitle: 'Seat locking that actually locks.',
@@ -74,7 +84,7 @@ export const DECK_SLIDES: readonly DeckSlide[] = [
   },
   {
     id: 'technical',
-    number: '06',
+    number: '07',
     kicker: 'TEKNIS',
     title: 'Cepat di ponsel, kuat di belakang.',
     subtitle: 'Fast on a phone, solid underneath.',
@@ -83,7 +93,7 @@ export const DECK_SLIDES: readonly DeckSlide[] = [
   },
   {
     id: 'assumptions',
-    number: '07',
+    number: '08',
     kicker: 'ASUMSI',
     title: 'Asumsi yang jelas, penilaian yang adil.',
     subtitle: 'Clear assumptions, fair judging.',
@@ -92,7 +102,7 @@ export const DECK_SLIDES: readonly DeckSlide[] = [
   },
   {
     id: 'impact',
-    number: '08',
+    number: '09',
     kicker: 'MANFAAT',
     title: 'Yang berubah bagi pengunjung dan panitia.',
     subtitle: 'What changes for visitors and organizers.',
@@ -101,7 +111,7 @@ export const DECK_SLIDES: readonly DeckSlide[] = [
   },
   {
     id: 'close',
-    number: '09',
+    number: '10',
     kicker: 'DEMO',
     title: 'Satu kursi, satu pemilik. Coba sendiri.',
     subtitle: 'One seat, one owner. Try it yourself.',

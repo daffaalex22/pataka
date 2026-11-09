@@ -8,15 +8,15 @@ import {
 } from '@/lib/deck'
 
 describe('DECK_SLIDES', () => {
-  it('has 10 slides with unique ids', () => {
-    expect(DECK_SLIDE_COUNT).toBe(10)
-    expect(DECK_SLIDES).toHaveLength(10)
-    expect(new Set(DECK_SLIDES.map((slide) => slide.id)).size).toBe(10)
+  it('has 11 slides with unique ids', () => {
+    expect(DECK_SLIDE_COUNT).toBe(11)
+    expect(DECK_SLIDES).toHaveLength(11)
+    expect(new Set(DECK_SLIDES.map((slide) => slide.id)).size).toBe(11)
   })
 
   it('starts at the cover and ends at the close', () => {
     expect(DECK_SLIDES[0].id).toBe('cover')
-    expect(DECK_SLIDES[9].id).toBe('close')
+    expect(DECK_SLIDES[10].id).toBe('close')
   })
 
   it('has a title, subtitle, and notes for every slide', () => {

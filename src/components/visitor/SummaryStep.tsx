@@ -1,6 +1,7 @@
 'use client'
 
 import { useCountdown } from '@/components/ui/useCountdown'
+import { VenueMapCard } from '@/components/venue/VenueMapCard'
 import { useLang, useT } from '@/lib/i18n'
 import { formatIdr, type Seat } from '@/lib/types'
 
@@ -65,6 +66,8 @@ export function SummaryStep({
         </dl>
 
         <p className="mt-4 text-xs leading-relaxed text-muted">{t('summary.note')}</p>
+
+        <VenueMapCard variant="compact" className="mt-4" />
 
         <button
           type="button"

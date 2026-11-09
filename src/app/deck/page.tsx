@@ -3,6 +3,7 @@ import { DemoLinks } from '@/components/deck/DemoLinks'
 import { DeckChrome } from '@/components/deck/DeckChrome'
 import { DeckSlide } from '@/components/deck/DeckSlide'
 import { ProductProof } from '@/components/deck/ProductProof'
+import { VenueMapSvg } from '@/components/venue/VenueMapSvg'
 import { DECK_SLIDES } from '@/lib/deck'
 
 function Card({ label, body }: { label: string; body: string }) {
@@ -138,6 +139,41 @@ export default function DeckPage() {
         </DeckSlide>
 
         <DeckSlide slide={DECK_SLIDES[5]}>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="overflow-hidden rounded-2xl border border-line bg-[#f7f5f0] p-3">
+              <VenueMapSvg
+                title="Denah Summarecon Mall Bandung"
+                description="Denah skematis Lantai Dasar dengan Sawarga Courtyard ditandai."
+              />
+              <p className="mt-2 px-1 text-[11px] text-[#6b6b6b]">
+                Berdasarkan denah Summarecon Mall Bandung · Ground Floor
+              </p>
+            </div>
+            <div className="relative min-h-[260px] overflow-hidden rounded-2xl border border-line bg-black/40">
+              <Image
+                src="/deck/venue.png"
+                alt="Pataka 3D venue at Sawarga Courtyard"
+                fill
+                unoptimized
+                sizes="(min-width: 1024px) 45vw, 100vw"
+                className="object-cover"
+              />
+            </div>
+          </div>
+          <div className="mt-4 grid gap-2 text-sm text-muted sm:grid-cols-3">
+            <p className="rounded-xl border border-line px-4 py-3">
+              Lokasi nyata: Sawarga Courtyard di Lantai Dasar, bukan venue fiktif.
+            </p>
+            <p className="rounded-xl border border-line px-4 py-3">
+              Akses jelas lewat tiga atrium: Ciunik, Cibadak, dan Cileutik.
+            </p>
+            <p className="rounded-xl border border-line px-4 py-3">
+              Pengunjung luar kota bisa berorientasi sebelum berangkat.
+            </p>
+          </div>
+        </DeckSlide>
+
+        <DeckSlide slide={DECK_SLIDES[6]}>
           <div className="grid gap-3 lg:grid-cols-2">
             <div className="panel rounded-2xl p-5">
               <p className="text-sm font-semibold">Tiga status, satu sumber kebenaran</p>
@@ -175,7 +211,7 @@ export default function DeckPage() {
           </div>
         </DeckSlide>
 
-        <DeckSlide slide={DECK_SLIDES[6]}>
+        <DeckSlide slide={DECK_SLIDES[7]}>
           <div className="grid gap-3 sm:grid-cols-2">
             <Card
               label="Next.js 16 + React Three Fiber"
@@ -201,7 +237,7 @@ export default function DeckPage() {
           </div>
         </DeckSlide>
 
-        <DeckSlide slide={DECK_SLIDES[7]}>
+        <DeckSlide slide={DECK_SLIDES[8]}>
           <div className="panel overflow-hidden rounded-2xl">
             <table className="w-full text-sm">
               <tbody>
@@ -225,7 +261,7 @@ export default function DeckPage() {
           </div>
         </DeckSlide>
 
-        <DeckSlide slide={DECK_SLIDES[8]}>
+        <DeckSlide slide={DECK_SLIDES[9]}>
           <div className="grid gap-3 sm:grid-cols-2">
             <Card
               label="Pengunjung lebih yakin"
@@ -253,7 +289,7 @@ export default function DeckPage() {
           </div>
         </DeckSlide>
 
-        <DeckSlide slide={DECK_SLIDES[9]} variant="closing">
+        <DeckSlide slide={DECK_SLIDES[10]} variant="closing">
           <p className="max-w-2xl text-sm leading-relaxed text-muted">
             Buka prototype di ponsel: pilih kategori → jelajahi venue 3D → kunci kursi → bayar simulasi → e-ticket QR.
             Lalu masuk panel panitia dan pindai tiket.

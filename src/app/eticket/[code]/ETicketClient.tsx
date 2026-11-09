@@ -7,6 +7,8 @@ import { QRCodeSVG } from 'qrcode.react'
 import { LangToggle } from '@/components/ui/LangToggle'
 import { useCountdown } from '@/components/ui/useCountdown'
 import { PaymentStep } from '@/components/visitor/PaymentStep'
+import { VenueMapCard } from '@/components/venue/VenueMapCard'
+import { VenueMapDialog } from '@/components/venue/VenueMapDialog'
 import { useLang, useT } from '@/lib/i18n'
 import { saveTicket } from '@/lib/ticketStore'
 import { formatEventDate, formatIdr, type EventInfo } from '@/lib/types'
@@ -45,6 +47,7 @@ export function ETicketClient() {
   const [paying, setPaying] = useState(false)
   const [payError, setPayError] = useState<string | null>(null)
   const [holdLost, setHoldLost] = useState(false)
+  const [mapOpen, setMapOpen] = useState(false)
   const holdCountdown = useCountdown(ticket?.holdExpiresAt ?? null)
 
   useEffect(() => {
@@ -316,8 +319,14 @@ export function ETicketClient() {
               <p className="mt-0.5 text-xs leading-relaxed text-muted">{t('eticket.reminderBody')}</p>
             </div>
           </div>
+
+          <div className="mt-4">
+            <VenueMapCard variant="full" onEnlarge={() => setMapOpen(true)} />
+          </div>
         </div>
       )}
+
+      <VenueMapDialog open={mapOpen} onClose={() => setMapOpen(false)} />
     </div>
   )
 }
