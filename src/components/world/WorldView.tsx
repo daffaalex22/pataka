@@ -33,7 +33,7 @@ const PlazaScene = dynamic(() => import('@/components/scene/PlazaScene'), {
   loading: () => <WorldLoading />,
 })
 
-export function WorldView() {
+export function WorldView({ onExit }: { onExit: () => void }) {
   const t = useT()
   const { lang } = useLang()
   const { data, seats, busy, error, loadSeats, setError, handleHold, handleOrder, handlePay } = useBookingFlow({
@@ -187,6 +187,7 @@ export function WorldView() {
         mapOpen={mapOpen}
         onToggleMap={() => setMapOpen((open) => !open)}
         hint={hint}
+        onExit={onExit}
       />
 
       {mode === 'walk' && !overlayOpen && !mapOpen && !previewSeat && !boothOpen && !boardDetailOpen && (

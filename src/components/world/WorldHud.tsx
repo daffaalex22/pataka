@@ -12,6 +12,7 @@ export function WorldHud({
   mapOpen,
   onToggleMap,
   hint,
+  onExit,
 }: {
   mode: 'walk' | 'orbit'
   onMode: (mode: 'walk' | 'orbit') => void
@@ -19,6 +20,7 @@ export function WorldHud({
   mapOpen: boolean
   onToggleMap: () => void
   hint: string | null
+  onExit: () => void
 }) {
   const t = useT()
 
@@ -26,10 +28,18 @@ export function WorldHud({
     <>
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 p-4 pt-[max(1rem,env(safe-area-inset-top))]">
         <div className="pointer-events-auto flex items-center gap-3">
-          <span className="flex items-center gap-2 text-sm font-semibold tracking-[0.22em]">
+          <Link
+            href="/"
+            onClick={(event) => {
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return
+              event.preventDefault()
+              onExit()
+            }}
+            className="focus-ring -my-3 flex items-center gap-2 py-3 text-sm font-semibold tracking-[0.22em] transition-colors hover:text-accent"
+          >
             PATAKA
             <span aria-hidden className="size-1.5 rounded-full bg-accent" />
-          </span>
+          </Link>
           <Link href="/deck" className="hidden text-xs text-white/50 transition hover:text-white sm:block">
             {t('common.deck')}
           </Link>

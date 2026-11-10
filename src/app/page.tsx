@@ -33,7 +33,7 @@ export default function Home() {
   }, [])
 
   if (phase === 'world') {
-    return <WorldView />
+    return <WorldView onExit={() => setPhase('splash')} />
   }
 
   return (
