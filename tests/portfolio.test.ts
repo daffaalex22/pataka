@@ -50,6 +50,11 @@ describe('buildPortfolio', () => {
     expect(result.settlement.netIdr).toBe(live.revenueIdr - result.settlement.platformFeeIdr)
   })
 
+  it('reports how many sample events are included in the totals', () => {
+    const result = buildPortfolio(live)
+    expect(result.totals.sampleCount).toBe(SAMPLE_EVENTS.length)
+  })
+
   it('labels sources and does not mutate inputs', () => {
     const sampleCount = SAMPLE_EVENTS.length
     const result = buildPortfolio(live)

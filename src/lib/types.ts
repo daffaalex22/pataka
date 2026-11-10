@@ -129,6 +129,7 @@ export interface PortfolioEvent {
 
 export interface PortfolioTotals {
   events: number
+  sampleCount: number
   capacity: number
   sold: number
   occupancyPct: number

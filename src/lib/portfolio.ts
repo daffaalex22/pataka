@@ -104,6 +104,7 @@ export function buildPortfolio(live: PortfolioEvent): PortfolioResponse {
 
   const totals: PortfolioTotals = {
     events: events.length,
+    sampleCount: samples.length,
     capacity: events.reduce((sum, event) => sum + event.capacity, 0),
     sold: events.reduce((sum, event) => sum + event.sold, 0),
     occupancyPct: 0,

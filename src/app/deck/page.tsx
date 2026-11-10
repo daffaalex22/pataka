@@ -112,7 +112,7 @@ export default function DeckPage() {
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             <Card label="Kejelasan" body="Status kursi sama di semua layar: denah, ringkasan, dan dashboard." />
             <Card label="Kecepatan" body="Pemesanan selesai dalam hitungan menit, check-in dalam hitungan detik." />
-            <Card label="Kepercayaan" body="Tidak ada kursi ganda; QR tidak bisa dipakai dua kali; angka mall sama dengan angka panitia." />
+            <Card label="Kepercayaan" body="Tidak ada kursi ganda; QR tidak bisa dipakai dua kali; angka acara live sama dengan angka panitia." />
           </div>
         </DeckSlide>
 
@@ -252,7 +252,7 @@ export default function DeckPage() {
                   ['Pemesanan', 'Satu kursi per pesanan; kursi ditahan 10 menit sebelum dibayar.'],
                   ['Pembayaran', 'Simulasi (e-wallet, VA, QRIS); tidak ada transaksi atau data kartu nyata.'],
                   ['Notifikasi', 'Email/WhatsApp dan pengingat disimulasikan; kalender .ics berfungsi.'],
-                  ['Data', 'Seluruh peserta dan transaksi adalah data contoh fiktif. Baris acara lain di Operasi Mall juga data contoh; angka acara live dihitung dari database.'],
+                  ['Data', 'Seluruh peserta dan transaksi adalah data contoh fiktif. Baris acara lain di Operasi Mall juga data contoh; angka acara live dihitung dari database. KPI portofolio di Operasi Mall menjumlahkan acara live dan acara contoh.'],
                   ['Operasi mall', 'Peran (mall/organizer/gate) dan settlement adalah model operasi pada demo, bukan fitur produksi.'],
                   ['Denah', 'Tata letak kursi ditetapkan per acara; panitia mengatur harga, kuota, dan periode jual.'],
                 ].map(([key, value]) => (

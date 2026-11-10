@@ -44,7 +44,7 @@ export const DECK_SLIDES: readonly DeckSlide[] = [
     title: 'Tiga pengguna, satu kebenaran data.',
     subtitle: 'Three users, one source of truth.',
     notes:
-      'Ada tiga pengguna. Pengunjung membuka link dari ponsel dan ingin yakin kursinya tidak mengecewakan. Panitia mengatur kuota, harga, dan periode jual, lalu memantau kursi, transaksi, dan kehadiran. Pengelola mall melihat okupansi, pendapatan, dan check-in lintas acara — dan memastikan satu proses untuk semua ruang. Ketiganya butuh kejelasan status, kecepatan alur, dan kepercayaan bahwa angka mall sama dengan angka panitia.',
+      'Ada tiga pengguna. Pengunjung membuka link dari ponsel dan ingin yakin kursinya tidak mengecewakan. Panitia mengatur kuota, harga, dan periode jual, lalu memantau kursi, transaksi, dan kehadiran. Pengelola mall melihat okupansi, pendapatan, dan check-in lintas acara — dan memastikan satu proses untuk semua ruang. Ketiganya butuh kejelasan status, kecepatan alur, dan kepercayaan bahwa angka acara live sama dengan angka panitia.',
   },
   {
     id: 'solution',
@@ -98,7 +98,7 @@ export const DECK_SLIDES: readonly DeckSlide[] = [
     title: 'Asumsi yang jelas, penilaian yang adil.',
     subtitle: 'Clear assumptions, fair judging.',
     notes:
-      'Supaya penilaiannya adil, ini asumsinya. Acara: konser malam penutupan Bandung Innovation Week 2026, 14 November, di Sawarga Courtyard. Kapasitas 446 kursi bernomor: VIP Depan 48, CAT 1 128, Tribun 120, Reguler 150. Harga Rp 350 ribu sampai Rp 1,5 juta. Satu kursi per pesanan, ditahan sepuluh menit. Pembayaran, email, dan WhatsApp disimulasikan; kalender .ics berfungsi. Semua data adalah contoh fiktif. Baris acara lain di Operasi Mall juga data contoh; angka acara live dihitung dari database. Peran dan settlement adalah model operasi pada demo, bukan fitur produksi.',
+      'Supaya penilaiannya adil, ini asumsinya. Acara: konser malam penutupan Bandung Innovation Week 2026, 14 November, di Sawarga Courtyard. Kapasitas 446 kursi bernomor: VIP Depan 48, CAT 1 128, Tribun 120, Reguler 150. Harga Rp 350 ribu sampai Rp 1,5 juta. Satu kursi per pesanan, ditahan sepuluh menit. Pembayaran, email, dan WhatsApp disimulasikan; kalender .ics berfungsi. Semua data adalah contoh fiktif. Baris acara lain di Operasi Mall juga data contoh; angka acara live dihitung dari database. KPI portofolio di Operasi Mall menjumlahkan acara live dan acara contoh. Peran dan settlement adalah model operasi pada demo, bukan fitur produksi.',
   },
   {
     id: 'impact',

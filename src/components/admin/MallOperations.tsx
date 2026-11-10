@@ -115,6 +115,10 @@ export function MallOperations({ adminKey }: { adminKey: string }) {
           </div>
         ))}
       </div>
+      <p className="mt-2 text-[11px] text-muted">
+        {t('admin.mall.totalsScope')}{' '}
+        <span className="font-medium text-foreground">{portfolio.totals.sampleCount}</span>
+      </p>
 
       <div className="panel mt-5 rounded-2xl p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -186,19 +190,27 @@ export function MallOperations({ adminKey }: { adminKey: string }) {
                 <td className="px-4 py-3 text-muted">{lang === 'id' ? event.space : event.spaceEn}</td>
                 <td className="px-4 py-3 text-muted">{formatShortDate(event.startsAt, lang)}</td>
                 <td className="px-4 py-3">
-                  <span className={`whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] ${STAGE_TONE[event.stage]}`}>
+                  <span
+                    className={`whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] ${STAGE_TONE[event.stage]} ${
+                      event.source === 'sample' ? 'opacity-70' : ''
+                    }`}
+                  >
                     {stageLabels[event.stage]}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-muted">
                   {event.sold}/{event.capacity}
                 </td>
-                <td className="px-4 py-3">{event.revenueIdr === 0 ? '—' : formatIdr(event.revenueIdr, lang)}</td>
+                <td className={`px-4 py-3 ${event.source === 'sample' ? 'text-muted' : ''}`}>
+                  {event.revenueIdr === 0 ? '—' : formatIdr(event.revenueIdr, lang)}
+                </td>
                 <td className="px-4 py-3 text-muted">{event.checkedIn}</td>
                 <td className="px-4 py-3">
                   <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide ${
-                      event.source === 'live' ? 'bg-accent/15 text-accent' : 'bg-white/5 text-muted'
+                    className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${
+                      event.source === 'live'
+                        ? 'border-accent/30 bg-accent/15 text-accent'
+                        : 'border-line bg-white/5 text-muted'
                     }`}
                   >
                     {t(event.source === 'live' ? 'admin.mall.live' : 'admin.mall.sampleBadge')}
@@ -226,6 +238,7 @@ export function MallOperations({ adminKey }: { adminKey: string }) {
 
         <div className="panel rounded-2xl p-4">
           <h3 className="text-sm font-semibold">{t('admin.mall.settlementTitle')}</h3>
+          <p className="mt-1 text-[11px] text-muted">{t('admin.mall.settlementScope')}</p>
           <dl className="mt-3 space-y-2 text-sm">
             <div className="flex items-center justify-between gap-3">
               <dt className="text-muted">{t('admin.mall.gross')}</dt>
