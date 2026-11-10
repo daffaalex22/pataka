@@ -78,6 +78,12 @@ async function main() {
     await desktop.screenshot({ path: path.join(outDir, 'admin.png') })
     console.log('wrote', path.join(outDir, 'admin.png'))
 
+    await desktop.getByRole('button', { name: /Operasi Mall|Mall operations/ }).click()
+    await desktop.getByText(/Portofolio acara|Event portfolio/).first().waitFor({ timeout: 20000 })
+    await desktop.waitForTimeout(1000)
+    await desktop.screenshot({ path: path.join(outDir, 'mall-operations.png') })
+    console.log('wrote', path.join(outDir, 'mall-operations.png'))
+
     const ticket = await browser.newPage({ viewport: { width: 900, height: 900 } })
     await ticket.goto(`${base}/admin`, { waitUntil: 'domcontentloaded' })
     await ticket.waitForTimeout(500)

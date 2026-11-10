@@ -24,6 +24,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     const stored = window.sessionStorage.getItem('pataka-admin-key')
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- restore the session after mount to avoid an SSR mismatch
     if (stored) setAdminKey(stored)
   }, [])
 

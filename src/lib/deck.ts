@@ -62,7 +62,7 @@ export const DECK_SLIDES: readonly DeckSlide[] = [
     title: 'Ini yang dilihat pengunjung — dan yang dipakai panitia.',
     subtitle: 'What visitors see — and what organizers use.',
     notes:
-      'Ini produknya. Di kiri atas, venue 3D: pengunjung bisa berjalan sebagai karakter atau melihat seluruh plaza. Di kanan atas, pratinjau dari kursi: kamera turun ke ketinggian mata dan menghadap panggung. Di kiri bawah, e-ticket dengan QR bertanda tangan. Di kanan bawah, panel panitia: penjualan, kursi, pesanan, check-in, dan ekspor CSV. Di Demo Day, tab Operasi Mall menambahkan portofolio acara lintas ruang. Semua dalam satu aplikasi.',
+      'Ini produknya. Di kiri atas, venue 3D: pengunjung bisa berjalan sebagai karakter atau melihat seluruh plaza. Di kanan atas, pratinjau dari kursi: kamera turun ke ketinggian mata dan menghadap panggung. Di kiri bawah, e-ticket dengan QR bertanda tangan. Di kanan bawah, Operasi Mall: portofolio acara, okupansi, pendapatan, check-in, dan settlement; panel panitia tetap di tab yang sama. Semua dalam satu aplikasi.',
   },
   {
     id: 'venue-proof',

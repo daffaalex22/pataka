@@ -32,6 +32,14 @@ export function DemoLinks() {
         >
           Panel Panitia
         </a>
+        <a
+          href={url ? `${url}/pilot` : '/pilot'}
+          target="_blank"
+          rel="noreferrer"
+          className="rounded-full border border-line px-6 py-3 text-sm font-medium text-muted transition hover:border-white/30 hover:text-foreground"
+        >
+          Pilot one-pager →
+        </a>
       </div>
       {url && (
         <div className="flex items-center gap-3">

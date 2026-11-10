@@ -533,6 +533,7 @@ export function LangProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = window.localStorage.getItem('pataka-lang')
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- restore the language after mount to avoid an SSR mismatch
     if (stored === 'id' || stored === 'en') setLangState(stored)
   }, [])
 

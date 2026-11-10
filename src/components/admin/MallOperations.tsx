@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { adminFetch } from '@/lib/adminApi'
 import { useLang, useT } from '@/lib/i18n'
-import type { PortfolioEvent, PortfolioResponse, PortfolioStage } from '@/lib/types'
+import type { PortfolioResponse, PortfolioStage } from '@/lib/types'
 import { formatIdr } from '@/lib/types'
 
 const STAGE_TONE: Record<PortfolioStage, string> = {
