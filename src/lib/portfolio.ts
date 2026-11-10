@@ -6,6 +6,8 @@ import type {
   PortfolioTotals,
 } from './types'
 
+export type { PortfolioEvent } from './types'
+
 export const MALL_SPACES: MallSpace[] = [
   { id: 'sawarga', name: 'Sawarga Courtyard', nameEn: 'Sawarga Courtyard' },
   { id: 'ciunik', name: 'Atrium Ciunik', nameEn: 'Atrium Ciunik' },
