@@ -10,7 +10,7 @@ import type { Category, EventInfo, Seat } from '@/lib/types'
 type EventResponse = { event: EventInfo; categories: Category[] }
 
 /**
- * Shared booking flow wiring used by both `/book` (classic mode) and the world
+ * Shared booking flow wiring used by both `/book` (direct booking) and the world
  * entry page. Reads and writes the `useBooking` store; callers own the seats
  * polling interval and the live-seat-sync effect.
  */

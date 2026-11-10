@@ -12,7 +12,7 @@ const id = {
   'common.home': 'Beranda',
 
   'splash.enter': 'Masuk ke Plaza',
-  'splash.classic': 'Mode klasik',
+  'splash.direct': 'Pesan langsung',
   'splash.loading': 'Menyiapkan plaza…',
   'world.hint': 'Ketuk kursi mana pun untuk memesan — atau jelajahi plaza',
   'world.lookHint': 'Geser untuk melihat sekeliling',
@@ -38,6 +38,7 @@ const id = {
   'hero.secondary': 'Lihat kategori tiket',
   'hero.venueLabel': 'Lokasi',
   'hero.dateLabel': 'Jadwal',
+  'hero.fromLabel': 'Mulai dari',
 
   'home.ticketsTitle': 'Pilih kelas tiketmu',
   'home.ticketsSub': 'Harga jelas, sisa kursi diperbarui langsung dari sistem.',
@@ -225,7 +226,7 @@ const en: Record<DictKey, string> = {
   'common.home': 'Home',
 
   'splash.enter': 'Enter the Plaza',
-  'splash.classic': 'Classic mode',
+  'splash.direct': 'Book directly',
   'splash.loading': 'Preparing the plaza…',
   'world.hint': 'Tap any seat to book — or explore the plaza',
   'world.lookHint': 'Drag to look around',
@@ -251,6 +252,7 @@ const en: Record<DictKey, string> = {
   'hero.secondary': 'Browse ticket tiers',
   'hero.venueLabel': 'Venue',
   'hero.dateLabel': 'Schedule',
+  'hero.fromLabel': 'From',
 
   'home.ticketsTitle': 'Choose your ticket tier',
   'home.ticketsSub': 'Clear pricing, live remaining seats from the system.',

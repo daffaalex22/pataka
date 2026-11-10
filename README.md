@@ -67,7 +67,7 @@ Optional ticket email: set `RESEND_API_KEY` and `EMAIL_FROM` to send e-ticket li
 
 1. Open `/` (splash → 3D plaza), visit the ticket booth or tap a seat directly,
    hit **Walk to seat** to see the stage from your seat, then hold it, fill
-   sample details and pay. No WebGL? “Classic mode” (`/book`) still works, and
+   sample details and pay. No WebGL? Direct booking (`/book`) still works, and
    purchased tickets stay recoverable at `/tickets` on the same device.
 2. The e-ticket shows a signed QR. Open `/admin` → **Check-in** and scan it
    (or paste the payload) — the first scan is VALID, the second is ALREADY USED.

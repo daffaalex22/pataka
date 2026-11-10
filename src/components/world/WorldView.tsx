@@ -150,7 +150,7 @@ export function WorldView() {
                 href="/book"
                 className="rounded-full bg-accent px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110"
               >
-                {t('splash.classic')} →
+                {t('splash.direct')} →
               </Link>
             </div>
           }
