@@ -24,27 +24,27 @@ export const DECK_SLIDES: readonly DeckSlide[] = [
     number: '00',
     kicker: 'BANDUNG BUILD CHALLENGE 2026',
     title: 'Pataka',
-    subtitle: 'Pick your concert seat inside the 3D venue.',
+    subtitle: 'Ticketing for mall events — from one concert to a venue calendar.',
     notes:
-      'Halo, saya Dare dari Tim Pataka. Pataka adalah pengalaman ticketing 3D untuk konser malam di Sawarga Courtyard, Summarecon Mall Bandung. Dalam empat menit, saya akan menunjukkan bagaimana pengunjung memilih kursi dengan yakin, dan bagaimana panitia menjaga satu kursi tetap satu pemilik.',
+      'Halo, saya Dare dari Tim Pataka. Pataka adalah pengalaman ticketing untuk acara mall — mulai dari konser malam di Sawarga Courtyard, sampai portofolio acara di seluruh venue. Dalam empat menit, saya akan menunjukkan bagaimana pengunjung memilih kursi dengan yakin, bagaimana panitia menjaga satu kursi tetap satu pemilik, dan bagaimana mall melihat seluruh acara dalam satu dasbor.',
   },
   {
     id: 'problem',
     number: '01',
     kicker: 'MASALAH',
-    title: 'Memilih kursi konser masih menebak-nebak.',
-    subtitle: 'Picking a concert seat is still guesswork.',
+    title: 'Acara mall masih jalan di atas spreadsheet dan denah statis.',
+    subtitle: 'Mall events still run on spreadsheets and static maps.',
     notes:
-      'Mulai dari masalahnya. Hari ini, memilih kursi konser masih tebak-tebakan. Pertama, kursi bisa terjual dua kali kalau tidak ada penguncian. Kedua, denah statis tidak menunjukkan apa yang sebenarnya dilihat dari kursi. Ketiga, check-in dan rekap masih manual. Di konser malam Sawarga Courtyard, pengunjung butuh rasa yakin sebelum membayar — dan panitia butuh data yang bisa dipercaya.',
+      'Mulai dari masalahnya. Acara mall masih jalan di atas spreadsheet dan denah statis. Pertama, kursi bisa terjual dua kali kalau tidak ada penguncian. Kedua, check-in dan rekap masih manual. Ketiga, setiap acara punya spreadsheet sendiri, jadi mall tidak bisa melihat okupansi, pendapatan, dan kehadiran dalam satu tempat. Di Sawarga, atrium, dan Downtown Walk, pengunjung butuh rasa yakin — dan mall butuh data yang bisa dipercaya.',
   },
   {
     id: 'users',
     number: '02',
     kicker: 'PENGGUNA',
-    title: 'Dua pengguna, satu kebenaran data.',
-    subtitle: 'Two users, one source of truth.',
+    title: 'Tiga pengguna, satu kebenaran data.',
+    subtitle: 'Three users, one source of truth.',
     notes:
-      'Ada dua pengguna. Pengunjung membuka link dari ponsel dan ingin yakin kursinya tidak mengecewakan. Panitia ingin mengatur kuota, harga, dan periode jual, lalu memantau kursi, transaksi, dan kehadiran. Keduanya butuh tiga hal yang sama: kejelasan status, kecepatan alur, dan kepercayaan bahwa data di layar adalah data yang sama di database.',
+      'Ada tiga pengguna. Pengunjung membuka link dari ponsel dan ingin yakin kursinya tidak mengecewakan. Panitia mengatur kuota, harga, dan periode jual, lalu memantau kursi, transaksi, dan kehadiran. Pengelola mall melihat okupansi, pendapatan, dan check-in lintas acara — dan memastikan satu proses untuk semua ruang. Ketiganya butuh kejelasan status, kecepatan alur, dan kepercayaan bahwa angka mall sama dengan angka panitia.',
   },
   {
     id: 'solution',
@@ -62,7 +62,7 @@ export const DECK_SLIDES: readonly DeckSlide[] = [
     title: 'Ini yang dilihat pengunjung — dan yang dipakai panitia.',
     subtitle: 'What visitors see — and what organizers use.',
     notes:
-      'Ini produknya. Di kiri atas, venue 3D: pengunjung bisa berjalan sebagai karakter atau melihat seluruh plaza. Di kanan atas, pratinjau dari kursi: kamera turun ke ketinggian mata dan menghadap panggung. Di kiri bawah, e-ticket dengan QR bertanda tangan. Di kanan bawah, panel panitia: penjualan, kursi, pesanan, check-in, dan ekspor CSV. Semua dalam satu aplikasi.',
+      'Ini produknya. Di kiri atas, venue 3D: pengunjung bisa berjalan sebagai karakter atau melihat seluruh plaza. Di kanan atas, pratinjau dari kursi: kamera turun ke ketinggian mata dan menghadap panggung. Di kiri bawah, e-ticket dengan QR bertanda tangan. Di kanan bawah, panel panitia: penjualan, kursi, pesanan, check-in, dan ekspor CSV. Di Demo Day, tab Operasi Mall menambahkan portofolio acara lintas ruang. Semua dalam satu aplikasi.',
   },
   {
     id: 'venue-proof',
@@ -98,25 +98,25 @@ export const DECK_SLIDES: readonly DeckSlide[] = [
     title: 'Asumsi yang jelas, penilaian yang adil.',
     subtitle: 'Clear assumptions, fair judging.',
     notes:
-      'Supaya penilaiannya adil, ini asumsinya. Acara: konser malam penutupan Bandung Innovation Week 2026, 14 November, di Sawarga Courtyard. Kapasitas 446 kursi bernomor: VIP Depan 48, CAT 1 128, Tribun 120, Reguler 150. Harga Rp 350 ribu sampai Rp 1,5 juta. Satu kursi per pesanan, ditahan sepuluh menit. Pembayaran, email, dan WhatsApp disimulasikan; kalender .ics berfungsi. Semua data adalah contoh fiktif.',
+      'Supaya penilaiannya adil, ini asumsinya. Acara: konser malam penutupan Bandung Innovation Week 2026, 14 November, di Sawarga Courtyard. Kapasitas 446 kursi bernomor: VIP Depan 48, CAT 1 128, Tribun 120, Reguler 150. Harga Rp 350 ribu sampai Rp 1,5 juta. Satu kursi per pesanan, ditahan sepuluh menit. Pembayaran, email, dan WhatsApp disimulasikan; kalender .ics berfungsi. Semua data adalah contoh fiktif. Baris acara lain di Operasi Mall juga data contoh; angka acara live dihitung dari database. Peran dan settlement adalah model operasi pada demo, bukan fitur produksi.',
   },
   {
     id: 'impact',
     number: '09',
     kicker: 'MANFAAT',
-    title: 'Yang berubah bagi pengunjung dan panitia.',
-    subtitle: 'What changes for visitors and organizers.',
+    title: 'Yang berubah bagi pengunjung, panitia, dan mall.',
+    subtitle: 'What changes for visitors, organizers, and the mall.',
     notes:
-      'Dampaknya ada empat. Pengunjung lebih yakin karena melihat pemandangan panggung sebelum membayar. Tidak ada kursi ganda karena penguncian terjadi di database. Check-in lebih cepat karena QR langsung memberi keputusan. Dan panitia mendapat keputusan berbasis data dari dasbor dan ekspor CSV. Langkah berikutnya: zona festival berdiri, refund mandiri, WhatsApp sungguhan, payment gateway, dan multi-acara.',
+      'Dampaknya ada empat. Pengunjung lebih yakin karena melihat pemandangan panggung sebelum membayar. Tidak ada kursi ganda karena penguncian terjadi di database. Check-in lebih cepat karena QR langsung memberi keputusan. Dan mall melihat seluruh portofolio: okupansi, pendapatan, dan kehadiran per acara dan per ruang. Modelnya: pilot satu acara di Sawarga, lalu kalender mall — platform fee plus per-ticket fee atau revenue share. KPI pilot: sell-through, check-in time, nol double-booking, rekonsiliasi 100 persen. Roadmap: multi-acara, peran, refund, settlement.',
   },
   {
     id: 'close',
     number: '10',
     kicker: 'DEMO',
-    title: 'Satu kursi, satu pemilik. Coba sendiri.',
-    subtitle: 'One seat, one owner. Try it yourself.',
+    title: 'Mulai dari satu acara. Jalankan kalender mall.',
+    subtitle: "Start with one event. Run the mall's calendar.",
     notes:
-      'Satu kursi, satu pemilik. Silakan coba sendiri: buka prototype di ponsel, pilih kategori, jelajahi venue 3D, kunci kursi, bayar simulasi, dan lihat e-ticket QR. Lalu masuk panel panitia dan pindai tiket. Kalau waktu memungkinkan, saya akan menunjukkan dua browser berebut kursi yang sama — dan hanya satu yang menang. Terima kasih.',
+      'Mulai dari satu acara. Jalankan kalender mall. Silakan coba sendiri: buka prototype di ponsel, pilih kategori, jelajahi venue 3D, kunci kursi, bayar simulasi, dan lihat e-ticket QR. Lalu masuk panel panitia dan tab Operasi Mall untuk melihat portofolio. Kalau waktu memungkinkan, saya akan menunjukkan dua browser berebut kursi yang sama — dan hanya satu yang menang. Terima kasih.',
   },
 ]
 

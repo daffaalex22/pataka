@@ -65,7 +65,7 @@ export default function DeckPage() {
           }
         >
           <p className="max-w-2xl text-2xl leading-snug text-foreground/90 sm:text-3xl">
-            Pilih kursi konser dari dalam venue 3D.
+            Pilih kursi dari dalam venue 3D. Kelola seluruh acara mall dari satu dasbor.
           </p>
           <div className="mt-8 space-y-1 text-sm text-muted">
             <p>Dare · Demo Day, 15 November 2026 · Summarecon Mall Bandung</p>
@@ -80,22 +80,22 @@ export default function DeckPage() {
               body="Pemesanan tanpa penguncian membuat dua pengunjung bisa membayar kursi yang sama."
             />
             <Card
-              label="Denah statis tidak menunjukkan pandangan"
-              body="Pengunjung tidak tahu apa yang mereka lihat: tertutup tribun, terlalu jauh, atau di sudut."
-            />
-            <Card
               label="Check-in dan rekap manual"
               body="Panitia mencatat kehadiran dengan daftar cetak; rawan salah dan lambat saat antrean masuk."
             />
+            <Card
+              label="Tidak ada pandangan lintas acara"
+              body="Setiap acara punya spreadsheet sendiri; mall tidak bisa melihat okupansi, pendapatan, dan kehadiran dalam satu tempat."
+            />
           </div>
           <p className="mt-6 max-w-3xl text-sm leading-relaxed text-muted">
-            Peluangnya: konser malam terbuka di Sawarga Courtyard — pengunjung butuh rasa yakin sebelum membeli,
-            panitia butuh data yang bisa dipercaya.
+            Satu sistem untuk semua acara di Sawarga, atrium, dan Downtown Walk — pengunjung butuh rasa yakin,
+            mall butuh data yang bisa dipercaya.
           </p>
         </DeckSlide>
 
         <DeckSlide slide={DECK_SLIDES[2]}>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-3">
             <Card
               label="Pengunjung acara"
               body="Membuka link dari ponsel, membandingkan kategori, memilih kursi, dan berharap tidak ada kejutan saat tiba."
@@ -104,11 +104,15 @@ export default function DeckPage() {
               label="Panitia"
               body="Mengatur kuota, harga, dan periode jual; memantau kursi dan transaksi; memindai QR; mengunduh laporan."
             />
+            <Card
+              label="Pengelola mall"
+              body="Melihat okupansi, pendapatan, dan check-in lintas acara; memastikan satu proses untuk semua ruang."
+            />
           </div>
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             <Card label="Kejelasan" body="Status kursi sama di semua layar: denah, ringkasan, dan dashboard." />
             <Card label="Kecepatan" body="Pemesanan selesai dalam hitungan menit, check-in dalam hitungan detik." />
-            <Card label="Kepercayaan" body="Tidak ada kursi ganda; QR tidak bisa dipakai dua kali." />
+            <Card label="Kepercayaan" body="Tidak ada kursi ganda; QR tidak bisa dipakai dua kali; angka mall sama dengan angka panitia." />
           </div>
         </DeckSlide>
 
@@ -248,7 +252,8 @@ export default function DeckPage() {
                   ['Pemesanan', 'Satu kursi per pesanan; kursi ditahan 10 menit sebelum dibayar.'],
                   ['Pembayaran', 'Simulasi (e-wallet, VA, QRIS); tidak ada transaksi atau data kartu nyata.'],
                   ['Notifikasi', 'Email/WhatsApp dan pengingat disimulasikan; kalender .ics berfungsi.'],
-                  ['Data', 'Seluruh peserta dan transaksi adalah data contoh fiktif.'],
+                  ['Data', 'Seluruh peserta dan transaksi adalah data contoh fiktif. Baris acara lain di Operasi Mall juga data contoh; angka acara live dihitung dari database.'],
+                  ['Operasi mall', 'Peran (mall/organizer/gate) dan settlement adalah model operasi pada demo, bukan fitur produksi.'],
                   ['Denah', 'Tata letak kursi ditetapkan per acara; panitia mengatur harga, kuota, dan periode jual.'],
                 ].map(([key, value]) => (
                   <tr key={key} className="border-b border-line/60 last:border-0">
@@ -276,15 +281,22 @@ export default function DeckPage() {
               body="Pemindaian QR langsung memberi keputusan valid/tidak dan mencatat kehadiran tanpa rekap manual."
             />
             <Card
-              label="Keputusan berbasis data"
-              body="Dasbor dan ekspor CSV memberi panitia angka pendaftar, penjualan, dan kehadiran saat itu juga."
+              label="Mall melihat seluruh portofolio"
+              body="Okupansi, pendapatan, dan kehadiran per acara dan per ruang — bukan spreadsheet terpisah."
             />
           </div>
-          <div className="mt-6">
-            <p className="text-sm font-semibold">Langkah berikutnya</p>
-            <p className="mt-1.5 text-sm leading-relaxed text-muted">
-              Zona festival berdiri, pembatalan mandiri dan refund, pengingat WhatsApp sungguhan, integrasi payment
-              gateway, serta multi-acara untuk pengelola venue.
+          <div className="mt-6 grid gap-2 text-sm text-muted sm:grid-cols-2 lg:grid-cols-4">
+            <p className="rounded-xl border border-line px-4 py-3">
+              <span className="font-semibold text-foreground">Pilot:</span> satu acara di Sawarga → kalender mall.
+            </p>
+            <p className="rounded-xl border border-line px-4 py-3">
+              <span className="font-semibold text-foreground">Model:</span> platform fee + per-ticket fee atau revenue share.
+            </p>
+            <p className="rounded-xl border border-line px-4 py-3">
+              <span className="font-semibold text-foreground">KPI pilot:</span> sell-through, check-in time, 0 double-booking, rekonsiliasi 100%.
+            </p>
+            <p className="rounded-xl border border-line px-4 py-3">
+              <span className="font-semibold text-foreground">Roadmap:</span> multi-acara, peran, refund, settlement.
             </p>
           </div>
         </DeckSlide>
@@ -292,7 +304,7 @@ export default function DeckPage() {
         <DeckSlide slide={DECK_SLIDES[10]} variant="closing">
           <p className="max-w-2xl text-sm leading-relaxed text-muted">
             Buka prototype di ponsel: pilih kategori → jelajahi venue 3D → kunci kursi → bayar simulasi → e-ticket QR.
-            Lalu masuk panel panitia dan pindai tiket.
+            Lalu masuk panel panitia, pindai tiket, dan buka tab Operasi Mall untuk melihat portofolio.
           </p>
           <div className="mt-4 max-w-2xl rounded-2xl border border-line bg-white/[0.03] p-4">
             <p className="text-sm font-semibold">Live demo: dua browser, satu kursi.</p>
