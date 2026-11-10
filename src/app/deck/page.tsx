@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { DemoLinks } from '@/components/deck/DemoLinks'
 import { DeckChrome } from '@/components/deck/DeckChrome'
 import { DeckSlide } from '@/components/deck/DeckSlide'
@@ -311,6 +312,14 @@ export default function DeckPage() {
             <p className="mt-1 text-sm text-muted">Satu menang; yang lain menerima 409.</p>
           </div>
           <p className="mt-3 text-xs text-muted">Jika demo gagal, gunakan screenshot di slide 04.</p>
+          <div className="mt-4">
+            <Link
+              href="/pilot"
+              className="inline-flex rounded-full border border-line px-5 py-2.5 text-sm font-medium text-muted transition hover:border-white/30 hover:text-foreground"
+            >
+              Pilot one-pager →
+            </Link>
+          </div>
           <DemoLinks />
         </DeckSlide>
       </main>
