@@ -1,4 +1,5 @@
 import type {
+  AdminStats,
   MallSpace,
   PortfolioEvent,
   PortfolioResponse,
@@ -7,6 +8,14 @@ import type {
 } from './types'
 
 export type { PortfolioEvent } from './types'
+
+export interface PortfolioEventRow {
+  id: number
+  name: string
+  nameEn: string
+  venue: string
+  startsAt: string
+}
 
 export const MALL_SPACES: MallSpace[] = [
   { id: 'sawarga', name: 'Sawarga Courtyard', nameEn: 'Sawarga Courtyard' },
@@ -69,6 +78,24 @@ export const SAMPLE_EVENTS: PortfolioEvent[] = [
 
 export function occupancyPct(sold: number, capacity: number): number {
   return capacity === 0 ? 0 : Math.round((sold / capacity) * 100)
+}
+
+export function buildLivePortfolioEvent(event: PortfolioEventRow, stats: AdminStats): PortfolioEvent {
+  return {
+    id: `live-${event.id}`,
+    name: event.name,
+    nameEn: event.nameEn,
+    spaceId: 'sawarga',
+    space: 'Sawarga Courtyard',
+    spaceEn: 'Sawarga Courtyard',
+    startsAt: event.startsAt,
+    stage: 'check_in',
+    capacity: stats.categories.reduce((sum, category) => sum + category.quota, 0),
+    sold: stats.orders.paid,
+    revenueIdr: stats.orders.revenueIdr,
+    checkedIn: stats.orders.checkedIn,
+    source: 'live',
+  }
 }
 
 export function buildPortfolio(live: PortfolioEvent): PortfolioResponse {
