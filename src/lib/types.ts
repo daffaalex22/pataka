@@ -7,6 +7,11 @@ export interface Category {
   name: string
   nameEn: string
   priceIdr: number
+  listPriceIdr: number
+  autoDiscountIdr: number
+  autoDiscountName: string | null
+  autoDiscountNameEn: string | null
+  autoDiscountPercent: number | null
   colorHex: string
   sortOrder: number
   quota: number
@@ -42,6 +47,11 @@ export interface Seat {
   categoryName: string
   categoryNameEn: string
   priceIdr: number
+  listPriceIdr: number
+  autoDiscountIdr: number
+  autoDiscountName: string | null
+  autoDiscountNameEn: string | null
+  autoDiscountPercent: number | null
   colorHex: string
 }
 

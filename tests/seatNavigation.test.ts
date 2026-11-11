@@ -17,6 +17,11 @@ function seat(id: string, x: number, z: number, overrides: Partial<Seat> = {}): 
     categoryName: 'CAT 1',
     categoryNameEn: 'CAT 1',
     priceIdr: 900_000,
+    listPriceIdr: 900_000,
+    autoDiscountIdr: 0,
+    autoDiscountName: null,
+    autoDiscountNameEn: null,
+    autoDiscountPercent: null,
     colorHex: '#22d3ee',
     ...overrides,
   }

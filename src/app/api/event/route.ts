@@ -1,11 +1,15 @@
 import { connection } from 'next/server'
 import { getDb } from '@/lib/db'
+import { priceWithPhase } from '@/lib/discounts'
+import { loadActiveDiscounts } from '@/services/discounts'
 import { expireStaleHolds } from '@/services/seats'
 
 export async function GET() {
   await connection()
   const db = await getDb()
   await expireStaleHolds(db)
+  const now = new Date()
+  const rules = await loadActiveDiscounts(db, now)
 
   const events = await db.query<{
     id: number
@@ -58,20 +62,28 @@ export async function GET() {
       description: event.description,
       descriptionEn: event.description_en,
     },
-    categories: categories.map((c) => ({
-      id: c.id,
-      key: c.key,
-      name: c.name,
-      nameEn: c.name_en,
-      priceIdr: c.price_idr,
-      colorHex: c.color_hex,
-      sortOrder: c.sort_order,
-      quota: c.quota,
-      salesOpen: c.sales_open,
-      available: c.available,
-      held: c.held,
-      sold: c.sold,
-      remaining: Math.max(0, c.quota - c.held - c.sold),
-    })),
+    categories: categories.map((c) => {
+      const priced = priceWithPhase(c.price_idr, c.key, rules, now)
+      return {
+        id: c.id,
+        key: c.key,
+        name: c.name,
+        nameEn: c.name_en,
+        priceIdr: priced.subtotalIdr,
+        listPriceIdr: priced.listPriceIdr,
+        autoDiscountIdr: priced.autoDiscountIdr,
+        autoDiscountName: priced.autoDiscountName,
+        autoDiscountNameEn: priced.autoDiscountNameEn,
+        autoDiscountPercent: priced.autoDiscountPercent,
+        colorHex: c.color_hex,
+        sortOrder: c.sort_order,
+        quota: c.quota,
+        salesOpen: c.sales_open,
+        available: c.available,
+        held: c.held,
+        sold: c.sold,
+        remaining: Math.max(0, c.quota - c.held - c.sold),
+      }
+    }),
   })
 }
