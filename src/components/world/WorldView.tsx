@@ -20,6 +20,7 @@ import { SeatViewPanel } from '@/components/world/SeatViewPanel'
 import { StepOverlay } from '@/components/world/StepOverlay'
 import { WorldHud } from '@/components/world/WorldHud'
 import { ChevronRightIcon, XIcon } from '@/components/ui/icons'
+import { useSceneQuality } from '@/components/scene/useSceneQuality'
 import { useLang, useT } from '@/lib/i18n'
 import { useBooking } from '@/lib/store'
 import type { Category, Seat } from '@/lib/types'
@@ -52,9 +53,7 @@ export function WorldView({ onExit }: { onExit: () => void }) {
 
   const [mode, setMode] = useState<'walk' | 'orbit'>('walk')
   const [mapOpen, setMapOpen] = useState(false)
-  const [maxDpr] = useState(() =>
-    typeof window !== 'undefined' && window.innerWidth < 768 ? 1.25 : 1.5,
-  )
+  const [quality, setQuality] = useSceneQuality()
   const moveRef = useRef<MoveVector>({ x: 0, y: 0 })
   const characterRef = useRef<Group | null>(null)
   const [previewSeat, setPreviewSeat] = useState<Seat | null>(null)
@@ -211,7 +210,7 @@ export function WorldView({ onExit }: { onExit: () => void }) {
           mode={mode}
           moveRef={moveRef}
           previewSeat={previewSeat}
-          maxDpr={maxDpr}
+          quality={quality}
           paused={overlayOpen || mapOpen || boothOpen || boardDetailOpen}
           showInteractables={Boolean(data)}
           boardData={data ? { event: data.event, categories: data.categories, lang } : undefined}
@@ -235,6 +234,8 @@ export function WorldView({ onExit }: { onExit: () => void }) {
         mapEnabled
         mapOpen={mapOpen}
         onToggleMap={() => setMapOpen((open) => !open)}
+        quality={quality}
+        onQuality={setQuality}
         hint={seat ? null : hint}
         onExit={onExit}
       />

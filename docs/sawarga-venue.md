@@ -30,6 +30,21 @@ old venue shell is replaced.
 - The event seat proxies/overlay from the playground are **not** copied. The
   real ticketing seats, stage, board and booth are used.
 
+## Render quality
+
+The 3D view has a persisted **Auto / Low / Medium / High** graphics menu
+(`Grafik` in Indonesian). Auto adapts to the device and keeps the
+`PerformanceMonitor` DPR fallback. Low/Medium/High pin the DPR cap and adjust
+the night practicals and environment intensity. Asset resolution is chosen once
+per mount so toggling a preset never rebuilds the venue.
+
+- Auto: mobile → Low assets/render, desktop → Medium assets/render.
+- Low: DPR 1, no balcony practicals, reduced night intensity.
+- Medium: DPR 1.25 desktop / 1.15 mobile.
+- High: DPR up to 2, stronger reflections and practicals.
+
+The preference is stored under `pataka.scene-quality` in `localStorage`.
+
 ## Database migration
 
 The `seats` table stores `x, y, z` and no rotation. The migration is idempotent
@@ -59,13 +74,14 @@ seeds the new positions through `src/lib/seatLayout.ts`.
 ## Verification
 
 ```bash
-npm test                     # 156 tests
+npm test                     # 160 tests
 npm run build
 npm run db:migrate-trib      # once per existing local/preview DB
 npx next start -p 3010       # production check
 node scripts/capture-venue.mjs      # desktop/mobile venue screenshots
 node scripts/capture-venue-walk.mjs # first-person walk screenshot
 node scripts/smoke-venue.mjs        # headed: pick TRIB-B10, walk, seat view
+node scripts/smoke-quality.mjs      # Auto/Low/Medium/High persistence
 ```
 
 Screenshots are written to `artifacts/venue-pass/`. Run the interactive smoke
@@ -80,6 +96,9 @@ test **headed**; software WebGL is too slow for the scripted walk.
 - [Walk to TRIB-B10](../artifacts/venue-pass/desktop-walk-to-trib.png)
 - [Mobile orbit](../artifacts/venue-pass/mobile-orbit.png)
 - [Mobile 2D map](../artifacts/venue-pass/mobile-seat-map.png)
+- [Graphics menu — desktop](../artifacts/venue-pass/quality-menu.png)
+- [Graphics menu — world HUD](../artifacts/venue-pass/quality-menu-world.png)
+- [Graphics menu — mobile](../artifacts/venue-pass/quality-menu-mobile.png)
 
 ## Main branch sync
 
@@ -98,5 +117,6 @@ before merging if `main` moves further.
   the final balcony material direction is chosen.
 - The playground’s Downtown Walk, koi pond and live-music area remain disabled.
 - The event proxies from the playground were not imported; do not re-add them.
+
 
 

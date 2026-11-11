@@ -2,9 +2,11 @@
 
 import Link from 'next/link'
 import { SeatLegend } from '@/components/visitor/SeatLegend'
+import { QualityMenu } from '@/components/scene/QualityMenu'
 import { LangToggle } from '@/components/ui/LangToggle'
 import { MapIcon, RotateIcon, WalkIcon } from '@/components/ui/icons'
 import { useT } from '@/lib/i18n'
+import type { SceneQuality } from '@/lib/sceneQuality'
 
 export function WorldHud({
   mode,
@@ -12,6 +14,8 @@ export function WorldHud({
   mapEnabled,
   mapOpen,
   onToggleMap,
+  quality,
+  onQuality,
   hint,
   onExit,
 }: {
@@ -20,6 +24,8 @@ export function WorldHud({
   mapEnabled: boolean
   mapOpen: boolean
   onToggleMap: () => void
+  quality: SceneQuality
+  onQuality: (quality: SceneQuality) => void
   hint: string | null
   onExit: () => void
 }) {
@@ -109,6 +115,8 @@ export function WorldHud({
             <div className="max-w-full rounded-sm border border-paper/10 bg-ink/70 px-3 py-2">
               <SeatLegend className="justify-end" />
             </div>
+
+            <QualityMenu quality={quality} onChange={onQuality} />
           </div>
         </div>
       </div>

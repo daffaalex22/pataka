@@ -13,6 +13,15 @@ import { Board, Booth } from '@/components/world/Interactables'
 import { LookDrag } from '@/components/scene/LookDrag'
 import { SawargaEnvironment } from '@/components/scene/SawargaEnvironment'
 import { Stage } from '@/components/scene/summaba/Stage'
+import {
+  assetQualityFor,
+  effectiveQuality,
+  isMobileViewport,
+  maxDprForQuality,
+  SCENE_PRESETS,
+  type EffectiveQuality,
+  type SceneQuality,
+} from '@/lib/sceneQuality'
 
 const STATUS_3D: Record<string, string> = {
   available: '#2dd4bf',
@@ -24,7 +33,7 @@ const STATUS_3D: Record<string, string> = {
  * Small procedural night environment so glass, metal, and the paving pick up
  * believable reflections without loading a sky HDRI into the ticketing scene.
  */
-function NightEnvironment() {
+function NightEnvironment({ intensity }: { intensity: number }) {
   const gl = useThree((state) => state.gl)
   const scene = useThree((state) => state.scene)
 
@@ -36,7 +45,6 @@ function NightEnvironment() {
     // supported way to attach image-based lighting.
     // eslint-disable-next-line react-hooks/immutability
     scene.environment = texture
-    scene.environmentIntensity = 0.14
     return () => {
       scene.environment = null
       scene.environmentIntensity = 1
@@ -53,11 +61,23 @@ function NightEnvironment() {
     }
   }, [gl, scene])
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability
+    scene.environmentIntensity = intensity
+  }, [scene, intensity])
+
   return null
 }
 
 
-function Venue() {
+function Venue({
+  quality,
+  assetQuality,
+}: {
+  quality: EffectiveQuality
+  assetQuality: 'low' | 'medium'
+}) {
+  const preset = SCENE_PRESETS[quality]
   const lightPoints = useMemo(() => {
     const points: [number, number, number][] = []
     for (let line = 0; line < 3; line++) {
@@ -90,7 +110,7 @@ function Venue() {
       <color attach="background" args={['#07060d']} />
       <fog attach="fog" args={['#07060d', 55, 130]} />
 
-      <SawargaEnvironment />
+      <SawargaEnvironment quality={assetQuality} />
       <Stage />
 
       {/* string lights */}
@@ -100,13 +120,29 @@ function Venue() {
       </instancedMesh>
 
       {/* moon light */}
-      <ambientLight intensity={0.16} color="#8b83ff" />
-      <hemisphereLight args={['#9fb4ff', '#1a1426', 0.28]} />
-      <directionalLight position={[10, 24, 8]} intensity={0.65} color="#aab8ff" />
+      <ambientLight intensity={preset.ambient} color="#8b83ff" />
+      <hemisphereLight args={['#9fb4ff', '#1a1426', preset.hemisphere]} />
+      <directionalLight position={[10, 24, 8]} intensity={preset.directional} color="#aab8ff" />
       {/* warm practicals: stage wash + the two balcony access ends */}
-      <pointLight position={[0, 8, -11]} intensity={55} distance={55} decay={2} color="#ffd9a2" />
-      <pointLight position={[27, 7.2, 11]} intensity={18} distance={22} decay={2} color="#ffc98a" />
-      <pointLight position={[-27, 7.2, 11]} intensity={18} distance={22} decay={2} color="#ffc98a" />
+      <pointLight position={[0, 8, -11]} intensity={preset.stageWash} distance={55} decay={2} color="#ffd9a2" />
+      {preset.balconyPractical > 0 && (
+        <>
+          <pointLight
+            position={[27, 7.2, 11]}
+            intensity={preset.balconyPractical}
+            distance={22}
+            decay={2}
+            color="#ffc98a"
+          />
+          <pointLight
+            position={[-27, 7.2, 11]}
+            intensity={preset.balconyPractical}
+            distance={22}
+            decay={2}
+            color="#ffc98a"
+          />
+        </>
+      )}
     </group>
   )
 }
@@ -292,7 +328,7 @@ export default function PlazaScene({
   mode = 'orbit',
   moveRef,
   previewSeat = null,
-  maxDpr = 1.5,
+  quality = 'auto',
   paused = false,
   showInteractables = false,
   boardData,
@@ -310,7 +346,7 @@ export default function PlazaScene({
   mode?: 'orbit' | 'walk'
   moveRef?: React.RefObject<MoveVector>
   previewSeat?: Seat | null
-  maxDpr?: number
+  quality?: SceneQuality
   paused?: boolean
   showInteractables?: boolean
   boardData?: { event: EventInfo; categories: Category[]; lang: Lang }
@@ -322,7 +358,19 @@ export default function PlazaScene({
   onAutoWalkCancel?: () => void
   characterRef?: React.RefObject<THREE.Group | null>
 }) {
-  const [dpr, setDpr] = useState(maxDpr)
+  const [isMobile] = useState(() => isMobileViewport())
+  const [deviceDpr] = useState(() =>
+    typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1,
+  )
+  const [assetQuality] = useState(() => assetQualityFor(quality, isMobile))
+  const effective = effectiveQuality(quality, isMobile)
+  const maxDpr = maxDprForQuality(quality, isMobile, deviceDpr)
+  const [dprState, setDprState] = useState<{ quality: SceneQuality; dpr: number }>(() => ({
+    quality,
+    dpr: maxDpr,
+  }))
+  // Derive the current DPR without an effect, so changing presets is immediate.
+  const dpr = dprState.quality === quality ? dprState.dpr : maxDpr
   const internalCharacterRef = useRef<THREE.Group | null>(null)
   const characterRef = externalCharacterRef ?? internalCharacterRef
   const lookYawRef = useRef(0)
@@ -335,15 +383,17 @@ export default function PlazaScene({
       camera={{ position: [20, 17, 20], fov: 55 }}
       gl={{ antialias: true, powerPreference: 'high-performance' }}
     >
-      <PerformanceMonitor
-        onDecline={() => setDpr(1)}
-        onIncline={() => setDpr(maxDpr)}
-        onFallback={() => setDpr(1)}
-      />
+      {quality === 'auto' && (
+        <PerformanceMonitor
+          onDecline={() => setDprState({ quality, dpr: 1 })}
+          onIncline={() => setDprState({ quality, dpr: maxDpr })}
+          onFallback={() => setDprState({ quality, dpr: 1 })}
+        />
+      )}
       <CameraReset mode={mode} />
-      <NightEnvironment />
+      <NightEnvironment intensity={SCENE_PRESETS[effective].envIntensity} />
       <Suspense fallback={null}>
-        <Venue />
+        <Venue quality={effective} assetQuality={assetQuality} />
         <Seats
           seats={seats}
           selectedId={selectedId}
