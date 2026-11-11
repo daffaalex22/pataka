@@ -12,6 +12,10 @@ const STATUS_STYLES: Record<string, string> = {
   cancelled: 'border-red-300/30 bg-red-300/10 text-red-200',
 }
 
+function discountTotal(order: AdminOrder) {
+  return order.autoDiscountIdr + order.promoDiscountIdr
+}
+
 export function OrdersTable({ adminKey }: { adminKey: string }) {
   const { lang } = useLang()
   const t = useT()
@@ -140,6 +144,13 @@ export function OrdersTable({ adminKey }: { adminKey: string }) {
                   {formatIdr(order.totalIdr, lang)} · {order.paymentMethod ?? '—'} ·{' '}
                   {new Date(order.createdAt).toLocaleString('id-ID')}
                 </p>
+                {(order.promoCode || discountTotal(order) > 0) && (
+                  <p className="mt-0.5 text-xs text-emerald-300/80">
+                    {order.promoCode && <span className="font-mono">{order.promoCode}</span>}
+                    {order.promoCode && discountTotal(order) > 0 && ' · '}
+                    {discountTotal(order) > 0 && `−${formatIdr(discountTotal(order), lang)}`}
+                  </p>
+                )}
               </div>
               <div className="flex flex-wrap gap-2">
                 {order.status === 'pending' && (

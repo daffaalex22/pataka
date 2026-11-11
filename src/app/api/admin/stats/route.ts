@@ -16,13 +16,15 @@ export async function GET(req: Request) {
     cancelled: number
     checked_in: number
     revenue: number
+    discount: number
   }>(`
     SELECT count(*)::int AS total,
            count(*) FILTER (WHERE status = 'pending')::int AS pending,
            count(*) FILTER (WHERE status = 'paid')::int AS paid,
            count(*) FILTER (WHERE status = 'cancelled')::int AS cancelled,
            count(*) FILTER (WHERE checked_in_at IS NOT NULL)::int AS checked_in,
-           COALESCE(sum(total_idr) FILTER (WHERE status = 'paid'), 0)::int AS revenue
+           COALESCE(sum(total_idr) FILTER (WHERE status = 'paid'), 0)::int AS revenue,
+           COALESCE(sum(auto_discount_idr + promo_discount_idr) FILTER (WHERE status = 'paid'), 0)::int AS discount
     FROM orders
   `)
 
@@ -63,6 +65,7 @@ export async function GET(req: Request) {
       cancelled: orderStats.cancelled,
       checkedIn: orderStats.checked_in,
       revenueIdr: orderStats.revenue,
+      discountIdr: orderStats.discount,
     },
     seats,
     categories: categories.map((c) => ({

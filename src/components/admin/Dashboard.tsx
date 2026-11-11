@@ -33,12 +33,16 @@ export function Dashboard({ adminKey, onOpenOrders }: { adminKey: string; onOpen
   if (error) return <p className="text-sm text-red-300">{t('error.generic')}</p>
   if (!stats) return <div className="grid gap-3 sm:grid-cols-3">{[0, 1, 2].map((i) => <div key={i} className="panel h-24 animate-pulse rounded-2xl" />)}</div>
 
-  const cards = [
+  const cards: { label: string; value: string; sub?: string }[] = [
     { label: t('admin.stats.registrants'), value: String(stats.orders.total) },
     { label: t('admin.stats.sold'), value: String(stats.orders.paid) },
     { label: t('admin.stats.held'), value: String(stats.seats.held) },
     { label: t('admin.stats.checkedIn'), value: String(stats.orders.checkedIn) },
-    { label: t('admin.stats.revenue'), value: formatIdr(stats.orders.revenueIdr, lang) },
+    {
+      label: t('admin.stats.revenue'),
+      value: formatIdr(stats.orders.revenueIdr, lang),
+      sub: `${t('admin.stats.discount')} ${formatIdr(stats.orders.discountIdr, lang)}`,
+    },
   ]
 
   return (
@@ -48,6 +52,7 @@ export function Dashboard({ adminKey, onOpenOrders }: { adminKey: string; onOpen
           <div key={card.label} className="panel rounded-2xl p-4">
             <p className="text-[11px] uppercase tracking-[0.14em] text-muted">{card.label}</p>
             <p className="mt-1 text-xl font-semibold tracking-tight">{card.value}</p>
+            {card.sub && <p className="mt-0.5 text-[11px] text-muted">{card.sub}</p>}
           </div>
         ))}
       </div>
