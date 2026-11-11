@@ -298,10 +298,12 @@ export function ETicketClient() {
                     <dt className="text-[11px] uppercase tracking-[0.16em] text-muted">{t('eticket.code')}</dt>
                     <dd className="mt-0.5 font-mono font-medium">{ticket.orderCode}</dd>
                   </div>
-                  <div>
-                    <dt className="text-[11px] uppercase tracking-[0.16em] text-muted">{t('discount.listPrice')}</dt>
-                    <dd className="mt-0.5 font-medium">{formatIdr(ticket.listPriceIdr, lang)}</dd>
-                  </div>
+                  {(ticket.autoDiscountIdr > 0 || ticket.promoDiscountIdr > 0) && (
+                    <div>
+                      <dt className="text-[11px] uppercase tracking-[0.16em] text-muted">{t('discount.listPrice')}</dt>
+                      <dd className="mt-0.5 font-medium">{formatIdr(ticket.listPriceIdr, lang)}</dd>
+                    </div>
+                  )}
                   {ticket.autoDiscountIdr > 0 && (
                     <div>
                       <dt className="text-[11px] uppercase tracking-[0.16em] text-muted">

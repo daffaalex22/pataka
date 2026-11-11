@@ -81,6 +81,33 @@ describe('sendTicketEmail', () => {
     expect(body.html).toContain('PATKA10')
   })
 
+  it('omits list-price and discount rows when there is no discount', async () => {
+    const noDiscount: TicketEmail = {
+      ...ticket,
+      autoDiscountIdr: 0,
+      autoDiscountName: null,
+      promoDiscountIdr: 0,
+      promoCode: null,
+      totalIdr: 1_500_000,
+    }
+    const calls: { init: RequestInit }[] = []
+    const fetchImpl = fetchStub((_url, init) => {
+      calls.push({ init })
+      return { ok: true, status: 200 } as Response
+    })
+    await sendTicketEmail(noDiscount, { apiKey: 'key-123', from: 'tickets@pataka.test', fetchImpl })
+    const body = JSON.parse(String(calls[0].init.body)) as { text: string; html: string }
+    const text = body.text.replace(/\u00a0/g, ' ')
+    expect(text).not.toContain('Harga:')
+    expect(text).not.toContain('Early Bird')
+    expect(text).not.toContain('PATKA10')
+    expect(text).toContain('Total: Rp 1.500.000')
+    expect(body.html).not.toContain('Harga')
+    expect(body.html).not.toContain('Early Bird')
+    expect(body.html).not.toContain('PATKA10')
+    expect(body.html).toContain('Total')
+  })
+
   it('escapes hostile input in the html body', async () => {
     const hostile = { ...ticket, name: 'Rina<script>', venue: 'Sawarga"<b>&' }
     const calls: { init: RequestInit }[] = []

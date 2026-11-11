@@ -160,7 +160,8 @@ export async function payOrder(db: SqlDb, code: string, method: string): Promise
                 s.hold_token AS seat_hold_token,
                 (s.hold_expires_at > now()) AS hold_fresh
          FROM orders o JOIN seats s ON s.id = o.seat_id
-         WHERE o.code = $1`,
+         WHERE o.code = $1
+         FOR UPDATE OF o, s`,
         [code],
       )
       if (rows.length === 0) return 'NOT_FOUND'
@@ -253,7 +254,13 @@ export async function confirmPayment(db: SqlDb, code: string): Promise<PayResult
         seat_id: string
         hold_token: string | null
         promo_discount_id: number | null
-      }>('SELECT status, seat_id, hold_token, promo_discount_id FROM orders WHERE code = $1', [code])
+      }>(
+        `SELECT o.status, o.seat_id, o.hold_token, o.promo_discount_id
+         FROM orders o JOIN seats s ON s.id = o.seat_id
+         WHERE o.code = $1
+         FOR UPDATE OF o, s`,
+        [code],
+      )
       if (rows.length === 0) return 'NOT_FOUND'
 
       const order = rows[0]

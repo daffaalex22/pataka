@@ -64,6 +64,12 @@ export function PaymentStep({
                 <dd>−{formatIdr(breakdown.autoDiscountIdr, lang)}</dd>
               </div>
             )}
+            {(breakdown.autoDiscountIdr > 0 || breakdown.promoDiscountIdr > 0) && (
+              <div className="flex items-center justify-between gap-4">
+                <dt className="text-muted">{t('discount.subtotal')}</dt>
+                <dd>{formatIdr(breakdown.subtotalIdr, lang)}</dd>
+              </div>
+            )}
             {breakdown.promoDiscountIdr > 0 && (
               <div className="flex items-center justify-between gap-4 text-emerald-300">
                 <dt>{breakdown.promoCode} · {t('discount.promo')}</dt>

@@ -217,6 +217,41 @@ describe('applyPromoToOrder', () => {
     })
   })
 
+  // PGlite runs on a single connection, so this covers the post-payment guard
+  // sequentially. The row locks in loadPendingOrder/payOrder are what serialize
+  // the real interleaving; this test would fail if apply/clear ignored status.
+  it('keeps a paid order frozen when apply or clear runs after payment', async () => {
+    await seedPhaseAndCode()
+    const order = await holdAndOrder('VIP-A9')
+
+    const applied = await applyPromoToOrder(db, order.orderCode, 'PATKA10')
+    expect(applied.ok).toBe(true)
+    if (!applied.ok) throw new Error(applied.error)
+
+    expect(await payOrder(db, order.orderCode, 'ewallet')).toBe('paid')
+
+    expect(await applyPromoToOrder(db, order.orderCode, 'PATKA10')).toEqual({
+      ok: false,
+      error: 'ORDER_NOT_EDITABLE',
+    })
+    expect(await clearPromoFromOrder(db, order.orderCode)).toEqual({
+      ok: false,
+      error: 'ORDER_NOT_EDITABLE',
+    })
+
+    const [row] = await db.query<{
+      total_idr: number
+      promo_code: string | null
+      promo_discount_idr: number
+    }>('SELECT total_idr, promo_code, promo_discount_idr FROM orders WHERE code = $1', [order.orderCode])
+    expect(row).toEqual({ total_idr: 1_080_000, promo_code: 'PATKA10', promo_discount_idr: 120_000 })
+
+    const [used] = await db.query<{ used_count: number }>(
+      "SELECT used_count FROM discounts WHERE code = 'PATKA10'",
+    )
+    expect(used.used_count).toBe(1)
+  })
+
   it('refuses to reprice an order whose hold has expired', async () => {
     await seedPhaseAndCode()
     const order = await holdAndOrder('VIP-A7')

@@ -215,6 +215,13 @@ type PendingOrderRow = {
   category_key: string
 }
 
+/**
+ * The row locks on the order and its seat are what make "paid orders can never
+ * be repriced" true: payment takes the same locks before committing `paid`, so
+ * apply/clear either sees a committed paid order or wins the race and forces
+ * payment to re-read the new promo snapshot. Never lock the discounts side of
+ * the left join — it is read-only here.
+ */
 async function loadPendingOrder(tx: SqlClient, orderCode: string): Promise<PendingOrderRow | null> {
   const rows = await tx.query<PendingOrderRow>(
     `SELECT o.list_price_idr, o.auto_discount_id, o.auto_discount_idr,
@@ -229,7 +236,8 @@ async function loadPendingOrder(tx: SqlClient, orderCode: string): Promise<Pendi
      JOIN seats s ON s.id = o.seat_id
      JOIN ticket_categories c ON c.id = s.category_id
      LEFT JOIN discounts d ON d.id = o.auto_discount_id
-     WHERE o.code = $1`,
+     WHERE o.code = $1
+     FOR UPDATE OF o, s`,
     [orderCode],
   )
   return rows.length > 0 ? rows[0] : null
