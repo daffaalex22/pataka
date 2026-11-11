@@ -155,6 +155,13 @@ export function WorldView({ onExit }: { onExit: () => void }) {
     setStep('seat')
   }
 
+  const clearSeat = () => {
+    setPreviewSeat(null)
+    setAutoWalkSeat(null)
+    setError(null)
+    setSeat(null)
+  }
+
   return (
     <div className="fixed inset-0 overflow-hidden bg-ink">
       <div className="absolute inset-0">
@@ -225,6 +232,7 @@ export function WorldView({ onExit }: { onExit: () => void }) {
           }}
           onHold={handleHold}
           onResume={() => setStep('form')}
+          onClear={clearSeat}
         />
       )}
 
