@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { CheckIn } from '@/components/admin/CheckIn'
 import { Dashboard } from '@/components/admin/Dashboard'
+import { Discounts } from '@/components/admin/Discounts'
 import { OrdersTable } from '@/components/admin/OrdersTable'
 import { SeatInventory } from '@/components/admin/SeatInventory'
 import { Settings } from '@/components/admin/Settings'
@@ -11,7 +12,7 @@ import { LangToggle } from '@/components/ui/LangToggle'
 import { adminFetch } from '@/lib/adminApi'
 import { useT } from '@/lib/i18n'
 
-type Tab = 'dashboard' | 'orders' | 'inventory' | 'settings' | 'checkin'
+type Tab = 'dashboard' | 'orders' | 'inventory' | 'settings' | 'discounts' | 'checkin'
 
 export default function AdminPage() {
   const t = useT()
@@ -99,6 +100,7 @@ export default function AdminPage() {
     { key: 'orders', label: t('admin.tabOrders') },
     { key: 'inventory', label: t('admin.tabInventory') },
     { key: 'settings', label: t('admin.tabSettings') },
+    { key: 'discounts', label: t('admin.tabDiscounts') },
     { key: 'checkin', label: t('admin.tabCheckin') },
   ]
 
@@ -141,6 +143,7 @@ export default function AdminPage() {
       {tab === 'orders' && <OrdersTable adminKey={adminKey} />}
       {tab === 'inventory' && <SeatInventory />}
       {tab === 'settings' && <Settings adminKey={adminKey} />}
+      {tab === 'discounts' && <Discounts adminKey={adminKey} />}
       {tab === 'checkin' && <CheckIn adminKey={adminKey} />}
     </div>
   )
