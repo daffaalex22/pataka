@@ -2,20 +2,21 @@
 
 import { useCountdown } from '@/components/ui/useCountdown'
 import { VenueMapCard } from '@/components/venue/VenueMapCard'
+import type { PriceBreakdown } from '@/lib/discounts'
 import { useLang, useT } from '@/lib/i18n'
 import { formatIdr, type Seat } from '@/lib/types'
 
 export function SummaryStep({
   seat,
   orderCode,
-  totalIdr,
+  breakdown,
   holdExpiresAt,
   onBack,
   onContinue,
 }: {
   seat: Seat | null
   orderCode: string
-  totalIdr: number
+  breakdown: PriceBreakdown
   holdExpiresAt: string | null
   onBack: () => void
   onContinue: () => void
@@ -51,11 +52,25 @@ export function SummaryStep({
               </span>
             </dd>
           </div>
+          <div className="flex items-center justify-between gap-4">
+            <dt className="text-muted">{t('discount.listPrice')}</dt>
+            <dd>{formatIdr(breakdown.listPriceIdr, lang)}</dd>
+          </div>
+          {breakdown.autoDiscountIdr > 0 && (
+            <div className="flex items-center justify-between gap-4 text-emerald-300">
+              <dt>{lang === 'id' ? breakdown.autoDiscountName : breakdown.autoDiscountNameEn}</dt>
+              <dd>−{formatIdr(breakdown.autoDiscountIdr, lang)}</dd>
+            </div>
+          )}
+          {breakdown.promoDiscountIdr > 0 && (
+            <div className="flex items-center justify-between gap-4 text-emerald-300">
+              <dt>{breakdown.promoCode} · {t('discount.promo')}</dt>
+              <dd>−{formatIdr(breakdown.promoDiscountIdr, lang)}</dd>
+            </div>
+          )}
           <div className="flex items-center justify-between gap-4 border-t border-line pt-3">
             <dt className="text-muted">{t('summary.total')}</dt>
-            <dd className="text-lg font-semibold text-accent">
-              {totalIdr ? formatIdr(totalIdr, lang) : '—'}
-            </dd>
+            <dd className="text-lg font-semibold text-accent">{formatIdr(breakdown.totalIdr, lang)}</dd>
           </div>
           <div className="flex items-center justify-between gap-4">
             <dt className="text-muted">{t('summary.hold')}</dt>

@@ -24,11 +24,12 @@ export default function BookPage() {
   const { lang } = useLang()
   const t = useT()
   const {
-    step, categoryKey, seat, holdToken, holdExpiresAt, holdSeatId, orderCode, totalIdr,
+    step, categoryKey, seat, holdToken, holdExpiresAt, holdSeatId, orderCode,
     setStep, setCategory, setSeat, setHold, reset,
   } = useBooking((state) => state)
 
-  const { data, seats, busy, error, loadSeats, setError, handleHold, handleOrder, handlePay } = useBookingFlow()
+  const { data, seats, busy, error, loadSeats, setError, handleHold, handleOrder, handlePay, breakdown, setBreakdown } =
+    useBookingFlow()
 
   useEffect(() => {
     loadSeats()
@@ -160,11 +161,11 @@ export default function BookPage() {
         />
       )}
 
-      {visibleStep === 'summary' && orderCode && (
+      {visibleStep === 'summary' && orderCode && breakdown && (
         <SummaryStep
           seat={seat}
           orderCode={orderCode}
-          totalIdr={totalIdr ?? 0}
+          breakdown={breakdown}
           holdExpiresAt={holdExpiresAt}
           onBack={() => setStep('form')}
           onContinue={() => {
@@ -174,12 +175,14 @@ export default function BookPage() {
         />
       )}
 
-      {visibleStep === 'payment' && orderCode && (
+      {visibleStep === 'payment' && orderCode && breakdown && (
         <PaymentStep
-          totalIdr={totalIdr ?? 0}
+          breakdown={breakdown}
+          orderCode={orderCode}
           holdExpiresAt={holdExpiresAt}
           paying={busy}
           error={error}
+          onBreakdownChange={setBreakdown}
           onBack={() => setStep('summary')}
           onPay={handlePay}
         />

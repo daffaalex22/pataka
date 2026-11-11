@@ -18,6 +18,7 @@ import { SeatBar } from '@/components/world/SeatBar'
 import { SeatViewPanel } from '@/components/world/SeatViewPanel'
 import { StepOverlay } from '@/components/world/StepOverlay'
 import { WorldHud } from '@/components/world/WorldHud'
+import type { PriceBreakdown } from '@/lib/discounts'
 import { useLang, useT } from '@/lib/i18n'
 import { useBooking } from '@/lib/store'
 import type { Category, Seat } from '@/lib/types'
@@ -36,11 +37,12 @@ const PlazaScene = dynamic(() => import('@/components/scene/PlazaScene'), {
 export function WorldView() {
   const t = useT()
   const { lang } = useLang()
-  const { data, seats, busy, error, loadSeats, setError, handleHold, handleOrder, handlePay } = useBookingFlow({
-    eventPollMs: 5000,
-  })
+  const { data, seats, busy, error, loadSeats, setError, handleHold, handleOrder, handlePay, breakdown, setBreakdown } =
+    useBookingFlow({
+      eventPollMs: 5000,
+    })
   const {
-    step, categoryKey, seat, holdToken, holdExpiresAt, holdSeatId, orderCode, totalIdr,
+    step, categoryKey, seat, holdToken, holdExpiresAt, holdSeatId, orderCode,
     setStep, setCategory, setSeat, setHold,
   } = useBooking((state) => state)
 
@@ -136,8 +138,8 @@ export function WorldView() {
 
   const visibleStep = step === 'form' && !holdToken ? 'seat' : step
   const formOpen = visibleStep === 'form'
-  const summaryOpen = visibleStep === 'summary' && Boolean(orderCode)
-  const paymentOpen = visibleStep === 'payment' && Boolean(orderCode)
+  const summaryOpen = visibleStep === 'summary' && Boolean(orderCode && breakdown)
+  const paymentOpen = visibleStep === 'payment' && Boolean(orderCode && breakdown)
   const overlayOpen = formOpen || summaryOpen || paymentOpen
 
   return (
@@ -245,8 +247,8 @@ export function WorldView() {
       <StepOverlay open={summaryOpen} onBack={() => setStep('form')}>
         <SummaryStep
           seat={seat}
-          orderCode={orderCode ?? ''}
-          totalIdr={totalIdr ?? 0}
+          orderCode={orderCode as string}
+          breakdown={breakdown as PriceBreakdown}
           holdExpiresAt={holdExpiresAt}
           onBack={() => setStep('form')}
           onContinue={() => {
@@ -258,10 +260,12 @@ export function WorldView() {
 
       <StepOverlay open={paymentOpen} onBack={() => setStep('summary')}>
         <PaymentStep
-          totalIdr={totalIdr ?? 0}
+          breakdown={breakdown as PriceBreakdown}
+          orderCode={orderCode as string}
           holdExpiresAt={holdExpiresAt}
           paying={busy}
           error={error}
+          onBreakdownChange={setBreakdown}
           onBack={() => setStep('summary')}
           onPay={handlePay}
         />

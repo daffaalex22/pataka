@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useCountdown } from '@/components/ui/useCountdown'
+import { PromoCodeField } from '@/components/visitor/PromoCodeField'
+import type { PriceBreakdown } from '@/lib/discounts'
 import { useLang, useT } from '@/lib/i18n'
 import { formatIdr } from '@/lib/types'
 
@@ -9,17 +11,23 @@ const METHODS = ['ewallet', 'va', 'qrpay'] as const
 type Method = (typeof METHODS)[number]
 
 export function PaymentStep({
+  breakdown,
   totalIdr,
+  orderCode,
   holdExpiresAt,
   paying,
   error,
+  onBreakdownChange,
   onBack,
   onPay,
 }: {
-  totalIdr: number
+  breakdown?: PriceBreakdown
+  totalIdr?: number
+  orderCode?: string
   holdExpiresAt: string | null
   paying: boolean
   error: string | null
+  onBreakdownChange?: (breakdown: PriceBreakdown) => void
   onBack: () => void
   onPay: (method: Method) => void
 }) {
@@ -44,10 +52,35 @@ export function PaymentStep({
       <p className="mt-1 text-sm text-muted">{t('pay.subtitle')}</p>
 
       <div className="panel mt-5 rounded-2xl p-5">
-        <div className="flex items-baseline justify-between">
-          <span className="text-sm text-muted">{t('summary.total')}</span>
-          <span className="text-2xl font-semibold text-accent">{formatIdr(totalIdr, lang)}</span>
-        </div>
+        {breakdown ? (
+          <dl className="space-y-3 text-sm">
+            <div className="flex items-center justify-between gap-4">
+              <dt className="text-muted">{t('discount.listPrice')}</dt>
+              <dd>{formatIdr(breakdown.listPriceIdr, lang)}</dd>
+            </div>
+            {breakdown.autoDiscountIdr > 0 && (
+              <div className="flex items-center justify-between gap-4 text-emerald-300">
+                <dt>{lang === 'id' ? breakdown.autoDiscountName : breakdown.autoDiscountNameEn}</dt>
+                <dd>−{formatIdr(breakdown.autoDiscountIdr, lang)}</dd>
+              </div>
+            )}
+            {breakdown.promoDiscountIdr > 0 && (
+              <div className="flex items-center justify-between gap-4 text-emerald-300">
+                <dt>{breakdown.promoCode} · {t('discount.promo')}</dt>
+                <dd>−{formatIdr(breakdown.promoDiscountIdr, lang)}</dd>
+              </div>
+            )}
+            <div className="flex items-center justify-between gap-4 border-t border-line pt-3">
+              <dt className="text-muted">{t('summary.total')}</dt>
+              <dd className="text-lg font-semibold text-accent">{formatIdr(breakdown.totalIdr, lang)}</dd>
+            </div>
+          </dl>
+        ) : (
+          <div className="flex items-baseline justify-between">
+            <span className="text-sm text-muted">{t('summary.total')}</span>
+            <span className="text-2xl font-semibold text-accent">{formatIdr(totalIdr ?? 0, lang)}</span>
+          </div>
+        )}
 
         <div className="mt-2 flex items-center justify-between text-xs">
           <span className="text-muted">{t('summary.hold')}</span>
@@ -86,6 +119,16 @@ export function PaymentStep({
           <div role="alert" className="mt-3 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-sm text-red-200">
             {t('error.holdExpired')}
           </div>
+        )}
+
+        {breakdown && orderCode && onBreakdownChange && (
+          <PromoCodeField
+            orderCode={orderCode}
+            promoCode={breakdown.promoCode}
+            promoDiscountIdr={breakdown.promoDiscountIdr}
+            disabled={countdown.expired}
+            onChanged={onBreakdownChange}
+          />
         )}
 
         <button
