@@ -10,6 +10,11 @@ export type TicketEmail = {
   seatLabel: string
   categoryName: string
   orderCode: string
+  listPriceIdr: number
+  autoDiscountIdr: number
+  autoDiscountName: string | null
+  promoDiscountIdr: number
+  promoCode: string | null
   totalIdr: number
   ticketUrl: string
 }
@@ -83,6 +88,9 @@ function buildTicketEmailHtml(
           ${detailRow('Waktu', escapeHtml(opts.eventDateId))}
           ${detailRow('Venue', escapeHtml(ticket.venue))}
           ${detailRow('Kursi', `${escapeHtml(ticket.seatLabel)} · ${escapeHtml(ticket.categoryName)}`)}
+          ${detailRow('Harga', escapeHtml(formatIdr(ticket.listPriceIdr, 'id')))}
+          ${ticket.autoDiscountIdr > 0 ? detailRow(escapeHtml(ticket.autoDiscountName ?? 'Diskon'), `-${escapeHtml(formatIdr(ticket.autoDiscountIdr, 'id'))}`) : ''}
+          ${ticket.promoDiscountIdr > 0 ? detailRow(escapeHtml(ticket.promoCode ?? 'Kode promo'), `-${escapeHtml(formatIdr(ticket.promoDiscountIdr, 'id'))}`) : ''}
           ${detailRow('Total', escapeHtml(opts.totalIdr))}
           ${detailRow('Kode', escapeHtml(ticket.orderCode))}
         </table>
@@ -128,6 +136,13 @@ export async function sendTicketEmail(ticket: TicketEmail, deps: EmailDeps = {})
     `Waktu: ${eventDateId}`,
     `Venue: ${ticket.venue}`,
     `Kursi: ${ticket.seatLabel} (${ticket.categoryName})`,
+    `Harga: ${formatIdr(ticket.listPriceIdr, 'id')}`,
+    ...(ticket.autoDiscountIdr > 0
+      ? [`${ticket.autoDiscountName ?? 'Diskon'}: -${formatIdr(ticket.autoDiscountIdr, 'id')}`]
+      : []),
+    ...(ticket.promoDiscountIdr > 0
+      ? [`${ticket.promoCode ?? 'Kode promo'}: -${formatIdr(ticket.promoDiscountIdr, 'id')}`]
+      : []),
     `Kode pesanan: ${ticket.orderCode}`,
     `Total: ${totalIdr}`,
     '',

@@ -12,12 +12,23 @@ import { VenueMapDialog } from '@/components/venue/VenueMapDialog'
 import { useLang, useT } from '@/lib/i18n'
 import { saveTicket } from '@/lib/ticketStore'
 import { formatEventDate, formatIdr, type EventInfo } from '@/lib/types'
+import type { PriceBreakdown } from '@/lib/discounts'
 
 type Ticket = {
   orderCode: string
   name: string
   status: 'pending' | 'paid' | 'cancelled'
   paymentMethod: string | null
+  listPriceIdr: number
+  autoDiscountId: number | null
+  autoDiscountIdr: number
+  autoDiscountName: string | null
+  autoDiscountNameEn: string | null
+  autoDiscountPercent: number | null
+  subtotalIdr: number
+  promoDiscountId: number | null
+  promoDiscountIdr: number
+  promoCode: string | null
   totalIdr: number
   holdExpiresAt: string | null
   holdActive: boolean
@@ -32,6 +43,22 @@ const METHOD_LABELS: Record<string, string> = {
   va: 'Virtual Account',
   qrpay: 'QRIS',
   manual: 'Manual',
+}
+
+function toBreakdown(ticket: Ticket): PriceBreakdown {
+  return {
+    listPriceIdr: ticket.listPriceIdr,
+    autoDiscountId: ticket.autoDiscountId,
+    autoDiscountIdr: ticket.autoDiscountIdr,
+    autoDiscountName: ticket.autoDiscountName,
+    autoDiscountNameEn: ticket.autoDiscountNameEn,
+    autoDiscountPercent: ticket.autoDiscountPercent,
+    subtotalIdr: ticket.subtotalIdr,
+    promoDiscountId: ticket.promoDiscountId,
+    promoDiscountIdr: ticket.promoDiscountIdr,
+    promoCode: ticket.promoCode,
+    totalIdr: ticket.totalIdr,
+  }
 }
 
 export function ETicketClient() {
@@ -93,6 +120,27 @@ export function ETicketClient() {
     }
   }
 
+  const applyBreakdown = (breakdown: PriceBreakdown) => {
+    setTicket((prev) =>
+      prev
+        ? {
+            ...prev,
+            listPriceIdr: breakdown.listPriceIdr,
+            autoDiscountId: breakdown.autoDiscountId,
+            autoDiscountIdr: breakdown.autoDiscountIdr,
+            autoDiscountName: breakdown.autoDiscountName,
+            autoDiscountNameEn: breakdown.autoDiscountNameEn,
+            autoDiscountPercent: breakdown.autoDiscountPercent,
+            subtotalIdr: breakdown.subtotalIdr,
+            promoDiscountId: breakdown.promoDiscountId,
+            promoDiscountIdr: breakdown.promoDiscountIdr,
+            promoCode: breakdown.promoCode,
+            totalIdr: breakdown.totalIdr,
+          }
+        : prev,
+    )
+  }
+
   const payPending = async (method: 'ewallet' | 'va' | 'qrpay') => {
     if (!ticket) return
     setPaying(true)
@@ -107,6 +155,17 @@ export function ETicketClient() {
         saveTicket(ticket.orderCode)
         await refreshTicket(ticket.orderCode)
       } else if (res.status === 409) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string }
+        if (body.error === 'DISCOUNT_UNAVAILABLE') {
+          const clearRes = await fetch(`/api/orders/${encodeURIComponent(ticket.orderCode)}/discount`, {
+            method: 'DELETE',
+          })
+          if (clearRes.ok) {
+            applyBreakdown((await clearRes.json()) as PriceBreakdown)
+            setPayError(t('error.discountUnavailable'))
+            return
+          }
+        }
         setHoldLost(true)
         setPayError(t('error.holdExpired'))
         await refreshTicket(ticket.orderCode)
@@ -174,10 +233,13 @@ export function ETicketClient() {
           <p className="mt-3 text-sm text-muted">{t('eticket.pendingBody')}</p>
           <div className="mt-4">
             <PaymentStep
+              breakdown={toBreakdown(ticket)}
               totalIdr={ticket.totalIdr}
+              orderCode={ticket.orderCode}
               holdExpiresAt={ticket.holdExpiresAt}
               paying={paying}
               error={payError}
+              onBreakdownChange={applyBreakdown}
               onBack={() => router.push('/tickets')}
               onPay={payPending}
             />
@@ -236,6 +298,30 @@ export function ETicketClient() {
                     <dt className="text-[11px] uppercase tracking-[0.16em] text-muted">{t('eticket.code')}</dt>
                     <dd className="mt-0.5 font-mono font-medium">{ticket.orderCode}</dd>
                   </div>
+                  <div>
+                    <dt className="text-[11px] uppercase tracking-[0.16em] text-muted">{t('discount.listPrice')}</dt>
+                    <dd className="mt-0.5 font-medium">{formatIdr(ticket.listPriceIdr, lang)}</dd>
+                  </div>
+                  {ticket.autoDiscountIdr > 0 && (
+                    <div>
+                      <dt className="text-[11px] uppercase tracking-[0.16em] text-muted">
+                        {lang === 'id' ? ticket.autoDiscountName : ticket.autoDiscountNameEn}
+                      </dt>
+                      <dd className="mt-0.5 font-medium text-emerald-300">
+                        −{formatIdr(ticket.autoDiscountIdr, lang)}
+                      </dd>
+                    </div>
+                  )}
+                  {ticket.promoDiscountIdr > 0 && (
+                    <div>
+                      <dt className="text-[11px] uppercase tracking-[0.16em] text-muted">
+                        {ticket.promoCode} · {t('discount.promo')}
+                      </dt>
+                      <dd className="mt-0.5 font-medium text-emerald-300">
+                        −{formatIdr(ticket.promoDiscountIdr, lang)}
+                      </dd>
+                    </div>
+                  )}
                   <div>
                     <dt className="text-[11px] uppercase tracking-[0.16em] text-muted">{t('summary.total')}</dt>
                     <dd className="mt-0.5 font-medium">{formatIdr(ticket.totalIdr, lang)}</dd>

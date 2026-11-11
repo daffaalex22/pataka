@@ -11,6 +11,11 @@ const ticket: TicketEmail = {
   seatLabel: 'VIP-A3',
   categoryName: 'VIP Depan',
   orderCode: 'PTK-ABC123',
+  listPriceIdr: 1_500_000,
+  autoDiscountIdr: 300_000,
+  autoDiscountName: 'Early Bird',
+  promoDiscountIdr: 120_000,
+  promoCode: 'PATKA10',
   totalIdr: 1500000,
   ticketUrl: 'https://pataka.example/eticket/PTK-ABC123',
 }
@@ -59,6 +64,21 @@ describe('sendTicketEmail', () => {
       content_id: 'tiket-qr',
     })
     expect(body.attachments[0].content.startsWith('iVBORw0KGgo')).toBe(true)
+  })
+
+  it('shows the discount breakdown in the email', async () => {
+    const calls: { init: RequestInit }[] = []
+    const fetchImpl = fetchStub((_url, init) => {
+      calls.push({ init })
+      return { ok: true, status: 200 } as Response
+    })
+    await sendTicketEmail(ticket, { apiKey: 'key-123', from: 'tickets@pataka.test', fetchImpl })
+    const body = JSON.parse(String(calls[0].init.body)) as { text: string; html: string }
+    expect(body.text.replace(/\u00a0/g, ' ')).toContain('Harga: Rp 1.500.000')
+    expect(body.text.replace(/\u00a0/g, ' ')).toContain('Early Bird: -Rp 300.000')
+    expect(body.text.replace(/\u00a0/g, ' ')).toContain('PATKA10: -Rp 120.000')
+    expect(body.html).toContain('Early Bird')
+    expect(body.html).toContain('PATKA10')
   })
 
   it('escapes hostile input in the html body', async () => {
