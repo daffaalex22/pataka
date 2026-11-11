@@ -26,6 +26,7 @@ async function main() {
     case 'reset': {
       await db.query('DROP TABLE IF EXISTS scans')
       await db.query('DROP TABLE IF EXISTS orders')
+      await db.query('DROP TABLE IF EXISTS discounts')
       await db.query('DROP TABLE IF EXISTS seats')
       await db.query('DROP TABLE IF EXISTS ticket_categories')
       await db.query('DROP TABLE IF EXISTS events')
