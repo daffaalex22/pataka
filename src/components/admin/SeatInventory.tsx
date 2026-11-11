@@ -2,12 +2,22 @@
 
 import { useEffect, useState } from 'react'
 import { STATUS_COLORS } from '@/components/ui/Legend'
-import { useT } from '@/lib/i18n'
-import type { Seat } from '@/lib/types'
+import { SeatLegend } from '@/components/visitor/SeatLegend'
+import { SeatMap2D } from '@/components/visitor/SeatMap2D'
+import { useLang, useT } from '@/lib/i18n'
+import { formatIdr, type Seat } from '@/lib/types'
+
+const STATUS_TEXT: Record<Seat['status'], string> = {
+  available: 'text-emerald-300',
+  held: 'text-amber-300',
+  sold: 'text-paper/55',
+}
 
 export function SeatInventory() {
+  const { lang } = useLang()
   const t = useT()
   const [seats, setSeats] = useState<Seat[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   useEffect(() => {
     const load = () =>
@@ -21,49 +31,85 @@ export function SeatInventory() {
   }, [])
 
   const sections = Array.from(new Set(seats.map((seat) => seat.section))).sort()
+  const selected = seats.find((seat) => seat.id === selectedId) ?? null
+
+  const totals = seats.reduce(
+    (accumulator, seat) => {
+      accumulator[seat.status] += 1
+      return accumulator
+    },
+    { available: 0, held: 0, sold: 0 },
+  )
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-muted">{t('admin.inventory.title')}</h2>
-        <div className="flex items-center gap-3 text-xs text-muted">
-          {(['available', 'held', 'sold'] as const).map((status) => (
-            <span key={status} className="flex items-center gap-1.5">
-              <span aria-hidden className="size-2.5 rounded-sm" style={{ backgroundColor: STATUS_COLORS[status] }} />
-              {t(`status.${status}`)}
-            </span>
-          ))}
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <p className="text-sm leading-relaxed text-paper/60">{t('admin.inventory.hint')}</p>
+        <SeatLegend />
       </div>
 
-      <div className="mt-4 space-y-4">
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border border-paper/10 px-3 py-2.5 text-xs">
+        <span className="text-paper/55">{t('admin.inventory.sections')}</span>
         {sections.map((section) => {
           const sectionSeats = seats.filter((seat) => seat.section === section)
           const sold = sectionSeats.filter((seat) => seat.status === 'sold').length
           const held = sectionSeats.filter((seat) => seat.status === 'held').length
           return (
-            <div key={section} className="panel rounded-2xl p-4">
-              <div className="flex items-baseline justify-between">
-                <p className="text-sm font-medium">{section}</p>
-                <p className="text-xs text-muted">
-                  {sectionSeats.length - sold - held} {t('status.available').toLowerCase()} · {held} {t('status.held').toLowerCase()} · {sold} {t('status.sold').toLowerCase()}
-                </p>
-              </div>
-              <div className="mt-3 flex flex-wrap gap-1">
-                {sectionSeats.map((seat) => (
-                  <span
-                    key={seat.id}
-                    title={`${seat.id} — ${t(`status.${seat.status}`)}`}
-                    className="size-3 rounded-[3px] transition"
-                    style={{ backgroundColor: STATUS_COLORS[seat.status], opacity: seat.status === 'sold' ? 0.5 : 1 }}
-                  />
-                ))}
-              </div>
-            </div>
+            <span key={section} className="inline-flex items-baseline gap-1.5 text-paper/55">
+              <span className="font-medium text-paper/80">{section}</span>
+              <span className="tabular-nums">
+                {sectionSeats.length - sold - held}/{sectionSeats.length}
+              </span>
+            </span>
           )
         })}
-        {seats.length === 0 && <div className="panel h-40 animate-pulse rounded-2xl" />}
+        <span className="ml-auto inline-flex items-baseline gap-1.5 text-paper/55">
+          <span>{t('admin.inventory.total')}</span>
+          <span className="font-semibold tabular-nums text-paper/80">{totals.available + totals.held + totals.sold}</span>
+        </span>
       </div>
+
+      {seats.length === 0 ? (
+        <p role="status" className="mt-4 border border-paper/10 p-6 text-sm text-paper/55">
+          {t('admin.inventory.empty')}
+        </p>
+      ) : (
+        <div className="mx-auto mt-4 w-full max-w-3xl border border-paper/15 p-3 sm:p-4">
+          <SeatMap2D
+            seats={seats}
+            categoryKey={null}
+            selectedId={selectedId}
+            onSelect={(seat) => setSelectedId(seat.id)}
+            stageLabel={t('seat.stage')}
+            showAllCategories
+            focusOnMount={false}
+          />
+        </div>
+      )}
+
+      {selected && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border border-paper/15 px-3 py-2.5 text-sm"
+        >
+          <span className="font-medium">
+            {t('seat.rowLabel')} {selected.row} · {t('seat.numberLabel')} {selected.num}
+          </span>
+          <span className="text-paper/55">
+            {lang === 'id' ? selected.categoryName : selected.categoryNameEn}
+          </span>
+          <span className="tabular-nums text-paper/75">{formatIdr(selected.priceIdr, lang)}</span>
+          <span className={`ml-auto inline-flex items-center gap-1.5 text-xs font-medium ${STATUS_TEXT[selected.status]}`}>
+            <span
+              aria-hidden
+              className="size-1.5 rounded-full"
+              style={{ backgroundColor: STATUS_COLORS[selected.status] }}
+            />
+            {t(`status.${selected.status}`)}
+          </span>
+        </div>
+      )}
     </div>
   )
 }

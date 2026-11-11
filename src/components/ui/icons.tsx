@@ -93,6 +93,24 @@ export function CheckIcon({ className }: { className?: string }) {
   )
 }
 
+export function ClockIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <circle cx="10" cy="10" r="7" />
+      <path d="M10 6v4.3l2.8 1.7" />
+    </Icon>
+  )
+}
+
+export function DownloadIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <path d="M10 3v9M6.5 8.75 10 12.25l3.5-3.5" />
+      <path d="M3.5 13.25v2.25A1.5 1.5 0 0 0 5 17h10a1.5 1.5 0 0 0 1.5-1.5v-2.25" />
+    </Icon>
+  )
+}
+
 export function CalendarIcon({ className }: { className?: string }) {
   return (
     <Icon className={className}>
