@@ -1,19 +1,25 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Joystick } from '@/components/scene/Joystick'
 import type { MoveVector } from '@/components/scene/Character'
 import { SceneBoundary } from '@/components/scene/SceneBoundary'
-import { Legend } from '@/components/ui/Legend'
-import { SeatMap2D } from '@/components/visitor/SeatMap2D'
+import { ArrowLeftIcon, CompassIcon, EyeIcon, RotateIcon } from '@/components/ui/icons'
+import { SeatLegend } from '@/components/visitor/SeatLegend'
+import { SeatPicker2D } from '@/components/visitor/SeatPicker2D'
 import { useLang, useT } from '@/lib/i18n'
 import { formatIdr, type Seat } from '@/lib/types'
 import { defaultSeatView, hasWebGL } from '@/lib/webgl'
 
+function SeatLoading() {
+  const t = useT()
+  return <div className="grid h-full place-items-center text-xs text-paper/55">{t('seat.loading3d')}</div>
+}
+
 const PlazaScene = dynamic(() => import('@/components/scene/PlazaScene'), {
   ssr: false,
-  loading: () => <div className="grid h-full place-items-center text-xs text-muted">Memuat venue 3D…</div>,
+  loading: () => <SeatLoading />,
 })
 
 export function SeatStep({
@@ -28,6 +34,7 @@ export function SeatStep({
   onBack,
   onResume,
   error,
+  defaultView,
 }: {
   seats: Seat[]
   categoryKey: string | null
@@ -40,81 +47,122 @@ export function SeatStep({
   onBack: () => void
   onResume: () => void
   error: string | null
+  defaultView?: '3d' | 'map'
 }) {
   const { lang } = useLang()
   const t = useT()
   const [webglAvailable] = useState(() => typeof window !== 'undefined' && hasWebGL())
-  const [view, setView] = useState<'3d' | 'map'>(() => defaultSeatView(webglAvailable))
+  const [view, setView] = useState<'3d' | 'map'>(() => defaultView ?? defaultSeatView(webglAvailable))
   const [mode, setMode] = useState<'orbit' | 'walk'>('orbit')
   const [previewSeat, setPreviewSeat] = useState<Seat | null>(null)
   const moveRef = useRef<MoveVector>({ x: 0, y: 0 })
+  const headingRef = useRef<HTMLHeadingElement>(null)
+  const holdButtonRef = useRef<HTMLButtonElement>(null)
+  const selectedId = selected?.id ?? null
+
+  useEffect(() => {
+    headingRef.current?.focus()
+  }, [])
+
+  useEffect(() => {
+    if (selectedId) holdButtonRef.current?.focus()
+  }, [selectedId])
 
   const selectSeat = (seat: Seat) => {
     setPreviewSeat(null)
     onSelect(seat)
   }
 
+  const categoryName = selected
+    ? lang === 'id'
+      ? selected.categoryName
+      : selected.categoryNameEn
+    : null
+
   return (
-    <div>
+    <div className="max-w-3xl">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <button type="button" onClick={onBack} className="text-xs text-muted transition hover:text-foreground">
-            ← {t('common.back')}
+          <button
+            type="button"
+            onClick={onBack}
+            className="focus-ring -my-2 inline-flex items-center gap-1 py-2 text-xs font-medium text-paper/55 transition-colors hover:text-paper"
+          >
+            <ArrowLeftIcon className="size-3.5" />
+            {t('common.back')}
           </button>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t('seat.title')}</h1>
-          <p className="mt-1 text-sm text-muted">{t('seat.subtitle')}</p>
+          <h1
+            ref={headingRef}
+            tabIndex={-1}
+            className="mt-2 font-display text-[clamp(2rem,5vw,2.75rem)] uppercase leading-[0.95] tracking-[0.01em] text-paper focus:outline-none"
+          >
+            {t('seat.title')}
+          </h1>
+          <p className="mt-1 text-sm text-paper/60">{t('seat.subtitle')}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Legend />
-          <div className="flex rounded-full border border-line p-0.5 text-[11px] font-medium">
-            {webglAvailable && (
-              <button
-                type="button"
-                onClick={() => setView('3d')}
-                className={`rounded-full px-2.5 py-1.5 transition ${view === '3d' ? 'bg-accent text-black' : 'text-muted'}`}
-              >
-                {t('seat.view3d')}
-              </button>
-            )}
+
+        <div className="flex rounded-sm border border-paper/15 p-0.5 text-xs font-medium">
+          <button
+            type="button"
+            onClick={() => setView('map')}
+            className={`focus-ring rounded-sm px-3 py-2.5 transition-colors ${
+              view === 'map' ? 'bg-accent text-ink' : 'text-paper/55 hover:text-paper'
+            }`}
+          >
+            {t('seat.viewList')}
+          </button>
+          {webglAvailable && (
             <button
               type="button"
-              onClick={() => {
-                setView('map')
-                setPreviewSeat(null)
-              }}
-              className={`rounded-full px-2.5 py-1.5 transition ${view === 'map' ? 'bg-accent text-black' : 'text-muted'}`}
+              onClick={() => setView('3d')}
+              className={`focus-ring rounded-sm px-3 py-2.5 transition-colors ${
+                view === '3d' ? 'bg-accent text-ink' : 'text-paper/55 hover:text-paper'
+              }`}
             >
-              {t('seat.viewMap')}
+              {t('seat.view3d')}
             </button>
-          </div>
+          )}
         </div>
       </div>
 
       {error && (
-        <div role="alert" className="mt-3 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-sm text-red-200">
+        <div
+          role="alert"
+          className="mt-3 border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200"
+        >
           {error}
         </div>
       )}
 
-      <div className="relative mt-4 h-[46vh] min-h-[340px] overflow-hidden rounded-2xl border border-line bg-[#07060d] sm:h-[56vh]">
-        {view === '3d' ? (
-          <>
+      {view === 'map' ? (
+        <div className="mt-4">
+          <SeatPicker2D
+            seats={seats}
+            categoryKey={categoryKey}
+            selectedId={selectedId}
+            onSelect={selectSeat}
+            stageLabel={t('seat.stage')}
+          />
+        </div>
+      ) : (
+        <>
+          <div className="relative mt-4 h-[46vh] min-h-[340px] overflow-hidden rounded-md border border-paper/15 bg-[#07060d] sm:h-[56vh]">
             <SceneBoundary
               fallback={
                 <div className="grid h-full place-items-center p-6 text-center">
                   <button
                     type="button"
                     onClick={() => setView('map')}
-                    className="rounded-full bg-accent px-4 py-2.5 text-xs font-semibold text-black"
+                    className="focus-ring rounded-sm bg-accent px-4 py-2.5 text-xs font-semibold text-ink"
                   >
-                    {t('seat.viewMap')} →
+                    {t('seat.viewMap')}
                   </button>
                 </div>
               }
             >
               <PlazaScene
                 seats={seats}
-                selectedId={selected?.id ?? null}
+                selectedId={selectedId}
                 onSelect={selectSeat}
                 mode={mode}
                 moveRef={moveRef}
@@ -123,33 +171,40 @@ export function SeatStep({
             </SceneBoundary>
 
             {!previewSeat && (
-              <div className="absolute left-3 top-3 flex rounded-full border border-white/15 bg-black/40 p-0.5 text-[11px] font-medium backdrop-blur">
+              <div className="absolute left-3 top-3 flex rounded-sm border border-paper/15 bg-ink/90 p-0.5 text-xs font-medium">
                 <button
                   type="button"
                   onClick={() => setMode('orbit')}
-                  className={`rounded-full px-3 py-1.5 transition ${mode === 'orbit' ? 'bg-accent text-black' : 'text-white/70'}`}
+                  className={`focus-ring inline-flex items-center gap-1 rounded-sm px-3 py-2.5 transition-colors ${
+                    mode === 'orbit' ? 'bg-accent text-ink' : 'text-paper/60 hover:text-paper'
+                  }`}
                 >
-                  ⟲ {t('seat.orbit')}
+                  <RotateIcon className="size-3.5" />
+                  {t('seat.orbit')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setMode('walk')}
-                  className={`rounded-full px-3 py-1.5 transition ${mode === 'walk' ? 'bg-accent text-black' : 'text-white/70'}`}
+                  className={`focus-ring inline-flex items-center gap-1 rounded-sm px-3 py-2.5 transition-colors ${
+                    mode === 'walk' ? 'bg-accent text-ink' : 'text-paper/60 hover:text-paper'
+                  }`}
                 >
-                  ⌂ {t('seat.walk')}
+                  <CompassIcon className="size-3.5" />
+                  {t('seat.walk')}
                 </button>
               </div>
             )}
 
             {previewSeat && (
               <div className="absolute inset-x-3 top-3 flex items-center justify-between gap-3">
-                <span className="rounded-full border border-accent/40 bg-black/50 px-3 py-1.5 text-[11px] font-medium text-accent backdrop-blur">
-                  {t('seat.previewing')} · {previewSeat.id}
+                <span className="rounded-sm border border-accent/40 bg-ink/90 px-3 py-2 text-xs font-medium text-accent">
+                  {t('seat.previewing')} · {t('seat.rowLabel')} {previewSeat.row} ·{' '}
+                  {t('seat.numberLabel')} {previewSeat.num}
                 </span>
                 <button
                   type="button"
                   onClick={() => setPreviewSeat(null)}
-                  className="rounded-full bg-accent px-3 py-1.5 text-[11px] font-semibold text-black"
+                  className="focus-ring rounded-sm bg-accent px-3 py-2 text-xs font-semibold text-ink"
                 >
                   {t('seat.exitPreview')}
                 </button>
@@ -158,72 +213,74 @@ export function SeatStep({
 
             {mode === 'walk' && !previewSeat && <Joystick moveRef={moveRef} />}
 
-            <p className="pointer-events-none absolute inset-x-0 bottom-2 text-center text-[10px] text-white/45">
+            <p className="pointer-events-none absolute inset-x-0 bottom-2 text-center text-xs text-paper/55">
               {mode === 'walk' ? t('seat.walkHint') : t('seat.dragHint')}
             </p>
-          </>
-        ) : (
-          <SeatMap2D
-            seats={seats}
-            categoryKey={categoryKey}
-            selectedId={selected?.id ?? null}
-            onSelect={selectSeat}
-            stageLabel={t('seat.stage')}
-          />
-        )}
-      </div>
+          </div>
+          <SeatLegend className="mt-3" />
+        </>
+      )}
 
       <div className="sticky bottom-3 mt-3 pb-[env(safe-area-inset-bottom)]">
         {selected ? (
-          <div className="panel flex items-center justify-between gap-3 rounded-2xl border-white/15 px-4 py-3 shadow-2xl">
-            <div className="min-w-0">
-              <p className="text-[11px] uppercase tracking-[0.16em] text-muted">{t('seat.yourSeat')}</p>
-              <p className="truncate text-sm font-semibold">
-                {selected.id} · {lang === 'id' ? selected.categoryName : selected.categoryNameEn}
-              </p>
-              <p className="text-xs text-muted">
-                {formatIdr(selected.priceIdr, lang)}
-                {selected.status !== 'available' && (
-                  <span className={selected.status === 'held' ? 'ml-2 text-amber-300' : 'ml-2 text-zinc-400'}>
-                    · {t(`status.${selected.status}`)}
-                  </span>
+          <div className="rounded-sm border border-paper/15 bg-ink px-4 py-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-xs text-paper/55">{t('seat.yourSeat')}</p>
+                <p className="mt-0.5 text-sm font-semibold text-paper">
+                  {t('seat.rowLabel')} {selected.row} · {t('seat.numberLabel')} {selected.num}
+                </p>
+                <p className="mt-0.5 text-xs text-paper/55">
+                  {categoryName} · {formatIdr(selected.priceIdr, lang)}
+                  {selected.status !== 'available' && (
+                    <span className={selected.status === 'held' ? 'text-amber-300' : 'text-paper/40'}>
+                      {' '}
+                      · {t(`status.${selected.status}`)}
+                    </span>
+                  )}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {webglAvailable && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView('3d')
+                      setPreviewSeat(selected)
+                    }}
+                    className="focus-ring inline-flex flex-1 items-center justify-center gap-1.5 rounded-sm border border-paper/15 px-3 py-3 text-sm font-medium text-paper/70 transition-colors hover:border-paper/30 hover:text-paper sm:flex-none"
+                  >
+                    <EyeIcon className="size-3.5" />
+                    {t('seat.preview')}
+                  </button>
                 )}
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setView('3d')
-                  setPreviewSeat(selected)
-                }}
-                className="rounded-full border border-line px-3 py-2.5 text-xs font-medium text-muted transition hover:border-accent/50 hover:text-accent"
-              >
-                👁 {t('seat.preview')}
-              </button>
-              {holdExpiresAt && holdSeatId === selected.id ? (
-                <button
-                  type="button"
-                  onClick={onResume}
-                  className="rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-black transition hover:brightness-110"
-                >
-                  {t('seat.resume')} →
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  disabled={holding || selected.status !== 'available'}
-                  onClick={onHold}
-                  className="rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {holding ? t('common.loading') : t('seat.choose')}
-                </button>
-              )}
+                {holdExpiresAt && holdSeatId === selected.id ? (
+                  <button
+                    ref={holdButtonRef}
+                    type="button"
+                    onClick={onResume}
+                    className="focus-ring flex-1 rounded-sm bg-accent px-4 py-3 text-sm font-semibold text-ink transition hover:brightness-110 sm:flex-none"
+                  >
+                    {t('seat.resume')}
+                  </button>
+                ) : (
+                  <button
+                    ref={holdButtonRef}
+                    type="button"
+                    disabled={holding || selected.status !== 'available'}
+                    onClick={onHold}
+                    className="focus-ring flex-1 rounded-sm bg-accent px-4 py-3 text-sm font-semibold text-ink transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none"
+                  >
+                    {holding ? t('common.loading') : t('seat.choose')}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        ) : (
-          <p className="py-3 text-center text-xs text-muted">{t('seat.selectFirst')}</p>
-        )}
+        ) : view === '3d' ? (
+          <p className="py-3 text-center text-xs text-paper/55">{t('seat.selectFirst')}</p>
+        ) : null}
       </div>
     </div>
   )

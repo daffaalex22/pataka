@@ -8,12 +8,14 @@ export function Dialog({
   onClose,
   ariaLabel,
   panelClassName,
+  plain = false,
   children,
 }: {
   open: boolean
   onClose: () => void
   ariaLabel: string
   panelClassName: string
+  plain?: boolean
   children: ReactNode
 }) {
   const ref = useRef<HTMLDialogElement>(null)
@@ -74,7 +76,9 @@ export function Dialog({
       className="fixed inset-0 z-30 m-0 h-full max-h-none w-full max-w-none border-0 bg-transparent p-3 text-foreground backdrop:bg-black/70 backdrop:backdrop-blur-sm open:flex open:items-end open:justify-center sm:p-6 sm:open:items-center"
     >
       <div
-        className={`panel max-h-[92svh] w-full overflow-y-auto rounded-t-3xl border-white/15 sm:rounded-3xl ${panelClassName}`}
+        className={`${
+          plain ? 'border border-paper/15 bg-ink text-paper' : 'panel'
+        } max-h-[92svh] w-full overflow-y-auto rounded-t-3xl sm:rounded-3xl ${panelClassName}`}
       >
         {children}
       </div>

@@ -156,6 +156,7 @@ export default function BookPage() {
                     setHold(null, null, null)
                   }
                   setError(null)
+                  setCategory(next.categoryKey)
                   setSeat(next)
                 }}
                 onHold={handleHold}
@@ -169,6 +170,7 @@ export default function BookPage() {
                 }}
                 onResume={() => setStep('form')}
                 error={error}
+                defaultView="map"
               />
             )}
 

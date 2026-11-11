@@ -1,5 +1,6 @@
 'use client'
 
+import { ChevronRightIcon } from '@/components/ui/icons'
 import { SectionMiniMap } from '@/components/visitor/SectionMiniMap'
 import { useLang, useT } from '@/lib/i18n'
 import { formatIdr, type Category } from '@/lib/types'
@@ -75,16 +76,7 @@ export function TicketTierList({
                 <span className="whitespace-nowrap text-right text-base font-semibold tabular-nums text-paper">
                   {price}
                 </span>
-                <svg
-                  aria-hidden
-                  viewBox="0 0 20 20"
-                  className="size-4 shrink-0 text-paper/35 transition-colors group-hover:text-paper/60"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                >
-                  <path d="M4 10h11M10 5l5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <ChevronRightIcon className="size-4 shrink-0 text-paper/35 transition-colors group-hover:text-paper/60" />
               </span>
             </button>
           </li>

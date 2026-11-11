@@ -8,6 +8,7 @@ import { Joystick } from '@/components/scene/Joystick'
 import { PaymentStep } from '@/components/visitor/PaymentStep'
 import { SceneBoundary } from '@/components/scene/SceneBoundary'
 import { FormStep } from '@/components/visitor/FormStep'
+import { SeatLegend } from '@/components/visitor/SeatLegend'
 import { SeatMap2D } from '@/components/visitor/SeatMap2D'
 import { SummaryStep } from '@/components/visitor/SummaryStep'
 import { Dialog } from '@/components/ui/Dialog'
@@ -289,6 +290,7 @@ export function WorldView({ onExit }: { onExit: () => void }) {
                 ✕ {t('common.back')}
               </button>
             </div>
+            <SeatLegend className="mt-3" />
             <div className="mt-3 overflow-hidden rounded-2xl border border-line bg-white/[0.03] p-3">
               <SeatMap2D
                 seats={seats}
