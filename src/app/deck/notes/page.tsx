@@ -17,8 +17,8 @@ export default function DeckNotesPage() {
           <p className="font-semibold text-zinc-900">Panduan waktu</p>
           <ul className="mt-2 space-y-1">
             <li><strong>3 menit:</strong> lewati slide Pengguna; ringkas Problem dan Asumsi.</li>
-            <li><strong>4 menit:</strong> 10 slide, sekitar 20–25 detik per slide.</li>
-            <li><strong>5 menit:</strong> tambah waktu di Bukti Produk dan Logika Kursi.</li>
+            <li><strong>4 menit:</strong> 11 slide, sekitar 20–22 detik per slide.</li>
+            <li><strong>5 menit:</strong> tambah waktu di Bukti Produk, Logika Kursi, dan Operasi Mall.</li>
           </ul>
         </section>
 

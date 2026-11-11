@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Bebas_Neue, Geist, Geist_Mono } from 'next/font/google'
 import { LangProvider } from '@/lib/i18n'
 import './globals.css'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] })
+const bebasNeue = Bebas_Neue({ variable: '--font-bebas', subsets: ['latin'], weight: '400' })
 
 export const metadata: Metadata = {
   title: 'Pataka — 3D Event Ticketing',
@@ -26,7 +27,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="id" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="id" className={`${geistSans.variable} ${geistMono.variable} ${bebasNeue.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <LangProvider>{children}</LangProvider>
       </body>

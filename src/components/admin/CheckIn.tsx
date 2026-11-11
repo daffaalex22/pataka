@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Html5Qrcode } from 'html5-qrcode'
+import { CheckIcon, ClockIcon, QrIcon, XIcon } from '@/components/ui/icons'
 import { adminFetch } from '@/lib/adminApi'
-import { useT } from '@/lib/i18n'
+import { useLang, useT } from '@/lib/i18n'
+import { formatSeatLabel } from './format'
 
 type Outcome = {
   result: 'valid' | 'already_used' | 'invalid'
@@ -14,13 +16,36 @@ type Outcome = {
 
 type RecentScan = Outcome & { payload: string; at: Date }
 
-const RESULT_STYLES: Record<Outcome['result'], { wrap: string; text: string; icon: string }> = {
-  valid: { wrap: 'border-emerald-400/40 bg-emerald-400/10', text: 'text-emerald-300', icon: '✓' },
-  already_used: { wrap: 'border-amber-400/40 bg-amber-400/10', text: 'text-amber-300', icon: '◔' },
-  invalid: { wrap: 'border-red-400/40 bg-red-400/10', text: 'text-red-300', icon: '✕' },
+const DUPLICATE_WINDOW_MS = 9000
+const BANNER_MS = 4000
+const REQUEST_LOCK_MS = 800
+
+const RESULT_TONES: Record<
+  Outcome['result'],
+  { frame: string; iconBox: string; text: string; icon: typeof CheckIcon }
+> = {
+  valid: {
+    frame: 'border-emerald-400/45 bg-emerald-400/[0.06]',
+    iconBox: 'border-emerald-400/50',
+    text: 'text-emerald-300',
+    icon: CheckIcon,
+  },
+  already_used: {
+    frame: 'border-amber-400/45 bg-amber-400/[0.06]',
+    iconBox: 'border-amber-400/50',
+    text: 'text-amber-300',
+    icon: ClockIcon,
+  },
+  invalid: {
+    frame: 'border-red-400/45 bg-red-400/[0.06]',
+    iconBox: 'border-red-400/50',
+    text: 'text-red-300',
+    icon: XIcon,
+  },
 }
 
 export function CheckIn({ adminKey }: { adminKey: string }) {
+  const { lang } = useLang()
   const t = useT()
   const [cameraActive, setCameraActive] = useState(false)
   const [outcome, setOutcome] = useState<(Outcome & { payload: string }) | null>(null)
@@ -29,6 +54,9 @@ export function CheckIn({ adminKey }: { adminKey: string }) {
   const [error, setError] = useState<string | null>(null)
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const lockRef = useRef(false)
+  const unlockTimerRef = useRef<number | null>(null)
+  const bannerTimerRef = useRef<number | null>(null)
+  const lastScanRef = useRef<{ payload: string; at: number } | null>(null)
 
   const stopCamera = useCallback(async () => {
     const scanner = scannerRef.current
@@ -44,9 +72,25 @@ export function CheckIn({ adminKey }: { adminKey: string }) {
     }
   }, [])
 
+  const showOutcome = useCallback((next: Outcome & { payload: string }) => {
+    setOutcome(next)
+    if (bannerTimerRef.current) window.clearTimeout(bannerTimerRef.current)
+    bannerTimerRef.current = window.setTimeout(() => {
+      bannerTimerRef.current = null
+      setOutcome(null)
+    }, BANNER_MS)
+  }, [])
+
   const validate = useCallback(
-    async (payload: string) => {
+    async (raw: string) => {
+      const payload = raw.trim()
       if (!payload || lockRef.current) return
+
+      const now = Date.now()
+      const last = lastScanRef.current
+      if (last && last.payload === payload && now - last.at < DUPLICATE_WINDOW_MS) return
+
+      lastScanRef.current = { payload, at: now }
       lockRef.current = true
       setError(null)
       try {
@@ -54,22 +98,23 @@ export function CheckIn({ adminKey }: { adminKey: string }) {
           method: 'POST',
           body: JSON.stringify({ payload }),
         })
-        setOutcome({ ...data, payload })
+        showOutcome({ ...data, payload })
         setRecent((current) => [{ ...data, payload, at: new Date() }, ...current].slice(0, 10))
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
           navigator.vibrate(data.result === 'valid' ? 80 : [60, 60, 60])
         }
-        // Freeze the scanner on the result so the same QR is not re-scanned as ALREADY USED.
-        await stopCamera()
       } catch {
+        lastScanRef.current = null
         setError(t('error.generic'))
       } finally {
-        window.setTimeout(() => {
+        if (unlockTimerRef.current) window.clearTimeout(unlockTimerRef.current)
+        unlockTimerRef.current = window.setTimeout(() => {
           lockRef.current = false
-        }, 800)
+          unlockTimerRef.current = null
+        }, REQUEST_LOCK_MS)
       }
     },
-    [adminKey, t, stopCamera],
+    [adminKey, showOutcome, t],
   )
 
   const startCamera = useCallback(async () => {
@@ -88,6 +133,7 @@ export function CheckIn({ adminKey }: { adminKey: string }) {
         () => {},
       )
     } catch {
+      scannerRef.current = null
       setCameraActive(false)
       setError(t('admin.checkin.cameraError'))
     }
@@ -95,6 +141,8 @@ export function CheckIn({ adminKey }: { adminKey: string }) {
 
   useEffect(() => {
     return () => {
+      if (unlockTimerRef.current) window.clearTimeout(unlockTimerRef.current)
+      if (bannerTimerRef.current) window.clearTimeout(bannerTimerRef.current)
       void stopCamera()
     }
   }, [stopCamera])
@@ -105,101 +153,155 @@ export function CheckIn({ adminKey }: { adminKey: string }) {
     invalid: t('admin.checkin.invalid'),
   }
 
+  const ResultIcon = outcome ? RESULT_TONES[outcome.result].icon : null
+  const tone = outcome ? RESULT_TONES[outcome.result] : null
+
   return (
-    <div className="mx-auto max-w-xl">
-      <h2 className="text-lg font-semibold tracking-tight">{t('admin.checkin.title')}</h2>
-      <p className="mt-1 text-sm text-muted">{t('admin.checkin.sub')}</p>
+    <div className="mx-auto max-w-2xl">
+      <p className="text-sm leading-relaxed text-paper/60">{t('admin.checkin.sub')}</p>
 
-      {error && <p className="mt-3 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-sm text-red-200">{error}</p>}
-
-      {outcome && (
-        <div className={`mt-4 rounded-2xl border p-5 text-center ${RESULT_STYLES[outcome.result].wrap}`}>
-          <p className={`text-2xl font-bold tracking-tight ${RESULT_STYLES[outcome.result].text}`}>
-            <span aria-hidden className="mr-2">{RESULT_STYLES[outcome.result].icon}</span>
-            {resultLabels[outcome.result]}
-          </p>
-          {outcome.name && <p className="mt-2 text-sm font-medium">{outcome.name}</p>}
-          {outcome.seatLabel && (
-            <p className="mt-1 text-sm text-muted">
-              {t('admin.checkin.seat')}: <span className="font-mono">{outcome.seatLabel}</span>
-              {outcome.orderCode ? ` · ${outcome.orderCode}` : ''}
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={() => {
-              setOutcome(null)
-              if (!cameraActive) void startCamera()
-            }}
-            className="mt-4 rounded-full border border-line px-5 py-2 text-xs font-medium transition hover:border-white/30"
-          >
-            {t('admin.checkin.next')}
-          </button>
-        </div>
-      )}
-
-      <div className="panel mt-4 overflow-hidden rounded-2xl">
-        <div id="checkin-reader" className="mx-auto w-full max-w-sm [&_video]:w-full" />
-        {!cameraActive ? (
-          <button
-            type="button"
-            onClick={startCamera}
-            className="m-4 w-[calc(100%-2rem)] rounded-full bg-accent px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110"
-          >
-            ◉ {t('admin.checkin.start')}
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={stopCamera}
-            className="m-4 w-[calc(100%-2rem)] rounded-full border border-line px-5 py-3 text-sm font-medium text-muted transition hover:border-white/30 hover:text-foreground"
-          >
-            {t('admin.checkin.stop')}
-          </button>
+      <div role="status" aria-live="assertive" className="mt-4">
+        {outcome && tone && ResultIcon && (
+          <div className={`flex gap-3 border p-4 ${tone.frame}`}>
+            <span
+              aria-hidden
+              className={`grid size-10 shrink-0 place-items-center border ${tone.iconBox} ${tone.text}`}
+            >
+              <ResultIcon className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <p className={`text-sm font-semibold ${tone.text}`}>{resultLabels[outcome.result]}</p>
+              {outcome.name && <p className="mt-1 break-words text-base font-medium">{outcome.name}</p>}
+              {(outcome.seatLabel || outcome.orderCode) && (
+                <p className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm text-paper/60">
+                  {outcome.seatLabel && <span>{formatSeatLabel(outcome.seatLabel, t)}</span>}
+                  {outcome.orderCode && (
+                    <span className="font-mono text-xs tabular-nums text-paper/55">{outcome.orderCode}</span>
+                  )}
+                </p>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
+      {error && (
+        <p
+          role="alert"
+          className="mt-3 flex items-start gap-2 border border-red-400/35 bg-red-400/[0.06] px-3 py-2 text-sm text-red-200"
+        >
+          <XIcon className="mt-0.5 size-4 shrink-0" />
+          {error}
+        </p>
+      )}
+
+      <div className="mt-4 border border-paper/15">
+        <div className="flex items-center justify-between gap-3 border-b border-paper/10 px-3 py-2">
+          <span className="inline-flex items-center gap-2 text-xs text-paper/55">
+            <span
+              aria-hidden
+              className={`size-1.5 rounded-full ${cameraActive ? 'bg-emerald-400' : 'bg-paper/30'}`}
+            />
+            {cameraActive ? t('admin.checkin.active') : t('admin.checkin.off')}
+          </span>
+          <QrIcon className="size-4 text-paper/30" />
+        </div>
+
+        <div id="checkin-reader" className="mx-auto w-full max-w-sm [&_video]:w-full" />
+
+        <div className="p-3">
+          {!cameraActive ? (
+            <button
+              type="button"
+              onClick={startCamera}
+              className="focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-sm bg-accent px-4 text-sm font-semibold text-ink transition hover:brightness-110"
+            >
+              <QrIcon className="size-4" />
+              {t('admin.checkin.start')}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void stopCamera()}
+              className="focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-sm border border-paper/15 px-4 text-sm font-medium text-paper/75 transition-colors hover:border-paper/30 hover:text-paper"
+            >
+              <XIcon className="size-4" />
+              {t('admin.checkin.stop')}
+            </button>
+          )}
+        </div>
+      </div>
+
       <form
-        className="panel mt-4 rounded-2xl p-4"
+        className="mt-4 border border-paper/15 p-4"
         onSubmit={(event) => {
           event.preventDefault()
-          void validate(manual.trim())
+          const payload = manual.trim()
+          if (!payload) return
+          void validate(payload).then(() => setManual(''))
         }}
       >
         <label className="block">
-          <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted">{t('admin.checkin.manual')}</span>
+          <span className="text-xs font-medium text-paper/65">{t('admin.checkin.manual')}</span>
           <input
             value={manual}
             onChange={(event) => setManual(event.target.value)}
             placeholder="PTK|PTK-XXXXXX|…"
-            className="mt-1.5 w-full rounded-xl border border-line bg-white/5 px-4 py-3 font-mono text-base outline-none transition focus:border-accent/60"
+            autoComplete="off"
+            spellCheck={false}
+            className="focus-ring mt-2 min-h-11 w-full rounded-sm border border-paper/15 bg-paper/[0.04] px-3 font-mono text-sm text-paper outline-none transition-colors placeholder:text-paper/55 focus:border-accent/70"
           />
         </label>
         <button
           type="submit"
           disabled={!manual.trim()}
-          className="mt-3 w-full rounded-full border border-accent/50 px-5 py-2.5 text-sm font-medium text-accent transition hover:bg-accent/10 disabled:opacity-40"
+          className="focus-ring mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-sm border border-accent/50 px-4 text-sm font-medium text-accent transition-colors hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {t('admin.checkin.check')}
         </button>
       </form>
 
       {recent.length > 0 && (
-        <div className="mt-6">
-          <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">{t('admin.checkin.recent')}</h3>
-          <div className="mt-2 space-y-1.5">
-            {recent.map((item, index) => (
-              <div key={`${item.at.getTime()}-${index}`} className="flex items-center justify-between gap-3 rounded-xl border border-line bg-white/[0.02] px-3 py-2 text-xs">
-                <span className="flex items-center gap-2">
-                  <span aria-hidden className={RESULT_STYLES[item.result].text}>{RESULT_STYLES[item.result].icon}</span>
-                  <span className="font-mono">{item.orderCode ?? item.payload.slice(0, 18)}</span>
-                  {item.seatLabel && <span className="text-muted">{item.seatLabel}</span>}
-                </span>
-                <span className="text-muted">{item.at.toLocaleTimeString('id-ID')}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <section className="mt-6" aria-labelledby="recent-scans-heading">
+          <h2 id="recent-scans-heading" className="text-xs font-medium text-paper/55">
+            {t('admin.checkin.recent')}
+          </h2>
+          <ul className="mt-2 border-t border-paper/10">
+            {recent.map((item, index) => {
+              const itemTone = RESULT_TONES[item.result]
+              const ItemIcon = itemTone.icon
+              const meta = [item.name, item.seatLabel ? formatSeatLabel(item.seatLabel, t) : null]
+                .filter(Boolean)
+                .join(' · ')
+              return (
+                <li
+                  key={`${item.at.getTime()}-${index}`}
+                  className="flex items-center gap-3 border-b border-paper/10 py-2.5 text-xs"
+                >
+                  <span aria-hidden className={`shrink-0 ${itemTone.text}`}>
+                    <ItemIcon className="size-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-mono tabular-nums text-paper/75">
+                      {item.orderCode ?? item.payload.slice(0, 18)}
+                    </span>
+                    {meta && <span className="mt-0.5 block truncate text-paper/55">{meta}</span>}
+                  </span>
+                  <time
+                    className="shrink-0 tabular-nums text-paper/55"
+                    dateTime={item.at.toISOString()}
+                  >
+                    {item.at.toLocaleTimeString(lang === 'id' ? 'id-ID' : 'en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                    })}
+                  </time>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
       )}
     </div>
   )

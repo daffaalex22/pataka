@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { ChevronRightIcon } from '@/components/ui/icons'
 import { adminFetch } from '@/lib/adminApi'
 import { useLang, useT } from '@/lib/i18n'
 import type { AdminStats } from '@/lib/types'
@@ -30,8 +31,8 @@ export function Dashboard({ adminKey, onOpenOrders }: { adminKey: string; onOpen
     }
   }, [adminKey])
 
-  if (error) return <p className="text-sm text-red-300">{t('error.generic')}</p>
-  if (!stats) return <div className="grid gap-3 sm:grid-cols-3">{[0, 1, 2].map((i) => <div key={i} className="panel h-24 animate-pulse rounded-2xl" />)}</div>
+  if (error) return <p role="alert" className="text-sm text-red-300">{t('error.generic')}</p>
+  if (!stats) return <p role="status" className="text-sm text-paper/55">{t('common.loading')}</p>
 
   const cards: { label: string; value: string; sub?: string }[] = [
     { label: t('admin.stats.registrants'), value: String(stats.orders.total) },
@@ -45,58 +46,92 @@ export function Dashboard({ adminKey, onOpenOrders }: { adminKey: string; onOpen
     },
   ]
 
+  const countColumns = [
+    { label: t('status.available'), value: (category: AdminStats['categories'][number]) => category.available, tone: 'text-emerald-300' },
+    { label: t('status.held'), value: (category: AdminStats['categories'][number]) => category.held, tone: 'text-amber-300' },
+    { label: t('status.sold'), value: (category: AdminStats['categories'][number]) => category.sold, tone: 'text-paper/70' },
+    { label: t('admin.settings.quota'), value: (category: AdminStats['categories'][number]) => category.quota, tone: 'text-paper/55' },
+  ]
+
   return (
     <div>
-      <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {cards.map((card) => (
-          <div key={card.label} className="panel rounded-2xl p-4">
-            <p className="text-[11px] uppercase tracking-[0.14em] text-muted">{card.label}</p>
-            <p className="mt-1 text-xl font-semibold tracking-tight">{card.value}</p>
-            {card.sub && <p className="mt-0.5 text-[11px] text-muted">{card.sub}</p>}
+      <dl className="grid grid-cols-2 gap-px border border-paper/10 bg-paper/10 sm:grid-cols-3 lg:grid-cols-5">
+        {cards.map((card, index) => (
+          <div
+            key={card.label}
+            className={`bg-ink p-4 ${index === cards.length - 1 ? 'col-span-2 sm:col-span-1' : ''}`}
+          >
+            <dt className="text-xs leading-snug text-paper/55">{card.label}</dt>
+            <dd className="mt-2 break-words text-xl font-semibold tabular-nums tracking-tight">{card.value}</dd>
+            {card.sub && <p className="mt-1 text-xs text-paper/55">{card.sub}</p>}
           </div>
         ))}
-      </div>
+      </dl>
 
-      <div className="mt-5 flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-muted">{t('admin.inventory.title')}</h2>
-        <button type="button" onClick={onOpenOrders} className="text-xs text-accent hover:underline">
-          {t('admin.tabOrders')} →
-        </button>
-      </div>
+      <section className="mt-8" aria-labelledby="inventory-heading">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="inventory-heading" className="text-sm font-medium">
+            {t('admin.inventory.title')}
+          </h2>
+          <button
+            type="button"
+            onClick={onOpenOrders}
+            className="focus-ring inline-flex min-h-11 items-center gap-1.5 rounded-sm border border-paper/15 px-3 text-sm font-medium text-paper/80 transition-colors hover:border-paper/30 hover:text-paper"
+          >
+            {t('admin.tabOrders')}
+            <ChevronRightIcon className="size-4" />
+          </button>
+        </div>
 
-      <div className="panel mt-2 overflow-x-auto rounded-2xl">
-        <table className="w-full min-w-[36rem] text-sm">
-          <thead>
-            <tr className="border-b border-line text-left text-[11px] uppercase tracking-[0.12em] text-muted">
-              <th className="px-4 py-3 font-medium">{t('admin.settings.title')}</th>
-              <th className="px-4 py-3 font-medium">{t('status.available')}</th>
-              <th className="px-4 py-3 font-medium">{t('status.held')}</th>
-              <th className="px-4 py-3 font-medium">{t('status.sold')}</th>
-              <th className="px-4 py-3 font-medium">{t('admin.settings.quota')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {stats.categories.map((category) => (
-              <tr key={category.key} className="border-b border-line/60 last:border-0">
-                <td className="px-4 py-3">
-                  <span className="flex items-center gap-2">
-                    <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: category.colorHex }} />
-                    {lang === 'id' ? category.name : category.nameEn}
-                    <span className="text-xs text-muted">{formatIdr(category.priceIdr, lang)}</span>
-                    {!category.salesOpen && (
-                      <span className="rounded-full bg-red-400/10 px-2 py-0.5 text-[10px] text-red-200">{t('cat.salesClosed')}</span>
-                    )}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-emerald-300">{category.available}</td>
-                <td className="px-4 py-3 text-amber-300">{category.held}</td>
-                <td className="px-4 py-3 text-muted">{category.sold}</td>
-                <td className="px-4 py-3 text-muted">{category.quota}</td>
-              </tr>
+        <div className="mt-3 border-y border-paper/10">
+          <div className="hidden grid-cols-[minmax(0,1fr)_repeat(4,4.5rem)] gap-3 border-b border-paper/10 py-2 text-xs text-paper/55 sm:grid">
+            <span>{t('seat.categoryLabel')}</span>
+            {countColumns.map((column) => (
+              <span key={column.label}>{column.label}</span>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </div>
+
+          <ul>
+            {stats.categories.map((category) => {
+              const name = lang === 'id' ? category.name : category.nameEn
+              return (
+                <li
+                  key={category.id}
+                  className="grid gap-2 border-b border-paper/10 py-3 last:border-0 sm:grid-cols-[minmax(0,1fr)_repeat(4,4.5rem)] sm:items-center sm:gap-3"
+                >
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 sm:block">
+                    <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
+                      <span
+                        aria-hidden
+                        className="size-2 shrink-0"
+                        style={{ backgroundColor: category.colorHex }}
+                      />
+                      {name}
+                      {!category.salesOpen && (
+                        <span className="border border-red-400/35 px-1.5 py-0.5 text-xs font-normal text-red-300">
+                          {t('cat.salesClosed')}
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-xs tabular-nums text-paper/55 sm:mt-0.5">
+                      {formatIdr(category.priceIdr, lang)}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums sm:contents">
+                    {countColumns.map((column) => (
+                      <span key={column.label} className="flex items-baseline gap-1.5 sm:block">
+                        <span className="text-xs text-paper/55 sm:hidden">{column.label}</span>
+                        <span className={column.tone}>{column.value(category)}</span>
+                      </span>
+                    ))}
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      </section>
     </div>
   )
 }

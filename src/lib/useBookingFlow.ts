@@ -11,15 +11,26 @@ import type { Category, EventInfo, Seat } from '@/lib/types'
 type EventResponse = { event: EventInfo; categories: Category[] }
 
 /**
- * Shared booking flow wiring used by both `/book` (classic mode) and the world
+ * Shared booking flow wiring used by both `/book` (direct booking) and the world
  * entry page. Reads and writes the `useBooking` store; callers own the seats
  * polling interval and the live-seat-sync effect.
  */
 export function useBookingFlow(options: { eventPollMs?: number } = {}) {
   const router = useRouter()
   const t = useT()
-  const { seat, holdToken, orderCode, breakdown, setStep, setSeat, setHold, setOrder, setBreakdown, reset } =
-    useBooking((state) => state)
+  const {
+    seat,
+    holdToken,
+    orderCode,
+    breakdown,
+    setStep,
+    setSeat,
+    setHold,
+    setOrder,
+    setBreakdown,
+    setParticipant,
+    reset,
+  } = useBooking((state) => state)
 
   const [data, setData] = useState<EventResponse | null>(null)
   const [seats, setSeats] = useState<Seat[]>([])
@@ -67,6 +78,8 @@ export function useBookingFlow(options: { eventPollMs?: number } = {}) {
       if (res.ok) {
         const held = (await res.json()) as { holdToken: string; expiresAt: string }
         setHold(held.holdToken, held.expiresAt, seat.id)
+        // A new hold owns a new order; clear any order from a previous seat.
+        setOrder(null, null)
         setStep('form')
       } else if (res.status === 409) {
         setError(t('error.seatTaken'))
@@ -86,22 +99,40 @@ export function useBookingFlow(options: { eventPollMs?: number } = {}) {
     setBusy(true)
     setError(null)
     try {
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ holdToken, ...details }),
-      })
-      if (res.status === 201) {
-        const order = (await res.json()) as { orderCode: string } & PriceBreakdown
+      const editingCode = orderCode
+      const res = await fetch(
+        editingCode ? `/api/orders/${encodeURIComponent(editingCode)}` : '/api/orders',
+        {
+          method: editingCode ? 'PATCH' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(editingCode ? details : { holdToken, ...details }),
+        },
+      )
+      if (res.ok) {
+        const order = (await res.json()) as { orderCode: string; totalIdr: number } & Partial<PriceBreakdown>
+        let nextBreakdown: PriceBreakdown | null = null
+        if (editingCode) {
+          const detail = await fetch(`/api/orders/${encodeURIComponent(order.orderCode)}`)
+          if (detail.ok) nextBreakdown = (await detail.json()) as PriceBreakdown
+        } else {
+          nextBreakdown = order as PriceBreakdown
+        }
         saveTicket(order.orderCode)
+        setParticipant(details)
         setOrder(order.orderCode, order.totalIdr)
-        setBreakdown(order)
+        if (nextBreakdown) setBreakdown(nextBreakdown)
         setStep('summary')
       } else if (res.status === 409) {
-        setError(t('error.holdExpired'))
-        setHold(null, null, null)
-        setStep('seat')
-        loadSeats()
+        if (editingCode) {
+          setError(t('error.orderLocked'))
+        } else {
+          setError(t('error.holdExpired'))
+          setHold(null, null, null)
+          setOrder(null, null)
+          setSeat(null)
+          setStep('seat')
+          loadSeats()
+        }
       } else if (res.status === 400) {
         setError(t('error.validation'))
       } else {
@@ -148,6 +179,8 @@ export function useBookingFlow(options: { eventPollMs?: number } = {}) {
         }
         setError(t('error.holdExpired'))
         setHold(null, null, null)
+        setOrder(null, null)
+        setSeat(null)
         setStep('seat')
         loadSeats()
       } else {

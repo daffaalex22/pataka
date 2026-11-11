@@ -1,7 +1,8 @@
 'use client'
 
-import { CategoryCards } from '@/components/visitor/CategoryCards'
+import { TicketTierList } from '@/components/visitor/TicketTierList'
 import { Dialog } from '@/components/ui/Dialog'
+import { XIcon } from '@/components/ui/icons'
 import { useT } from '@/lib/i18n'
 import type { Category } from '@/lib/types'
 
@@ -24,28 +25,31 @@ export function BoothOverlay({
       open={open && Boolean(categories)}
       onClose={onClose}
       ariaLabel={t('home.ticketsTitle')}
-      panelClassName="max-w-lg p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+      plain
+      panelClassName="max-w-lg rounded-none! p-0 sm:rounded-sm!"
     >
       {categories && (
         <>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold tracking-tight">{t('home.ticketsTitle')}</h2>
-              <p className="mt-1 text-sm text-muted">{t('home.ticketsSub')}</p>
+          <div className="flex items-start justify-between gap-4 px-4 pt-4 sm:px-5 sm:pt-5">
+            <div className="min-w-0">
+              <h2 className="text-balance font-display text-[clamp(1.5rem,4vw,2rem)] uppercase leading-[0.95] tracking-[0.01em] text-paper">
+                {t('home.ticketsTitle')}
+              </h2>
+              <p className="mt-1 text-sm text-paper/60">{t('home.ticketsSub')}</p>
             </div>
             <button
               type="button"
               onClick={onClose}
-              aria-label={t('common.back')}
-              title={t('common.back')}
-              className="grid size-11 shrink-0 place-items-center rounded-full border border-line text-sm text-muted transition hover:text-foreground"
+              aria-label={t('board.close')}
+              title={t('board.close')}
+              className="focus-ring grid size-11 shrink-0 place-items-center rounded-sm border border-paper/20 text-paper/70 transition-colors hover:border-paper/40 hover:text-paper"
             >
-              ✕
+              <XIcon className="size-4" />
             </button>
           </div>
 
-          <div className="mt-4">
-            <CategoryCards categories={categories} compact onChoose={onChoose} />
+          <div className="px-4 pb-4 sm:px-5">
+            <TicketTierList categories={categories} onChoose={onChoose} />
           </div>
         </>
       )}

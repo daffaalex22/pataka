@@ -4,19 +4,19 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { EntrySplash } from '@/components/world/EntrySplash'
 import { WorldView } from '@/components/world/WorldView'
-import type { EventInfo } from '@/lib/types'
+import type { Category, EventInfo } from '@/lib/types'
 import { hasWebGL } from '@/lib/webgl'
 
-type EventResponse = { event: EventInfo }
+type EventResponse = { event: EventInfo; categories: Category[] }
 
 export default function Home() {
   const router = useRouter()
   const [phase, setPhase] = useState<'splash' | 'world'>('splash')
-  const [event, setEvent] = useState<EventInfo | null>(null)
+  const [data, setData] = useState<EventResponse | null>(null)
   const [failed, setFailed] = useState(false)
 
   useEffect(() => {
-    // No WebGL → classic mode, never a dead page.
+    // No WebGL → direct booking, never a dead page.
     if (!hasWebGL()) {
       router.replace('/book')
       return
@@ -28,13 +28,21 @@ export default function Home() {
   useEffect(() => {
     fetch('/api/event')
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
-      .then((data: EventResponse) => setEvent(data.event))
+      .then((payload: EventResponse) => setData(payload))
       .catch(() => setFailed(true))
   }, [])
 
   if (phase === 'world') {
-    return <WorldView />
+    return <WorldView onExit={() => setPhase('splash')} />
   }
 
-  return <EntrySplash event={event} failed={failed} onEnter={() => setPhase('world')} entering={false} />
+  return (
+    <EntrySplash
+      event={data?.event ?? null}
+      categories={data?.categories ?? []}
+      failed={failed}
+      onEnter={() => setPhase('world')}
+      entering={false}
+    />
+  )
 }

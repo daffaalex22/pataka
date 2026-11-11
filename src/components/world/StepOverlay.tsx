@@ -21,20 +21,10 @@ export function StepOverlay({
       open={open}
       onClose={onBack}
       ariaLabel={t('world.checkout')}
+      plain
       panelClassName="max-w-md p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
     >
-      <div className="mb-2 flex items-center justify-end">
-        <button
-          type="button"
-          onClick={onBack}
-          aria-label={t('common.back')}
-          title={t('common.back')}
-          className="grid size-11 place-items-center rounded-full border border-line text-sm text-muted transition hover:text-foreground"
-        >
-          ✕
-        </button>
-      </div>
-      {children}
+      {open && children}
     </Dialog>
   )
 }

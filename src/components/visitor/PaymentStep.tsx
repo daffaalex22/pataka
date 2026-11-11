@@ -1,129 +1,191 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useCountdown } from '@/components/ui/useCountdown'
+import { ArrowLeftIcon, BankIcon, QrIcon, WalletIcon } from '@/components/ui/icons'
+import { OrderContext } from '@/components/visitor/OrderContext'
 import { PromoCodeField } from '@/components/visitor/PromoCodeField'
 import type { PriceBreakdown } from '@/lib/discounts'
 import { useLang, useT } from '@/lib/i18n'
-import { formatIdr } from '@/lib/types'
+import { formatIdr, type Seat } from '@/lib/types'
 
 const METHODS = ['ewallet', 'va', 'qrpay'] as const
 type Method = (typeof METHODS)[number]
+
+const METHOD_ICONS = {
+  ewallet: WalletIcon,
+  va: BankIcon,
+  qrpay: QrIcon,
+} as const
 
 export function PaymentStep({
   breakdown,
   totalIdr,
   orderCode,
   holdExpiresAt,
+  seat = null,
+  contextLabel,
   paying,
   error,
   onBreakdownChange,
   onBack,
   onPay,
+  onChooseSeat,
 }: {
   breakdown?: PriceBreakdown
   totalIdr?: number
   orderCode?: string
   holdExpiresAt: string | null
+  seat?: Seat | null
+  contextLabel?: string | null
   paying: boolean
   error: string | null
   onBreakdownChange?: (breakdown: PriceBreakdown) => void
   onBack: () => void
   onPay: (method: Method) => void
+  onChooseSeat?: () => void
 }) {
   const { lang } = useLang()
   const t = useT()
   const [method, setMethod] = useState<Method>('ewallet')
   const countdown = useCountdown(holdExpiresAt)
+  const headingRef = useRef<HTMLHeadingElement>(null)
+
+  useEffect(() => {
+    headingRef.current?.focus()
+  }, [])
 
   const labels: Record<Method, string> = {
     ewallet: t('pay.ewallet'),
     va: t('pay.va'),
     qrpay: t('pay.qrpay'),
   }
-  const icons: Record<Method, string> = { ewallet: '◉', va: '▤', qrpay: '▦' }
 
   return (
     <div className="mx-auto w-full max-w-xl">
-      <button type="button" onClick={onBack} className="text-xs text-muted transition hover:text-foreground">
-        ← {t('common.back')}
+      <button
+        type="button"
+        onClick={onBack}
+        className="focus-ring -my-2 inline-flex min-h-11 items-center gap-1 py-2 text-xs font-medium text-paper/55 transition-colors hover:text-paper"
+      >
+        <ArrowLeftIcon className="size-3.5" />
+        {t('common.back')}
       </button>
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t('pay.title')}</h1>
-      <p className="mt-1 text-sm text-muted">{t('pay.subtitle')}</p>
+      <h1
+        ref={headingRef}
+        tabIndex={-1}
+        className="mt-2 font-display text-[clamp(2rem,5vw,2.75rem)] uppercase leading-[0.95] tracking-[0.01em] text-paper focus:outline-none"
+      >
+        {t('pay.title')}
+      </h1>
+      <p className="mt-1 text-sm text-paper/60">{t('pay.subtitle')}</p>
 
-      <div className="panel mt-5 rounded-2xl p-5">
-        {breakdown ? (
-          <dl className="space-y-3 text-sm">
-            <div className="flex items-center justify-between gap-4">
-              <dt className="text-muted">{t('discount.listPrice')}</dt>
-              <dd>{formatIdr(breakdown.listPriceIdr, lang)}</dd>
-            </div>
-            {breakdown.autoDiscountIdr > 0 && (
-              <div className="flex items-center justify-between gap-4 text-emerald-300">
-                <dt>{lang === 'id' ? breakdown.autoDiscountName : breakdown.autoDiscountNameEn}</dt>
-                <dd>−{formatIdr(breakdown.autoDiscountIdr, lang)}</dd>
-              </div>
-            )}
-            {(breakdown.autoDiscountIdr > 0 || breakdown.promoDiscountIdr > 0) && (
+      <div className="mt-4 rounded-sm border border-paper/15 bg-paper/[0.02]">
+        <OrderContext
+          embedded
+          seat={seat}
+          holdExpiresAt={holdExpiresAt}
+          contextLabel={contextLabel}
+          countdown={countdown}
+          showPrice={false}
+        />
+
+        <div className="border-t border-paper/10 px-4 pb-4 pt-3 sm:px-5 sm:pb-5 sm:pt-4">
+          {breakdown ? (
+            <dl className="space-y-2 text-sm">
               <div className="flex items-center justify-between gap-4">
-                <dt className="text-muted">{t('discount.subtotal')}</dt>
-                <dd>{formatIdr(breakdown.subtotalIdr, lang)}</dd>
+                <dt className="text-paper/55">{t('discount.listPrice')}</dt>
+                <dd className="tabular-nums">{formatIdr(breakdown.listPriceIdr, lang)}</dd>
               </div>
-            )}
-            {breakdown.promoDiscountIdr > 0 && (
-              <div className="flex items-center justify-between gap-4 text-emerald-300">
-                <dt>{breakdown.promoCode} · {t('discount.promo')}</dt>
-                <dd>−{formatIdr(breakdown.promoDiscountIdr, lang)}</dd>
+              {breakdown.autoDiscountIdr > 0 && (
+                <div className="flex items-center justify-between gap-4 text-emerald-300">
+                  <dt>{lang === 'id' ? breakdown.autoDiscountName : breakdown.autoDiscountNameEn}</dt>
+                  <dd className="tabular-nums">−{formatIdr(breakdown.autoDiscountIdr, lang)}</dd>
+                </div>
+              )}
+              {(breakdown.autoDiscountIdr > 0 || breakdown.promoDiscountIdr > 0) && (
+                <div className="flex items-center justify-between gap-4">
+                  <dt className="text-paper/55">{t('discount.subtotal')}</dt>
+                  <dd className="tabular-nums">{formatIdr(breakdown.subtotalIdr, lang)}</dd>
+                </div>
+              )}
+              {breakdown.promoDiscountIdr > 0 && (
+                <div className="flex items-center justify-between gap-4 text-emerald-300">
+                  <dt>
+                    {breakdown.promoCode} · {t('discount.promo')}
+                  </dt>
+                  <dd className="tabular-nums">−{formatIdr(breakdown.promoDiscountIdr, lang)}</dd>
+                </div>
+              )}
+              <div className="flex items-baseline justify-between gap-4 border-t border-paper/10 pt-2">
+                <dt className="text-paper/55">{t('summary.total')}</dt>
+                <dd className="text-2xl font-semibold tabular-nums text-paper">
+                  {formatIdr(breakdown.totalIdr, lang)}
+                </dd>
               </div>
-            )}
-            <div className="flex items-center justify-between gap-4 border-t border-line pt-3">
-              <dt className="text-muted">{t('summary.total')}</dt>
-              <dd className="text-lg font-semibold text-accent">{formatIdr(breakdown.totalIdr, lang)}</dd>
+            </dl>
+          ) : (
+            <div className="flex items-baseline justify-between gap-4">
+              <span className="text-sm text-paper/55">{t('summary.total')}</span>
+              <span className="text-2xl font-semibold tabular-nums text-paper">
+                {formatIdr(totalIdr ?? 0, lang)}
+              </span>
             </div>
-          </dl>
-        ) : (
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm text-muted">{t('summary.total')}</span>
-            <span className="text-2xl font-semibold text-accent">{formatIdr(totalIdr ?? 0, lang)}</span>
-          </div>
-        )}
+          )}
 
-        <div className="mt-2 flex items-center justify-between text-xs">
-          <span className="text-muted">{t('summary.hold')}</span>
-          <span className={`font-mono font-medium ${countdown.expired ? 'text-red-300' : 'text-amber-200'}`}>
-            {countdown.formatted}
-          </span>
-        </div>
-
-        <div className="mt-4 grid gap-2">
-          {METHODS.map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => setMethod(option)}
-              aria-pressed={method === option}
-              className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition ${
-                method === option
-                  ? 'border-accent/70 bg-accent/10'
-                  : 'border-line bg-white/[0.02] hover:border-white/25'
-              }`}
-            >
-              <span aria-hidden className="text-base text-muted">{icons[option]}</span>
-              <span className="font-medium">{labels[option]}</span>
-              <span className={`ml-auto size-4 rounded-full border ${method === option ? 'border-accent bg-accent' : 'border-white/25'}`} />
-            </button>
-          ))}
+          <div className="mt-4 grid gap-2">
+          {METHODS.map((option) => {
+            const selected = method === option
+            const Icon = METHOD_ICONS[option]
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setMethod(option)}
+                aria-pressed={selected}
+                className={`focus-ring flex min-h-12 w-full items-center gap-3 rounded-sm border px-3.5 py-3 text-left transition-colors ${
+                  selected
+                    ? 'border-accent/70 bg-accent/[0.06]'
+                    : 'border-paper/15 hover:border-paper/30'
+                }`}
+              >
+                <Icon className="size-5 shrink-0 text-paper/60" />
+                <span className="text-sm font-medium text-paper">{labels[option]}</span>
+                <span
+                  aria-hidden
+                  className={`ml-auto grid size-4 shrink-0 place-items-center rounded-full border ${
+                    selected ? 'border-accent bg-accent' : 'border-paper/30'
+                  }`}
+                >
+                  {selected && <span className="size-1.5 rounded-full bg-ink" />}
+                </span>
+              </button>
+            )
+          })}
         </div>
 
         {error && (
-          <div role="alert" className="mt-3 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-sm text-red-200">
+          <div
+            role="alert"
+            className="mt-3 border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200"
+          >
             {error}
           </div>
         )}
 
         {countdown.expired && (
-          <div role="alert" className="mt-3 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-sm text-red-200">
-            {t('error.holdExpired')}
+          <div role="alert" className="mt-3 border border-amber-300/30 bg-amber-300/[0.07] px-4 py-3">
+            <p className="text-sm font-medium text-amber-200">{t('hold.expired')}</p>
+            <p className="mt-1 text-sm leading-relaxed text-paper/60">{t('hold.expiredBody')}</p>
+            {onChooseSeat && (
+              <button
+                type="button"
+                onClick={onChooseSeat}
+                className="focus-ring mt-3 inline-flex min-h-11 items-center rounded-sm border border-paper/20 px-4 text-sm font-medium text-paper transition-colors hover:border-paper/35"
+              >
+                {t('summary.chooseSeat')}
+              </button>
+            )}
           </div>
         )}
 
@@ -137,15 +199,16 @@ export function PaymentStep({
           />
         )}
 
-        <button
-          type="button"
-          onClick={() => onPay(method)}
-          disabled={paying || countdown.expired}
-          className="accent-glow mt-5 w-full rounded-full bg-accent px-6 py-3.5 text-sm font-semibold text-black transition hover:brightness-110 disabled:opacity-50"
-        >
-          {paying ? t('pay.processing') : t('pay.payNow')}
-        </button>
-        <p className="mt-3 text-center text-[11px] text-muted">{t('pay.simulation')}</p>
+          <button
+            type="button"
+            onClick={() => onPay(method)}
+            disabled={paying || countdown.expired}
+            className="focus-ring mt-4 min-h-12 w-full rounded-sm bg-accent px-5 py-3 text-sm font-semibold text-ink transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {paying ? t('pay.processing') : t('pay.payNow')}
+          </button>
+          <p className="mt-3 text-center text-xs text-paper/55">{t('pay.simulation')}</p>
+        </div>
       </div>
     </div>
   )
