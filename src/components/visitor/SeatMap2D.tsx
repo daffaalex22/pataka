@@ -196,7 +196,7 @@ export function SeatMap2D({
           type="button"
           onClick={() => zoomBy(1 / 1.35)}
           aria-label={t('seat.zoomOut')}
-          className="focus-ring grid size-8 place-items-center rounded-sm text-paper/60 transition-colors hover:bg-paper/10 hover:text-paper"
+          className="focus-ring grid size-11 place-items-center rounded-sm text-paper/60 transition-colors hover:bg-paper/10 hover:text-paper"
         >
           −
         </button>
@@ -204,14 +204,14 @@ export function SeatMap2D({
           type="button"
           onClick={() => zoomBy(1.35)}
           aria-label={t('seat.zoomIn')}
-          className="focus-ring grid size-8 place-items-center rounded-sm text-paper/60 transition-colors hover:bg-paper/10 hover:text-paper"
+          className="focus-ring grid size-11 place-items-center rounded-sm text-paper/60 transition-colors hover:bg-paper/10 hover:text-paper"
         >
           +
         </button>
         <button
           type="button"
           onClick={resetView}
-          className="focus-ring rounded-sm px-2 py-1.5 text-paper/60 transition-colors hover:bg-paper/10 hover:text-paper"
+          className="focus-ring inline-flex min-h-11 items-center rounded-sm px-3 text-paper/60 transition-colors hover:bg-paper/10 hover:text-paper"
         >
           {t('seat.mapAll')}
         </button>
@@ -219,7 +219,7 @@ export function SeatMap2D({
           <button
             type="button"
             onClick={focusCategory}
-            className="focus-ring rounded-sm px-2 py-1.5 text-paper/60 transition-colors hover:bg-paper/10 hover:text-paper"
+            className="focus-ring inline-flex min-h-11 items-center rounded-sm px-3 text-paper/60 transition-colors hover:bg-paper/10 hover:text-paper"
           >
             {t('seat.mapFocus')}
           </button>

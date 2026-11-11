@@ -64,7 +64,7 @@ export function SeatMapSheet({
           type="button"
           onClick={onClose}
           aria-label={t('seat.closeMap')}
-          className="focus-ring grid size-9 shrink-0 place-items-center rounded-sm text-paper/55 transition-colors hover:bg-paper/10 hover:text-paper"
+          className="focus-ring grid size-11 shrink-0 place-items-center rounded-sm border border-paper/20 text-paper/70 transition-colors hover:border-paper/40 hover:text-paper"
         >
           <XIcon className="size-4" />
         </button>

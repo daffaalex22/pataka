@@ -50,6 +50,24 @@ export function RotateIcon({ className }: { className?: string }) {
   )
 }
 
+export function WalkIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <circle cx="11.5" cy="4.4" r="1.6" />
+      <path d="M11.5 6v4.2M11.5 10.2l2.6 2.4 1 3.4M11.5 10.2l-2.4 2.6-.8 3M11.5 7.4 8.9 9M11.5 7.4l2.6 1.4" />
+    </Icon>
+  )
+}
+
+export function MapIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <path d="M3.5 5.5 8 4l4 1.5L16.5 4v10.5L12 16l-4-1.5-4.5 1.5z" />
+      <path d="M8 4v10.5M12 5.5V16" />
+    </Icon>
+  )
+}
+
 export function CompassIcon({ className }: { className?: string }) {
   return (
     <Icon className={className}>

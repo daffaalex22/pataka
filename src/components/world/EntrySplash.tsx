@@ -64,7 +64,7 @@ export function EntrySplash({
       <header className="relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
         <Link
           href="/"
-          className="flex items-center gap-2 text-sm font-semibold tracking-[0.22em] text-paper focus-ring"
+          className="focus-ring inline-flex min-h-11 items-center gap-2 text-sm font-semibold tracking-[0.22em] text-paper"
         >
           PATAKA
           <span aria-hidden className="size-1.5 rounded-full bg-accent" />
@@ -73,19 +73,19 @@ export function EntrySplash({
         <nav className="flex items-center gap-4 text-xs text-paper/65">
           <Link
             href="/tickets"
-            className="transition hover:text-paper focus-ring"
+            className="focus-ring inline-flex min-h-11 items-center transition hover:text-paper"
           >
             {t('world.myTickets')}
           </Link>
           <Link
             href="/deck"
-            className="hidden transition hover:text-paper focus-ring sm:block"
+            className="focus-ring hidden min-h-11 min-w-11 items-center justify-center transition hover:text-paper sm:inline-flex"
           >
             {t('common.deck')}
           </Link>
           <Link
             href="/admin"
-            className="hidden transition hover:text-paper focus-ring sm:block"
+            className="focus-ring hidden min-h-11 min-w-11 items-center justify-center transition hover:text-paper sm:inline-flex"
           >
             {t('common.admin')}
           </Link>
@@ -170,7 +170,7 @@ export function EntrySplash({
             </button>
             <Link
               href="/book"
-              className="text-sm font-medium text-paper/65 underline decoration-paper/30 underline-offset-4 transition hover:text-paper hover:decoration-paper/60 focus-ring"
+              className="focus-ring inline-flex min-h-11 items-center text-sm font-medium text-paper/65 underline decoration-paper/30 underline-offset-4 transition hover:text-paper hover:decoration-paper/60"
             >
               {t('splash.direct')}
             </Link>

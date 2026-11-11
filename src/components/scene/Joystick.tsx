@@ -38,7 +38,7 @@ export function Joystick({ moveRef }: { moveRef: React.RefObject<MoveVector> }) 
       ref={baseRef}
       role="group"
       aria-label="Movement joystick"
-      className="pointer-events-auto absolute bottom-24 left-5 size-28 touch-none select-none rounded-full border border-white/20 bg-white/5 backdrop-blur-sm"
+      className="pointer-events-auto absolute bottom-24 left-5 size-28 touch-none select-none rounded-full border border-paper/25 bg-ink/70"
       onPointerDown={(event) => {
         event.currentTarget.setPointerCapture(event.pointerId)
         setActive(true)
@@ -55,7 +55,7 @@ export function Joystick({ moveRef }: { moveRef: React.RefObject<MoveVector> }) 
     >
       <span
         aria-hidden
-        className="absolute left-1/2 top-1/2 size-12 rounded-full bg-accent/80 shadow-[0_0_18px_rgba(245,197,66,0.5)]"
+        className="absolute left-1/2 top-1/2 size-12 rounded-full bg-accent"
         style={{ transform: `translate(calc(-50% + ${knob.x}px), calc(-50% + ${knob.y}px))` }}
       />
     </div>

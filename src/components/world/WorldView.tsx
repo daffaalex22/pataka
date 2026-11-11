@@ -19,6 +19,7 @@ import { SeatBar } from '@/components/world/SeatBar'
 import { SeatViewPanel } from '@/components/world/SeatViewPanel'
 import { StepOverlay } from '@/components/world/StepOverlay'
 import { WorldHud } from '@/components/world/WorldHud'
+import { ChevronRightIcon, XIcon } from '@/components/ui/icons'
 import { useLang, useT } from '@/lib/i18n'
 import { useBooking } from '@/lib/store'
 import type { Category, Seat } from '@/lib/types'
@@ -26,7 +27,11 @@ import { useBookingFlow } from '@/lib/useBookingFlow'
 
 function WorldLoading() {
   const t = useT()
-  return <div className="grid h-full place-items-center text-xs text-muted">{t('splash.loading')}</div>
+  return (
+    <div className="grid h-full place-items-center bg-ink p-6 text-center text-sm text-paper/60">
+      {t('splash.loading')}
+    </div>
+  )
 }
 
 const PlazaScene = dynamic(() => import('@/components/scene/PlazaScene'), {
@@ -151,16 +156,17 @@ export function WorldView({ onExit }: { onExit: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-[#07060d]">
+    <div className="fixed inset-0 overflow-hidden bg-ink">
       <div className="absolute inset-0">
         <SceneBoundary
           fallback={
             <div className="grid h-full place-items-center p-6 text-center">
               <Link
                 href="/book"
-                className="rounded-full bg-accent px-5 py-3 text-sm font-semibold text-black transition hover:brightness-110"
+                className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-sm bg-accent px-5 text-sm font-semibold text-ink transition hover:brightness-110"
               >
-                {t('splash.direct')} →
+                {t('splash.direct')}
+                <ChevronRightIcon className="size-4" />
               </Link>
             </div>
           }
@@ -196,11 +202,11 @@ export function WorldView({ onExit }: { onExit: () => void }) {
         mapEnabled
         mapOpen={mapOpen}
         onToggleMap={() => setMapOpen((open) => !open)}
-        hint={hint}
+        hint={seat ? null : hint}
         onExit={onExit}
       />
 
-      {mode === 'walk' && !overlayOpen && !mapOpen && !previewSeat && !boothOpen && !boardDetailOpen && (
+      {mode === 'walk' && !seat && !overlayOpen && !mapOpen && !previewSeat && !boothOpen && !boardDetailOpen && (
         <Joystick moveRef={moveRef} />
       )}
 
@@ -237,8 +243,8 @@ export function WorldView({ onExit }: { onExit: () => void }) {
         />
       )}
 
-      {!previewSeat && !overlayOpen && !mapOpen && !boothOpen && !boardDetailOpen && (
-        <p className="pointer-events-none absolute inset-x-0 bottom-2 z-10 text-center text-[10px] text-white/45">
+      {!seat && !previewSeat && !overlayOpen && !mapOpen && !boothOpen && !boardDetailOpen && (
+        <p className="pointer-events-none absolute inset-x-0 bottom-2 z-10 text-center text-xs text-paper/55">
           {mode === 'walk' ? t('seat.walkHint') : t('seat.dragHint')}
         </p>
       )}
@@ -290,35 +296,42 @@ export function WorldView({ onExit }: { onExit: () => void }) {
         open={mapOpen}
         onClose={() => setMapOpen(false)}
         ariaLabel={t('seat.title')}
-        panelClassName="max-w-3xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5"
+        plain
+        panelClassName="max-w-3xl rounded-none! p-0 sm:rounded-sm!"
       >
         {mapOpen && (
           <>
-            <div className="flex items-center justify-between gap-3 py-2">
-              <div>
-                <h2 className="text-lg font-semibold tracking-tight">{t('seat.title')}</h2>
-                <p className="text-xs text-muted">{t('seat.subtitle')}</p>
+            <div className="flex items-start justify-between gap-4 border-b border-paper/10 px-4 py-4 sm:px-5">
+              <div className="min-w-0">
+                <h2 className="text-balance font-display text-[clamp(1.5rem,4vw,2rem)] uppercase leading-[0.95] tracking-[0.01em] text-paper">
+                  {t('seat.title')}
+                </h2>
+                <p className="mt-1 text-sm text-paper/60">{t('seat.subtitle')}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setMapOpen(false)}
-                className="rounded-full border border-line px-3 py-1.5 text-xs font-medium text-muted transition hover:border-white/30 hover:text-foreground"
+                aria-label={t('seat.closeMap')}
+                title={t('seat.closeMap')}
+                className="focus-ring grid size-11 shrink-0 place-items-center rounded-sm border border-paper/20 text-paper/70 transition-colors hover:border-paper/40 hover:text-paper"
               >
-                ✕ {t('common.back')}
+                <XIcon className="size-4" />
               </button>
             </div>
-            <SeatLegend className="mt-3" />
-            <div className="mt-3 overflow-hidden rounded-2xl border border-line bg-white/[0.03] p-3">
-              <SeatMap2D
-                seats={seats}
-                categoryKey={categoryKey}
-                selectedId={seat?.id ?? null}
-                onSelect={(next) => {
-                  selectSeat(next)
-                  setMapOpen(false)
-                }}
-                stageLabel={t('seat.stage')}
-              />
+            <div className="p-4">
+              <SeatLegend />
+              <div className="mt-3 border border-paper/10 p-3">
+                <SeatMap2D
+                  seats={seats}
+                  categoryKey={categoryKey}
+                  selectedId={seat?.id ?? null}
+                  onSelect={(next) => {
+                    selectSeat(next)
+                    setMapOpen(false)
+                  }}
+                  stageLabel={t('seat.stage')}
+                />
+              </div>
             </div>
           </>
         )}

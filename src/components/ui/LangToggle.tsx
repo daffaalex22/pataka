@@ -12,7 +12,7 @@ export function LangToggle() {
           type="button"
           onClick={() => setLang(code)}
           aria-pressed={lang === code}
-          className={`focus-ring rounded-full px-3 py-2.5 uppercase tracking-wide transition ${
+          className={`focus-ring inline-flex min-h-11 min-w-11 items-center justify-center rounded-full px-3 uppercase tracking-wide transition ${
             lang === code ? 'bg-accent text-black' : 'text-muted hover:text-foreground'
           }`}
         >

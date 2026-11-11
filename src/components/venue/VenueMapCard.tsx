@@ -41,7 +41,7 @@ export function VenueMapCard({
               <button
                 type="button"
                 onClick={onEnlarge}
-                className="shrink-0 rounded-sm border border-black/15 px-2.5 py-1.5 text-xs font-medium text-[#4d4d4d] transition hover:border-black/30 hover:bg-black/5"
+                className="focus-ring inline-flex min-h-11 shrink-0 items-center justify-center rounded-sm border border-black/15 px-3 text-xs font-medium text-[#4d4d4d] transition hover:border-black/30 hover:bg-black/5"
               >
                 {t('venue.enlarge')}
               </button>
