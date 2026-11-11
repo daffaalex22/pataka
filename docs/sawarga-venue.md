@@ -81,6 +81,14 @@ test **headed**; software WebGL is too slow for the scripted walk.
 - [Mobile orbit](../artifacts/venue-pass/mobile-orbit.png)
 - [Mobile 2D map](../artifacts/venue-pass/mobile-seat-map.png)
 
+## Main branch sync
+
+The branch was rebased onto `main` at `eeb89af`, which includes the plaza HUD and
+admin-console rebuild. The only overlap was `SeatMap2D`; the shell projection is
+kept alongside main's larger touch targets. Main's `WorldHud`, `SeatBar`,
+`SeatViewPanel`, `WorldView` and admin components are untouched. Rebase again
+before merging if `main` moves further.
+
 ## Known follow-ups
 
 - The atria access bridges are visual; the walkable route uses the two
