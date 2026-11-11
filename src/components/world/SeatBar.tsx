@@ -51,6 +51,14 @@ export function SeatBar({
             </p>
             <p className="text-xs text-white/60">
               {formatIdr(seat.priceIdr, lang)}
+              {seat.autoDiscountIdr > 0 && (
+                <>
+                  <span className="ml-1.5 line-through">{formatIdr(seat.listPriceIdr, lang)}</span>
+                  <span className="ml-1.5 text-emerald-300">
+                    {lang === 'id' ? seat.autoDiscountName : seat.autoDiscountNameEn} · −{formatIdr(seat.autoDiscountIdr, lang)}
+                  </span>
+                </>
+              )}
               {seat.status !== 'available' && (
                 <span className={seat.status === 'held' ? 'ml-2 text-amber-300' : 'ml-2 text-zinc-400'}>
                   · {t(`status.${seat.status}`)}

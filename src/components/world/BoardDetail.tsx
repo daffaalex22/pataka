@@ -115,7 +115,17 @@ export function BoardDetail({
                     </span>
                   </span>
                   <span className="flex shrink-0 items-center gap-3 text-sm">
-                    <span className="text-accent">{formatIdr(category.priceIdr, lang)}</span>
+                    <span className="flex items-baseline gap-2 text-accent">
+                      {formatIdr(category.priceIdr, lang)}
+                      {category.autoDiscountIdr > 0 && (
+                        <>
+                          <span className="text-xs text-muted line-through">{formatIdr(category.listPriceIdr, lang)}</span>
+                          <span className="text-[11px] text-emerald-300">
+                            {lang === 'id' ? category.autoDiscountName : category.autoDiscountNameEn} · −{formatIdr(category.autoDiscountIdr, lang)}
+                          </span>
+                        </>
+                      )}
+                    </span>
                     <span className="text-muted">
                       {category.remaining} {t('cat.available')}
                     </span>

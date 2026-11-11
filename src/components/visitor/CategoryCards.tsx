@@ -44,7 +44,19 @@ export function CategoryCards({
                 style={{ backgroundColor: category.colorHex, boxShadow: `0 0 12px ${category.colorHex}` }}
               />
             </div>
-            <p className="mt-3 text-xl font-semibold tracking-tight">{formatIdr(category.priceIdr, lang)}</p>
+            {category.autoDiscountIdr > 0 ? (
+              <>
+                <p className="mt-3 flex items-baseline gap-2">
+                  <span className="text-xl font-semibold tracking-tight">{formatIdr(category.priceIdr, lang)}</span>
+                  <span className="text-xs text-muted line-through">{formatIdr(category.listPriceIdr, lang)}</span>
+                </p>
+                <p className="mt-1 text-[11px] text-emerald-300">
+                  {lang === 'id' ? category.autoDiscountName : category.autoDiscountNameEn} · −{formatIdr(category.autoDiscountIdr, lang)}
+                </p>
+              </>
+            ) : (
+              <p className="mt-3 text-xl font-semibold tracking-tight">{formatIdr(category.priceIdr, lang)}</p>
+            )}
             <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
               <div
                 className="h-full rounded-full transition-all"

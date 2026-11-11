@@ -36,7 +36,17 @@ export function FormStep({
           <span className="font-medium">
             {seat.id} · {lang === 'id' ? seat.categoryName : seat.categoryNameEn}
           </span>
-          <span className="text-accent">{formatIdr(seat.priceIdr, lang)}</span>
+          <span className="flex shrink-0 items-baseline gap-2 text-accent">
+            {formatIdr(seat.priceIdr, lang)}
+            {seat.autoDiscountIdr > 0 && (
+              <>
+                <span className="text-xs text-muted line-through">{formatIdr(seat.listPriceIdr, lang)}</span>
+                <span className="text-[11px] text-emerald-300">
+                  {lang === 'id' ? seat.autoDiscountName : seat.autoDiscountNameEn} · −{formatIdr(seat.autoDiscountIdr, lang)}
+                </span>
+              </>
+            )}
+          </span>
         </div>
       )}
 
