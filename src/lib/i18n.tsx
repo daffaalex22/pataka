@@ -27,12 +27,14 @@ const id = {
 
   'tickets.title': 'Tiket saya',
   'tickets.subtitle': 'Tiket yang tersimpan di perangkat ini.',
-  'tickets.empty': 'Belum ada tiket di perangkat ini.',
+  'tickets.emptyTitle': 'Belum ada tiket',
+  'tickets.empty': 'Tiket yang kamu pesan akan muncul di sini.',
   'tickets.emptyCta': 'Masuk ke Plaza',
   'tickets.view': 'Lihat tiket',
   'tickets.continuePay': 'Lanjutkan pembayaran',
   'tickets.remove': 'Hapus dari daftar',
   'tickets.error': 'Tiket tidak dapat dimuat.',
+  'tickets.loading': 'Memuat tiket…',
 
   'hero.badge': 'Bandung Innovation Week 2026',
   'hero.cta': 'Pilih Kursi Sekarang',
@@ -161,11 +163,15 @@ const id = {
 
   'eticket.success': 'Pembayaran berhasil',
   'eticket.title': 'E-Ticket kamu',
+  'eticket.ticketLabel': 'E-Tiket',
   'eticket.name': 'Nama',
   'eticket.seat': 'Kursi',
   'eticket.code': 'Kode',
   'eticket.method': 'Metode',
-  'eticket.calendar': 'Tambah ke Kalender',
+  'eticket.showQr': 'Tunjukkan QR',
+  'eticket.qrTitle': 'Tunjukkan QR ini',
+  'eticket.qrClose': 'Tutup QR',
+  'eticket.calendar': 'Kalender',
   'eticket.email': 'Kirim ke email',
   'eticket.emailSending': 'Mengirim…',
   'eticket.emailSent': 'Tiket sudah dikirim ke emailmu.',
@@ -175,7 +181,8 @@ const id = {
   'eticket.reminderBody': 'Pengingat H-1 akan dikirim ke email dan WhatsApp kamu.',
   'eticket.scanNote': 'Tunjukkan QR ini ke panitia saat check-in.',
   'eticket.backHome': 'Kembali ke beranda',
-  'eticket.notFound': 'Tiket tidak ditemukan.',
+  'eticket.notFound': 'Tiket tidak ditemukan',
+  'eticket.notFoundBody': 'Periksa tautan tiket atau buka daftar tiket di perangkat ini.',
 
   'venue.title': 'Cara ke Sawarga Courtyard',
   'venue.subtitle': 'Ground Floor · Summarecon Mall Bandung',
@@ -296,7 +303,7 @@ const id = {
   'admin.checkin.next': 'Scan berikutnya',
   'admin.checkin.cameraError': 'Kamera tidak tersedia — gunakan input manual.',
   'eticket.copy': 'Salin tautan',
-  'eticket.copied': 'Tersalin ✓',
+  'eticket.copied': 'Tersalin',
   'eticket.cancelledTitle': 'Pesanan dibatalkan',
   'eticket.cancelledBody': 'Pesanan ini telah dibatalkan oleh panitia. Kursi sudah dilepas untuk pengunjung lain.',
 
@@ -331,12 +338,14 @@ const en: Record<DictKey, string> = {
 
   'tickets.title': 'My tickets',
   'tickets.subtitle': 'Tickets saved on this device.',
-  'tickets.empty': 'No tickets saved on this device yet.',
+  'tickets.emptyTitle': 'No tickets yet',
+  'tickets.empty': 'Tickets you book will appear here.',
   'tickets.emptyCta': 'Enter the Plaza',
   'tickets.view': 'View ticket',
   'tickets.continuePay': 'Continue payment',
   'tickets.remove': 'Remove from list',
   'tickets.error': 'This ticket could not be loaded.',
+  'tickets.loading': 'Loading tickets…',
 
   'hero.badge': 'Bandung Innovation Week 2026',
   'hero.cta': 'Pick Your Seat',
@@ -465,11 +474,15 @@ const en: Record<DictKey, string> = {
 
   'eticket.success': 'Payment successful',
   'eticket.title': 'Your e-ticket',
+  'eticket.ticketLabel': 'E-Ticket',
   'eticket.name': 'Name',
   'eticket.seat': 'Seat',
   'eticket.code': 'Code',
   'eticket.method': 'Method',
-  'eticket.calendar': 'Add to Calendar',
+  'eticket.showQr': 'Show QR',
+  'eticket.qrTitle': 'Show this QR',
+  'eticket.qrClose': 'Close QR',
+  'eticket.calendar': 'Calendar',
   'eticket.email': 'Email ticket',
   'eticket.emailSending': 'Sending…',
   'eticket.emailSent': 'The ticket has been emailed to you.',
@@ -479,7 +492,8 @@ const en: Record<DictKey, string> = {
   'eticket.reminderBody': 'A D-1 reminder will be sent to your email and WhatsApp.',
   'eticket.scanNote': 'Show this QR to the organizer at check-in.',
   'eticket.backHome': 'Back to home',
-  'eticket.notFound': 'Ticket not found.',
+  'eticket.notFound': 'Ticket not found',
+  'eticket.notFoundBody': 'Check the ticket link or open the ticket list on this device.',
 
   'venue.title': 'Getting to Sawarga Courtyard',
   'venue.subtitle': 'Ground Floor · Summarecon Mall Bandung',
@@ -600,7 +614,7 @@ const en: Record<DictKey, string> = {
   'admin.checkin.next': 'Scan next',
   'admin.checkin.cameraError': 'Camera unavailable — use manual entry instead.',
   'eticket.copy': 'Copy link',
-  'eticket.copied': 'Copied ✓',
+  'eticket.copied': 'Copied',
   'eticket.cancelledTitle': 'Order cancelled',
   'eticket.cancelledBody': 'This order was cancelled by the organizer. The seat has been released for someone else.',
 
@@ -624,7 +638,10 @@ export function LangProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = window.localStorage.getItem('pataka-lang')
     // eslint-disable-next-line react-hooks/set-state-in-effect -- restore the language after mount to avoid an SSR mismatch
-    if (stored === 'id' || stored === 'en') setLangState(stored)
+    if (stored === 'id' || stored === 'en') {
+      setLangState(stored)
+      document.documentElement.lang = stored
+    }
   }, [])
 
   const setLang = (next: Lang) => {

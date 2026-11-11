@@ -67,6 +67,42 @@ export function XIcon({ className }: { className?: string }) {
   )
 }
 
+export function CheckIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <path d="M4 10.5l4 4L16 6" />
+    </Icon>
+  )
+}
+
+export function CalendarIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <rect x="3" y="4.5" width="14" height="12" rx="1.25" />
+      <path d="M3 8.25h14M6.75 3v3M13.25 3v3" />
+      <path d="M6.5 11.25h2M11.5 11.25h2M6.5 13.75h2" />
+    </Icon>
+  )
+}
+
+export function LinkIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <path d="M8.3 11.7a3.1 3.1 0 0 0 4.4 0l2.5-2.5a3.1 3.1 0 0 0-4.4-4.4l-1.3 1.3" />
+      <path d="M11.7 8.3a3.1 3.1 0 0 0-4.4 0l-2.5 2.5a3.1 3.1 0 0 0 4.4 4.4l1.3-1.3" />
+    </Icon>
+  )
+}
+
+export function MailIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <rect x="2.75" y="4.5" width="14.5" height="11" rx="1.25" />
+      <path d="M3.4 5.4 10 10.6l6.6-5.2" />
+    </Icon>
+  )
+}
+
 export function WalletIcon({ className }: { className?: string }) {
   return (
     <Icon className={className}>
