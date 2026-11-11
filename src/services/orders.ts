@@ -1,4 +1,6 @@
 import type { SqlDb } from '@/lib/db'
+import type { PriceBreakdown } from '@/lib/discounts'
+import { resolvePrice } from '@/services/discounts'
 
 export type CreateOrderInput = {
   holdToken: string
@@ -8,7 +10,7 @@ export type CreateOrderInput = {
 }
 
 export type CreateOrderResult =
-  | { orderCode: string; totalIdr: number }
+  | ({ orderCode: string } & PriceBreakdown)
   | 'HOLD_EXPIRED'
   | 'SALES_CLOSED'
 
@@ -24,8 +26,13 @@ function newOrderCode(): string {
 /** Create a pending order from a live hold. The hold token proves seat ownership. */
 export async function createOrder(db: SqlDb, input: CreateOrderInput): Promise<CreateOrderResult> {
   return db.transaction(async (tx) => {
-    const valid = await tx.query<{ id: string; price_idr: number; sales_open: boolean }>(
-      `SELECT s.id, c.price_idr, c.sales_open
+    const valid = await tx.query<{
+      id: string
+      price_idr: number
+      category_key: string
+      sales_open: boolean
+    }>(
+      `SELECT s.id, c.price_idr, c.key AS category_key, c.sales_open
        FROM seats s JOIN ticket_categories c ON c.id = s.category_id
        WHERE s.hold_token = $1 AND s.status = 'held' AND s.hold_expires_at > now()`,
       [input.holdToken],
@@ -43,13 +50,53 @@ export async function createOrder(db: SqlDb, input: CreateOrderInput): Promise<C
     const seat = valid[0]
     if (!seat.sales_open) return 'SALES_CLOSED'
 
+    const breakdown = await resolvePrice(tx, seat.category_key, Number(seat.price_idr), new Date())
+
     // Idempotent: the same hold token always maps to one pending order.
-    const existing = await tx.query<{ code: string; total_idr: number }>(
-      `SELECT code, total_idr FROM orders WHERE hold_token = $1 AND status = 'pending' LIMIT 1`,
+    const existing = await tx.query<{
+      code: string
+      list_price_idr: number
+      auto_discount_id: number | null
+      auto_discount_idr: number
+      auto_discount_name: string | null
+      auto_discount_name_en: string | null
+      promo_discount_id: number | null
+      promo_discount_idr: number
+      promo_code: string | null
+      total_idr: number
+      auto_discount_type: string | null
+      auto_discount_value: number | null
+    }>(
+      `SELECT o.code, o.list_price_idr, o.auto_discount_id, o.auto_discount_idr,
+              o.auto_discount_name, o.auto_discount_name_en,
+              o.promo_discount_id, o.promo_discount_idr, o.promo_code, o.total_idr,
+              d.type AS auto_discount_type, d.value AS auto_discount_value
+       FROM orders o
+       LEFT JOIN discounts d ON d.id = o.auto_discount_id
+       WHERE o.hold_token = $1 AND o.status = 'pending'
+       LIMIT 1`,
       [input.holdToken],
     )
     if (existing.length > 0) {
-      return { orderCode: existing[0].code, totalIdr: Number(existing[0].total_idr) }
+      const row = existing[0]
+      const listPriceIdr = Number(row.list_price_idr)
+      const autoDiscountIdr = Number(row.auto_discount_idr)
+      const promoDiscountIdr = Number(row.promo_discount_idr)
+      return {
+        orderCode: row.code,
+        listPriceIdr,
+        autoDiscountId: row.auto_discount_id,
+        autoDiscountIdr,
+        autoDiscountName: row.auto_discount_name,
+        autoDiscountNameEn: row.auto_discount_name_en,
+        autoDiscountPercent:
+          row.auto_discount_type === 'percent' ? Number(row.auto_discount_value) : null,
+        subtotalIdr: listPriceIdr - autoDiscountIdr,
+        promoDiscountId: row.promo_discount_id,
+        promoDiscountIdr,
+        promoCode: row.promo_code,
+        totalIdr: Number(row.total_idr),
+      }
     }
 
     // Any older pending order on this seat is stale — the current hold token owns the seat now.
@@ -61,11 +108,26 @@ export async function createOrder(db: SqlDb, input: CreateOrderInput): Promise<C
 
     const code = newOrderCode()
     await tx.query(
-      `INSERT INTO orders (code, seat_id, hold_token, name, email, phone, total_idr)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [code, seat.id, input.holdToken, input.name, input.email, input.phone, seat.price_idr],
+      `INSERT INTO orders (code, seat_id, hold_token, name, email, phone, total_idr,
+                           list_price_idr, auto_discount_id, auto_discount_idr,
+                           auto_discount_name, auto_discount_name_en)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+      [
+        code,
+        seat.id,
+        input.holdToken,
+        input.name,
+        input.email,
+        input.phone,
+        breakdown.totalIdr,
+        breakdown.listPriceIdr,
+        breakdown.autoDiscountId,
+        breakdown.autoDiscountIdr,
+        breakdown.autoDiscountName,
+        breakdown.autoDiscountNameEn,
+      ],
     )
-    return { orderCode: code, totalIdr: Number(seat.price_idr) }
+    return { orderCode: code, ...breakdown }
   })
 }
 
