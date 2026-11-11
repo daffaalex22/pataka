@@ -18,7 +18,6 @@ import { SeatBar } from '@/components/world/SeatBar'
 import { SeatViewPanel } from '@/components/world/SeatViewPanel'
 import { StepOverlay } from '@/components/world/StepOverlay'
 import { WorldHud } from '@/components/world/WorldHud'
-import type { PriceBreakdown } from '@/lib/discounts'
 import { useLang, useT } from '@/lib/i18n'
 import { useBooking } from '@/lib/store'
 import type { Category, Seat } from '@/lib/types'
@@ -245,30 +244,34 @@ export function WorldView() {
       </StepOverlay>
 
       <StepOverlay open={summaryOpen} onBack={() => setStep('form')}>
-        <SummaryStep
-          seat={seat}
-          orderCode={orderCode as string}
-          breakdown={breakdown as PriceBreakdown}
-          holdExpiresAt={holdExpiresAt}
-          onBack={() => setStep('form')}
-          onContinue={() => {
-            setError(null)
-            setStep('payment')
-          }}
-        />
+        {orderCode && breakdown && (
+          <SummaryStep
+            seat={seat}
+            orderCode={orderCode}
+            breakdown={breakdown}
+            holdExpiresAt={holdExpiresAt}
+            onBack={() => setStep('form')}
+            onContinue={() => {
+              setError(null)
+              setStep('payment')
+            }}
+          />
+        )}
       </StepOverlay>
 
       <StepOverlay open={paymentOpen} onBack={() => setStep('summary')}>
-        <PaymentStep
-          breakdown={breakdown as PriceBreakdown}
-          orderCode={orderCode as string}
-          holdExpiresAt={holdExpiresAt}
-          paying={busy}
-          error={error}
-          onBreakdownChange={setBreakdown}
-          onBack={() => setStep('summary')}
-          onPay={handlePay}
-        />
+        {orderCode && breakdown && (
+          <PaymentStep
+            breakdown={breakdown}
+            orderCode={orderCode}
+            holdExpiresAt={holdExpiresAt}
+            paying={busy}
+            error={error}
+            onBreakdownChange={setBreakdown}
+            onBack={() => setStep('summary')}
+            onPay={handlePay}
+          />
+        )}
       </StepOverlay>
 
       <Dialog
