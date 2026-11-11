@@ -282,8 +282,8 @@ function addStairLanding(
   stair: (typeof ACCESS_STAIRS)['east'],
   sign: 1 | -1,
 ): void {
-  const { landing, width } = stair;
-  const platform = new THREE.BoxGeometry(width, 0.26, width);
+  const { landing, landingSize } = stair;
+  const platform = new THREE.BoxGeometry(landingSize, 0.26, landingSize);
   platform.translate(landing.x, landing.y - 0.13, landing.z);
   batch.add('venueStone', platform);
 
@@ -292,16 +292,16 @@ function addStairLanding(
   if (columnHeight > 0.5) {
     for (const offset of [-0.8, 0.8]) {
       const column = new THREE.CylinderGeometry(0.13, 0.17, columnHeight, 10);
-      column.translate(landing.x + offset, columnHeight / 2, landing.z - width / 2 + 0.35);
+      column.translate(landing.x + offset, columnHeight / 2, landing.z - landingSize / 2 + 0.35);
       batch.add('venueMetal', column);
     }
   }
 
-  const half = width / 2;
+  const half = landingSize / 2;
   const railY = landing.y + 0.06;
   const topY = landing.y + 1.01;
-  // North edge and the outer side edge; the south/east sides stay open for
-  // the two flights.
+  // North edge, the outer side edge, and the unused part of the inner edge.
+  // The south edge and the upper-flight opening stay clear.
   const edges: Array<[{ x: number; z: number }, { x: number; z: number }]> = [
     [
       { x: landing.x - half, z: landing.z - half },
@@ -310,6 +310,10 @@ function addStairLanding(
     [
       { x: landing.x - sign * half, z: landing.z - half },
       { x: landing.x - sign * half, z: landing.z + half },
+    ],
+    [
+      { x: landing.x + sign * half, z: landing.z - half },
+      { x: landing.x + sign * half, z: stair.upperStart.z },
     ],
   ];
   for (const [from, to] of edges) {

@@ -26,8 +26,8 @@ describe('floorHeightAt', () => {
     expect(floorHeightAt(-20, -16.2)).toBeCloseTo(2.6, 1)
   })
   it('ramps up the upper flight to the bridge', () => {
-    expect(floorHeightAt(22.15, -13)).toBeCloseTo(3.9, 1)
-    expect(floorHeightAt(23.5, -11)).toBeCloseTo(5.2, 1)
+    expect(floorHeightAt(22.25, -13.5)).toBeCloseTo(3.9, 1)
+    expect(floorHeightAt(23.5, -11.5)).toBeCloseTo(5.2, 1)
   })
   it('keeps the landing bridge walkable', () => {
     expect(floorHeightAt(24.9, -9.9)).toBeCloseTo(5.2, 1)
@@ -60,9 +60,40 @@ describe('resolveWalkable', () => {
     expect(Math.hypot(pos.x - center.x, pos.z - center.z)).toBeGreaterThan(atrium.radius)
   })
   it('railing stops an upper-level walk off the curved balcony', () => {
-    const pos = { x: 12, y: 5.2, z: 0 }
+    const pos = { x: 28, y: 5.2, z: 0 }
     resolveWalkable(pos)
     expect(pos.x).toBeGreaterThanOrEqual(28.5)
+  })
+  it('keeps an elevated walker on the landing at the north edge', () => {
+    for (const sign of [1, -1]) {
+      const pos = { x: 19.5 * sign, y: 2.6, z: -17.5 }
+      pos.z = -17.9
+      resolveWalkable(pos)
+      expect(pos.x).toBeCloseTo(19.5 * sign, 1)
+      expect(pos.z).toBeGreaterThanOrEqual(-17.71)
+      expect(pos.y).toBe(2.6)
+    }
+  })
+  it('pushes a lower-flight walker back onto the flight', () => {
+    for (const sign of [1, -1]) {
+      const pos = { x: 21.3 * sign, y: 1.5, z: -13 }
+      resolveWalkable(pos)
+      expect(Math.abs(pos.x)).toBeLessThanOrEqual(20.71)
+      expect(pos.z).toBeCloseTo(-13, 1)
+      expect(pos.y).toBe(1.5)
+    }
+  })
+  it('does not lift a lower-flight walker onto the upper flight', () => {
+    const pos = { x: 21.3, y: 1.5, z: -13 }
+    resolveWalkable(pos)
+    expect(floorHeightAt(pos.x, pos.z)).toBeLessThan(2.2)
+  })
+  it('falls to the courtyard instead of teleporting across the venue', () => {
+    const pos = { x: 19.5, y: 2.6, z: -20 }
+    resolveWalkable(pos)
+    expect(pos.y).toBe(0)
+    expect(pos.x).toBeCloseTo(19.5, 1)
+    expect(pos.z).toBeGreaterThanOrEqual(-18.01)
   })
   it('keeps the character off the stage platform', () => {
     const pos = { x: 0, y: 0, z: -12 }
@@ -108,8 +139,8 @@ describe('planWalkRoute', () => {
   })
   it('crosses balconies by descending and re-ascending', () => {
     const route = planWalkRoute({ x: -30, y: 5.2, z: 0 }, { x: 30, y: 5.2, z: 0 })
-    const westBottom = route.findIndex((point) => point.x < -19.9 && point.y < 0.1)
-    const eastBottom = route.findIndex((point) => point.x > 19.9 && point.y < 0.1)
+    const westBottom = route.findIndex((point) => point.x < -19 && point.y < 0.1)
+    const eastBottom = route.findIndex((point) => point.x > 19 && point.y < 0.1)
     expect(westBottom).toBeGreaterThanOrEqual(0)
     expect(eastBottom).toBeGreaterThan(westBottom)
     expect(route.at(-1)?.x).toBe(30)

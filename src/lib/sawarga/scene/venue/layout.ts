@@ -101,6 +101,7 @@ export interface AccessStair {
   /** Bridge landing on the inner balcony terrace. */
   bridgeEnd: VenuePoint
   width: number
+  landingSize: number
   lowerSteps: number
   upperSteps: number
 }
@@ -108,28 +109,31 @@ export interface AccessStair {
 /**
  * The two stage-side access stairs. They sit north of the tribune seating
  * band and east/west of the stage, clear of the atria and the board/booth.
- * West is the exact mirror of east.
+ * The two flights are side by side with a shared landing, so the stair
+ * walkability never has two different heights over the same ground point.
  */
 export const ACCESS_STAIRS: Record<'east' | 'west', AccessStair> = {
   east: {
-    bottom: { x: 20, y: 0, z: -10.5 },
-    lowerTop: { x: 20, y: 2.6, z: -15.0 },
-    landing: { x: 20, y: 2.6, z: -16.2 },
-    upperStart: { x: 20.8, y: 2.6, z: -15.0 },
-    upperTop: { x: 23.5, y: 5.2, z: -11.0 },
+    bottom: { x: 19.5, y: 0, z: -10.5 },
+    lowerTop: { x: 19.5, y: 2.6, z: -15.0 },
+    landing: { x: 19.5, y: 2.6, z: -16.2 },
+    upperStart: { x: 21, y: 2.6, z: -15.5 },
+    upperTop: { x: 23.5, y: 5.2, z: -11.5 },
     bridgeEnd: { x: 26.35, y: 5.2, z: -8.7 },
     width: 2.4,
+    landingSize: 3.0,
     lowerSteps: 16,
     upperSteps: 16,
   },
   west: {
-    bottom: { x: -20, y: 0, z: -10.5 },
-    lowerTop: { x: -20, y: 2.6, z: -15.0 },
-    landing: { x: -20, y: 2.6, z: -16.2 },
-    upperStart: { x: -20.8, y: 2.6, z: -15.0 },
-    upperTop: { x: -23.5, y: 5.2, z: -11.0 },
+    bottom: { x: -19.5, y: 0, z: -10.5 },
+    lowerTop: { x: -19.5, y: 2.6, z: -15.0 },
+    landing: { x: -19.5, y: 2.6, z: -16.2 },
+    upperStart: { x: -21, y: 2.6, z: -15.5 },
+    upperTop: { x: -23.5, y: 5.2, z: -11.5 },
     bridgeEnd: { x: -26.35, y: 5.2, z: -8.7 },
     width: 2.4,
+    landingSize: 3.0,
     lowerSteps: 16,
     upperSteps: 16,
   },

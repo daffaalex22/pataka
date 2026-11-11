@@ -17,6 +17,9 @@ old venue shell is replaced.
   (`x ≈ ±25…34`, `y 5.2/5.75/6.3`). VIP/CAT1/REG are unchanged.
 - **Walkability** now uses the Sawarga ellipse, curved terrace heights, the
   switchback flights/landing/bridge, the atria drums, stage, board and booth.
+  Elevated movement is access-aware: leaving a stair edge clamps back to that
+  stair, and a true fall drops to the courtyard instead of snapping to a
+  distant balcony end.
 - **Scripted walks** route up the stage-side switchback, across the bridge, and
   along the curved terrace with arc waypoints.
 - **The 2D seat map** projects all seats into the shell ellipse, so the curved
@@ -56,7 +59,7 @@ seeds the new positions through `src/lib/seatLayout.ts`.
 ## Verification
 
 ```bash
-npm test                     # 152 tests
+npm test                     # 156 tests
 npm run build
 npm run db:migrate-trib      # once per existing local/preview DB
 npx next start -p 3010       # production check
@@ -87,4 +90,5 @@ test **headed**; software WebGL is too slow for the scripted walk.
   the final balcony material direction is chosen.
 - The playground’s Downtown Walk, koi pond and live-music area remain disabled.
 - The event proxies from the playground were not imported; do not re-add them.
+
 

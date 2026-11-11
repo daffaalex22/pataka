@@ -174,8 +174,8 @@ function accessHeightAt(side: 'east' | 'west', x: number, z: number): number | n
   if (lower !== null) return lower
 
   if (
-    Math.abs(x - stair.landing.x) <= half &&
-    Math.abs(z - stair.landing.z) <= half
+    Math.abs(x - stair.landing.x) <= stair.landingSize / 2 &&
+    Math.abs(z - stair.landing.z) <= stair.landingSize / 2
   ) {
     return stair.landing.y
   }
@@ -192,6 +192,103 @@ function accessHeightAtAny(x: number, z: number): number | null {
     if (height !== null) return height
   }
   return null
+}
+
+interface AccessProjection {
+  x: number
+  z: number
+  height: number
+  distance: number
+  corridor: number
+  insideSpan: boolean
+}
+
+function projectToSegment(from: Vec3, to: Vec3, x: number, z: number): AccessProjection {
+  const dx = to.x - from.x
+  const dz = to.z - from.z
+  const lengthSq = dx * dx + dz * dz
+  const rawT = lengthSq > 1e-6
+    ? ((x - from.x) * dx + (z - from.z) * dz) / lengthSq
+    : 0
+  const t = Math.min(1, Math.max(0, rawT))
+  const px = from.x + dx * t
+  const pz = from.z + dz * t
+  return {
+    x: px,
+    z: pz,
+    height: from.y + (to.y - from.y) * t,
+    distance: Math.hypot(x - px, z - pz),
+    corridor: 0,
+    insideSpan: rawT >= 0 && rawT <= 1,
+  }
+}
+
+function projectToLanding(
+  stair: (typeof ACCESS_STAIRS)['east'],
+  x: number,
+  z: number,
+): AccessProjection {
+  const half = stair.landingSize / 2
+  const px = Math.min(stair.landing.x + half, Math.max(stair.landing.x - half, x))
+  const pz = Math.min(stair.landing.z + half, Math.max(stair.landing.z - half, z))
+  return {
+    x: px,
+    z: pz,
+    height: stair.landing.y,
+    distance: Math.hypot(x - px, z - pz),
+    corridor: 0,
+    insideSpan: true,
+  }
+}
+
+/**
+ * Keep an elevated character on the access structure they are using. If they
+ * graze a stair side, overshoot the landing, or drift off the bridge, this
+ * pushes them back to the nearest access edge instead of letting the balcony
+ * fallback teleport them across the venue.
+ */
+function clampToAccess(pos: Vec3, capture = 1.0): boolean {
+  const candidates: AccessProjection[] = []
+
+  const consider = (projection: AccessProjection, corridor: number) => {
+    if (!projection.insideSpan) return
+    // Do not latch onto an overhead flight when the character is on the
+    // lower flight or the courtyard below.
+    if (Math.abs(projection.height - pos.y) > 1.3) return
+    if (projection.distance > corridor + capture) return
+    candidates.push({ ...projection, corridor })
+  }
+
+  for (const side of ['east', 'west'] as const) {
+    const stair = ACCESS_STAIRS[side]
+    const half = stair.width / 2
+    consider(projectToSegment(stair.bottom, stair.lowerTop, pos.x, pos.z), half)
+    consider(projectToLanding(stair, pos.x, pos.z), 0)
+    consider(projectToSegment(stair.upperStart, stair.upperTop, pos.x, pos.z), half)
+    consider(projectToSegment(stair.upperTop, stair.bridgeEnd, pos.x, pos.z), half)
+  }
+
+  if (candidates.length === 0) return false
+  // If the point is inside any access corridor, let it move freely. This is
+  // what lets the walker step from the landing onto the upper flight; picking
+  // only the nearest piece would otherwise clamp them to the landing edge.
+  if (candidates.some((candidate) => candidate.distance <= candidate.corridor + 0.001)) {
+    return true
+  }
+
+  const best = candidates.reduce((a, b) => (a.distance <= b.distance ? a : b))
+  const dx = pos.x - best.x
+  const dz = pos.z - best.z
+  const length = Math.hypot(dx, dz) || 1
+  pos.x = best.x + (dx / length) * best.corridor
+  pos.z = best.z + (dz / length) * best.corridor
+  return true
+}
+
+function nearBalconyBand(x: number, z: number): boolean {
+  const q = shellRadiusAt(x, z)
+  if (q < BALCONY_BAND.minQ - 0.12 || q > BALCONY_BAND.maxQ + 0.12) return false
+  return balconySideAt(shellAngleAt(x, z)) !== null
 }
 
 /** Full route through one switchback stair, from the ground to the terrace. */
@@ -432,23 +529,32 @@ export function planWalkRoute(from: Vec3, to: Vec3): Vec3[] {
 
 /**
  * Clamp a position into the walkable world. Mutates in place.
- * Upper level (y > 1): the curved balcony band plus the access ramps and
- * bridges are walkable — the railing edge acts as a barrier.
+ * Upper level (y > 1): the curved balcony band plus the switchback stairs and
+ * bridges are walkable. Leaving an access structure is clamped back to its
+ * edge; leaving the balcony is clamped to the local band edge; a true fall
+ * drops to the courtyard instead of snapping across the venue.
  * Ground: the Sawarga ellipse inside the facades; the stage, board, booth,
  * atria drums, and venue planters push the character out.
  */
 export function resolveWalkable(pos: Vec3): void {
   if (pos.y > 1) {
-    if (
-      accessHeightAtAny(pos.x, pos.z) !== null ||
-      balconyHeightAt(pos.x, pos.z) !== null
-    ) {
+    if (clampToAccess(pos)) return
+    if (balconyHeightAt(pos.x, pos.z) !== null) return
+    if (nearBalconyBand(pos.x, pos.z)) {
+      clampToBalcony(pos)
       return
     }
-    clampToBalcony(pos)
+    // No local balcony or access surface: fall to the courtyard at this XZ
+    // rather than teleporting to the nearest balcony end.
+    pos.y = 0
+    resolveGround(pos)
     return
   }
 
+  resolveGround(pos)
+}
+
+function resolveGround(pos: Vec3): void {
   clampToShell(pos)
 
   // The stage backdrop/hero wall closes the north end of the event floor.
