@@ -206,37 +206,41 @@ export async function payOrder(db: SqlDb, code: string, method: string): Promise
 /** Admin action: cancel an order and release its seat only if the seat is still owned by it. */
 export async function cancelOrder(db: SqlDb, code: string): Promise<boolean> {
   return db.transaction(async (tx) => {
-    const rows = await tx.query<{
-      status: string
-      seat_id: string
-      hold_token: string | null
-      promo_discount_id: number | null
-    }>('SELECT status, seat_id, hold_token, promo_discount_id FROM orders WHERE code = $1', [code])
-    if (rows.length === 0) return false
-
-    const order = rows[0]
-    if (order.status === 'cancelled') return true
-
-    // Only a paid order ever counted a promo use; pending cancellation must not touch it.
-    if (order.status === 'paid') {
-      await releasePromoForPaidCancel(tx, order.promo_discount_id)
-    }
-
-    await tx.query(`UPDATE orders SET status = 'cancelled', cancelled_at = now() WHERE code = $1`, [code])
-
-    if (order.status === 'paid') {
+    // The status transition is the lock: only the cancel that actually moves
+    // paid -> cancelled releases the promo use, even under concurrent calls.
+    const paid = await tx.query<{ seat_id: string; promo_discount_id: number | null }>(
+      `UPDATE orders SET status = 'cancelled', cancelled_at = now()
+       WHERE code = $1 AND status = 'paid'
+       RETURNING seat_id, promo_discount_id`,
+      [code],
+    )
+    if (paid.length > 0) {
+      // Only a paid order ever counted a promo use; pending cancellation must not touch it.
+      await releasePromoForPaidCancel(tx, paid[0].promo_discount_id)
       await tx.query(
         `UPDATE seats SET status = 'available', hold_token = NULL, hold_expires_at = NULL WHERE id = $1`,
-        [order.seat_id],
+        [paid[0].seat_id],
       )
-    } else {
+      return true
+    }
+
+    const pending = await tx.query<{ seat_id: string; hold_token: string | null }>(
+      `UPDATE orders SET status = 'cancelled', cancelled_at = now()
+       WHERE code = $1 AND status = 'pending'
+       RETURNING seat_id, hold_token`,
+      [code],
+    )
+    if (pending.length > 0) {
       await tx.query(
         `UPDATE seats SET status = 'available', hold_token = NULL, hold_expires_at = NULL
          WHERE id = $1 AND status = 'held' AND hold_token = $2`,
-        [order.seat_id, order.hold_token],
+        [pending[0].seat_id, pending[0].hold_token],
       )
+      return true
     }
-    return true
+
+    const rows = await tx.query<{ status: string }>('SELECT status FROM orders WHERE code = $1', [code])
+    return rows.length > 0 && rows[0].status === 'cancelled'
   })
 }
 

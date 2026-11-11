@@ -303,4 +303,24 @@ describe('promo redemption', () => {
     const [used] = await db.query<{ used_count: number }>("SELECT used_count FROM discounts WHERE code = 'LIMIT1'")
     expect(used.used_count).toBe(2)
   })
+
+  it('releases the promo use exactly once when a paid order is cancelled twice', async () => {
+    const order = await orderWithCode('CAT1-F7')
+    expect(await payOrder(db, order.orderCode, 'ewallet')).toBe('paid')
+
+    expect(await cancelOrder(db, order.orderCode)).toBe(true)
+    expect(await cancelOrder(db, order.orderCode)).toBe(true)
+    const [used] = await db.query<{ used_count: number }>("SELECT used_count FROM discounts WHERE code = 'LIMIT1'")
+    expect(used.used_count).toBe(0)
+  })
+
+  it('does not touch promo usage when a pending order is cancelled', async () => {
+    const order = await orderWithCode('CAT1-F10')
+
+    expect(await cancelOrder(db, order.orderCode)).toBe(true)
+    const [used] = await db.query<{ used_count: number }>("SELECT used_count FROM discounts WHERE code = 'LIMIT1'")
+    expect(used.used_count).toBe(0)
+    const [seat] = await db.query<{ status: string }>("SELECT status FROM seats WHERE id = 'CAT1-F10'")
+    expect(seat.status).toBe('available')
+  })
 })
