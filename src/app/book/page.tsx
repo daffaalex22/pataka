@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { LangToggle } from '@/components/ui/LangToggle'
 import { BookingStepper } from '@/components/visitor/BookingStepper'
 import { FormStep } from '@/components/visitor/FormStep'
@@ -28,8 +28,8 @@ export default function BookPage() {
   const { lang } = useLang()
   const t = useT()
   const {
-    step, categoryKey, seat, holdToken, holdExpiresAt, holdSeatId, orderCode, totalIdr,
-    setStep, setCategory, setSeat, setHold, reset,
+    step, categoryKey, seat, holdToken, holdExpiresAt, holdSeatId, orderCode, totalIdr, participant,
+    setStep, setCategory, setSeat, setHold, setOrder, reset,
   } = useBooking((state) => state)
 
   const { data, seats, busy, error, loadSeats, setError, handleHold, handleOrder, handlePay } = useBookingFlow()
@@ -39,6 +39,19 @@ export default function BookPage() {
     const timer = window.setInterval(loadSeats, 5000)
     return () => window.clearInterval(timer)
   }, [loadSeats])
+
+  // The page is statically rendered, so read the recovery link's query once
+  // after mount rather than pulling in useSearchParams/Suspense.
+  const appliedCategoryParam = useRef(false)
+  useEffect(() => {
+    if (appliedCategoryParam.current || !data) return
+    appliedCategoryParam.current = true
+    const requested = new URLSearchParams(window.location.search).get('category')
+    if (!requested || !data.categories.some((category) => category.key === requested)) return
+    reset()
+    setCategory(requested)
+    setStep('seat')
+  }, [data, reset, setCategory, setStep])
 
   useEffect(() => {
     if (!seat) return
@@ -54,6 +67,15 @@ export default function BookPage() {
   const visibleStep: BookingStep = step === 'form' && !holdToken ? 'seat' : step
   const activeIndex = Math.max(0, STEPS.findIndex((item) => item.key === visibleStep))
   const localizedSteps = STEPS.map((item) => ({ key: item.key, label: t(item.labelKey) }))
+
+  const chooseSeatAgain = () => {
+    setHold(null, null, null)
+    setOrder(null, null)
+    setSeat(null)
+    setError(null)
+    loadSeats()
+    setStep('seat')
+  }
 
   return (
     <div className="flex min-h-svh flex-col bg-ink text-paper">
@@ -177,9 +199,13 @@ export default function BookPage() {
             {visibleStep === 'form' && (
               <FormStep
                 seat={seat}
+                holdExpiresAt={holdExpiresAt}
+                initialParticipant={participant}
+                editing={Boolean(orderCode)}
                 submitting={busy}
                 error={error}
                 onBack={() => setStep('seat')}
+                onChooseSeat={chooseSeatAgain}
                 onSubmit={handleOrder}
               />
             )}
@@ -187,10 +213,12 @@ export default function BookPage() {
             {visibleStep === 'summary' && orderCode && (
               <SummaryStep
                 seat={seat}
+                participant={participant}
                 orderCode={orderCode}
                 totalIdr={totalIdr ?? 0}
                 holdExpiresAt={holdExpiresAt}
-                onBack={() => setStep('form')}
+                onEdit={() => setStep('form')}
+                onChooseSeat={chooseSeatAgain}
                 onContinue={() => {
                   setError(null)
                   setStep('payment')
@@ -202,9 +230,11 @@ export default function BookPage() {
               <PaymentStep
                 totalIdr={totalIdr ?? 0}
                 holdExpiresAt={holdExpiresAt}
+                seat={seat}
                 paying={busy}
                 error={error}
                 onBack={() => setStep('summary')}
+                onChooseSeat={chooseSeatAgain}
                 onPay={handlePay}
               />
             )}

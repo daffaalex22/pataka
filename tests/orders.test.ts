@@ -3,7 +3,13 @@ import { createTestDb, type TestDb } from './helpers/db'
 import { migrate } from '../src/lib/migrate'
 import { seed } from '../src/lib/seed'
 import { holdSeat, releaseHold } from '../src/services/seats'
-import { cancelOrder, confirmPayment, createOrder, payOrder } from '../src/services/orders'
+import {
+  cancelOrder,
+  confirmPayment,
+  createOrder,
+  payOrder,
+  updatePendingOrder,
+} from '../src/services/orders'
 
 let db: TestDb
 
@@ -156,6 +162,54 @@ describe('orders', () => {
 
     const [seat] = await db.query<{ status: string }>("SELECT status FROM seats WHERE id='CAT1-F4'")
     expect(seat.status).toBe('sold')
+  })
+})
+
+describe('updatePendingOrder', () => {
+  it('updates participant details on a pending order', async () => {
+    const order = await holdAndOrder('CAT1-F5')
+
+    const updated = await updatePendingOrder(db, order.orderCode, {
+      name: 'Rina Diperbarui',
+      email: 'rina.baru@example.com',
+      phone: '081200000099',
+    })
+    expect(updated).toEqual({ orderCode: order.orderCode, totalIdr: order.totalIdr })
+
+    const [row] = await db.query<{ name: string; email: string; phone: string; status: string }>(
+      'SELECT name, email, phone, status FROM orders WHERE code = $1',
+      [order.orderCode],
+    )
+    expect(row).toMatchObject({
+      name: 'Rina Diperbarui',
+      email: 'rina.baru@example.com',
+      phone: '081200000099',
+      status: 'pending',
+    })
+  })
+
+  it('locks a paid order and leaves its details untouched', async () => {
+    const order = await holdAndOrder('CAT1-F6')
+    expect(await payOrder(db, order.orderCode, 'ewallet')).toBe('paid')
+
+    const result = await updatePendingOrder(db, order.orderCode, {
+      name: 'Tidak Boleh',
+      email: 'nope@example.com',
+      phone: '081200000098',
+    })
+    expect(result).toBe('ORDER_LOCKED')
+
+    const [row] = await db.query<{ name: string }>('SELECT name FROM orders WHERE code = $1', [order.orderCode])
+    expect(row.name).toBe('Rina Contoh')
+  })
+
+  it('reports a missing order', async () => {
+    const result = await updatePendingOrder(db, 'PTK-NOPE00', {
+      name: 'Hantu',
+      email: 'hantu@example.com',
+      phone: '081200000097',
+    })
+    expect(result).toBe('NOT_FOUND')
   })
 })
 

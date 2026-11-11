@@ -66,3 +66,34 @@ export function XIcon({ className }: { className?: string }) {
     </Icon>
   )
 }
+
+export function WalletIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <rect x="2.75" y="5.25" width="14.5" height="10.5" rx="1.5" />
+      <path d="M2.75 8.25h14.5" />
+      <circle cx="13.5" cy="11.75" r="0.9" fill="currentColor" stroke="none" />
+    </Icon>
+  )
+}
+
+export function BankIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <path d="M3 7.75 10 3.5l7 4.25" />
+      <path d="M4.75 8.5v6M8.25 8.5v6M11.75 8.5v6M15.25 8.5v6" />
+      <path d="M3 16h14" />
+    </Icon>
+  )
+}
+
+export function QrIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <rect x="3" y="3" width="5" height="5" rx="0.75" />
+      <rect x="12" y="3" width="5" height="5" rx="0.75" />
+      <rect x="3" y="12" width="5" height="5" rx="0.75" />
+      <path d="M12 12h2v2h-2zM16.25 12H17M12 16.25V17M15.5 15.5h1.5V17h-1.5z" />
+    </Icon>
+  )
+}

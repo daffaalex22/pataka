@@ -22,6 +22,9 @@ type Ticket = {
   holdExpiresAt: string | null
   holdActive: boolean
   seatLabel: string
+  seatRow: string
+  seatNum: number
+  categoryKey: string
   categoryName: string
   categoryNameEn: string
   qrPayload: string | null
@@ -122,6 +125,15 @@ export function ETicketClient() {
 
   const pendingExpired =
     ticket?.status === 'pending' && (holdLost || !ticket.holdActive || holdCountdown.expired)
+  const rebookHref = ticket?.categoryKey
+    ? `/book?category=${encodeURIComponent(ticket.categoryKey)}`
+    : '/book'
+  const pendingSeatLabel = ticket
+    ? `${t('seat.rowLabel')} ${ticket.seatRow} · ${t('seat.numberLabel')} ${ticket.seatNum}`
+    : ''
+  const pendingContext = ticket
+    ? `${pendingSeatLabel} · ${lang === 'id' ? ticket.categoryName : ticket.categoryNameEn}`
+    : ''
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 pb-16 sm:px-6">
@@ -161,42 +173,32 @@ export function ETicketClient() {
       )}
 
       {ticket && ticket.status === 'pending' && !pendingExpired && (
-        <div className="mt-6">
-          <div className="panel flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.16em] text-amber-300">{t('summary.statusPending')}</p>
-              <p className="mt-1 text-sm font-medium">
-                {ticket.seatLabel} · {lang === 'id' ? ticket.categoryName : ticket.categoryNameEn}
-              </p>
-            </div>
-            <p className="font-mono text-xs text-muted">{ticket.orderCode}</p>
-          </div>
-          <p className="mt-3 text-sm text-muted">{t('eticket.pendingBody')}</p>
-          <div className="mt-4">
-            <PaymentStep
-              totalIdr={ticket.totalIdr}
-              holdExpiresAt={ticket.holdExpiresAt}
-              paying={paying}
-              error={payError}
-              onBack={() => router.push('/tickets')}
-              onPay={payPending}
-            />
-          </div>
+        <div className="mt-4">
+          <PaymentStep
+            totalIdr={ticket.totalIdr}
+            holdExpiresAt={ticket.holdExpiresAt}
+            contextLabel={pendingContext}
+            paying={paying}
+            error={payError}
+            onBack={() => router.push('/tickets')}
+            onPay={payPending}
+          />
+          <p className="mt-4 text-center font-mono text-xs text-paper/55">{ticket.orderCode}</p>
         </div>
       )}
 
       {ticket && ticket.status === 'pending' && pendingExpired && (
-        <div className="panel mt-10 rounded-2xl p-8 text-center">
-          <p className="text-sm uppercase tracking-[0.16em] text-red-300">{t('eticket.expiredTitle')}</p>
-          <p className="mt-2 text-sm leading-relaxed text-muted">{t('eticket.expiredBody')}</p>
-          <p className="mt-2 font-mono text-xs text-muted">
-            {ticket.seatLabel} · {ticket.orderCode}
+        <div className="mt-8 border border-paper/15 bg-paper/[0.02] px-5 py-6 text-center">
+          <p className="text-sm font-medium text-amber-200">{t('eticket.expiredTitle')}</p>
+          <p className="mt-2 text-sm leading-relaxed text-paper/60">{t('eticket.expiredBody')}</p>
+          <p className="mt-2 text-xs text-paper/55">
+            {pendingSeatLabel} · <span className="font-mono">{ticket.orderCode}</span>
           </p>
           <Link
-            href="/"
-            className="mt-5 inline-block rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-black transition hover:brightness-110"
+            href={rebookHref}
+            className="focus-ring mt-5 inline-flex min-h-11 items-center rounded-sm bg-accent px-5 text-sm font-semibold text-ink transition hover:brightness-110"
           >
-            {t('eticket.chooseSeat')} →
+            {t('eticket.chooseSeat')}
           </Link>
         </div>
       )}

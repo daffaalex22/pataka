@@ -41,8 +41,8 @@ export function WorldView({ onExit }: { onExit: () => void }) {
     eventPollMs: 5000,
   })
   const {
-    step, categoryKey, seat, holdToken, holdExpiresAt, holdSeatId, orderCode, totalIdr,
-    setStep, setCategory, setSeat, setHold,
+    step, categoryKey, seat, holdToken, holdExpiresAt, holdSeatId, orderCode, totalIdr, participant,
+    setStep, setCategory, setSeat, setHold, setOrder,
   } = useBooking((state) => state)
 
   const [mode, setMode] = useState<'walk' | 'orbit'>('walk')
@@ -141,6 +141,15 @@ export function WorldView({ onExit }: { onExit: () => void }) {
   const paymentOpen = visibleStep === 'payment' && Boolean(orderCode)
   const overlayOpen = formOpen || summaryOpen || paymentOpen
 
+  const chooseSeatAgain = () => {
+    setHold(null, null, null)
+    setOrder(null, null)
+    setSeat(null)
+    setError(null)
+    loadSeats()
+    setStep('seat')
+  }
+
   return (
     <div className="fixed inset-0 overflow-hidden bg-[#07060d]">
       <div className="absolute inset-0">
@@ -237,9 +246,13 @@ export function WorldView({ onExit }: { onExit: () => void }) {
       <StepOverlay open={formOpen} onBack={() => setStep('seat')}>
         <FormStep
           seat={seat}
+          holdExpiresAt={holdExpiresAt}
+          initialParticipant={participant}
+          editing={Boolean(orderCode)}
           submitting={busy}
           error={error}
           onBack={() => setStep('seat')}
+          onChooseSeat={chooseSeatAgain}
           onSubmit={handleOrder}
         />
       </StepOverlay>
@@ -247,10 +260,12 @@ export function WorldView({ onExit }: { onExit: () => void }) {
       <StepOverlay open={summaryOpen} onBack={() => setStep('form')}>
         <SummaryStep
           seat={seat}
+          participant={participant}
           orderCode={orderCode ?? ''}
           totalIdr={totalIdr ?? 0}
           holdExpiresAt={holdExpiresAt}
-          onBack={() => setStep('form')}
+          onEdit={() => setStep('form')}
+          onChooseSeat={chooseSeatAgain}
           onContinue={() => {
             setError(null)
             setStep('payment')
@@ -262,9 +277,11 @@ export function WorldView({ onExit }: { onExit: () => void }) {
         <PaymentStep
           totalIdr={totalIdr ?? 0}
           holdExpiresAt={holdExpiresAt}
+          seat={seat}
           paying={busy}
           error={error}
           onBack={() => setStep('summary')}
+          onChooseSeat={chooseSeatAgain}
           onPay={handlePay}
         />
       </StepOverlay>

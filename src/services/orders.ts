@@ -12,6 +12,17 @@ export type CreateOrderResult =
   | 'HOLD_EXPIRED'
   | 'SALES_CLOSED'
 
+export type UpdateOrderInput = {
+  name: string
+  email: string
+  phone: string
+}
+
+export type UpdateOrderResult =
+  | { orderCode: string; totalIdr: number }
+  | 'NOT_FOUND'
+  | 'ORDER_LOCKED'
+
 export type PayResult = 'paid' | 'HOLD_EXPIRED' | 'ORDER_CANCELLED' | 'NOT_FOUND'
 
 function newOrderCode(): string {
@@ -66,6 +77,29 @@ export async function createOrder(db: SqlDb, input: CreateOrderInput): Promise<C
       [code, seat.id, input.holdToken, input.name, input.email, input.phone, seat.price_idr],
     )
     return { orderCode: code, totalIdr: Number(seat.price_idr) }
+  })
+}
+
+/** Edit participant details while the order is still pending. Paid/cancelled orders are locked. */
+export async function updatePendingOrder(
+  db: SqlDb,
+  code: string,
+  details: UpdateOrderInput,
+): Promise<UpdateOrderResult> {
+  return db.transaction(async (tx) => {
+    const updated = await tx.query<{ code: string; total_idr: number }>(
+      `UPDATE orders SET name = $1, email = $2, phone = $3
+       WHERE code = $4 AND status = 'pending'
+       RETURNING code, total_idr`,
+      [details.name, details.email, details.phone, code],
+    )
+    if (updated.length > 0) {
+      return { orderCode: updated[0].code, totalIdr: Number(updated[0].total_idr) }
+    }
+
+    const existing = await tx.query<{ status: string }>('SELECT status FROM orders WHERE code = $1', [code])
+    if (existing.length === 0) return 'NOT_FOUND'
+    return 'ORDER_LOCKED'
   })
 }
 

@@ -17,7 +17,8 @@ type EventResponse = { event: EventInfo; categories: Category[] }
 export function useBookingFlow(options: { eventPollMs?: number } = {}) {
   const router = useRouter()
   const t = useT()
-  const { seat, holdToken, orderCode, setStep, setSeat, setHold, setOrder, reset } = useBooking((state) => state)
+  const { seat, holdToken, orderCode, setStep, setSeat, setHold, setOrder, setParticipant, reset } =
+    useBooking((state) => state)
 
   const [data, setData] = useState<EventResponse | null>(null)
   const [seats, setSeats] = useState<Seat[]>([])
@@ -65,6 +66,8 @@ export function useBookingFlow(options: { eventPollMs?: number } = {}) {
       if (res.ok) {
         const held = (await res.json()) as { holdToken: string; expiresAt: string }
         setHold(held.holdToken, held.expiresAt, seat.id)
+        // A new hold owns a new order; clear any order from a previous seat.
+        setOrder(null, null)
         setStep('form')
       } else if (res.status === 409) {
         setError(t('error.seatTaken'))
@@ -84,21 +87,32 @@ export function useBookingFlow(options: { eventPollMs?: number } = {}) {
     setBusy(true)
     setError(null)
     try {
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ holdToken, ...details }),
-      })
-      if (res.status === 201) {
+      const editingCode = orderCode
+      const res = await fetch(
+        editingCode ? `/api/orders/${encodeURIComponent(editingCode)}` : '/api/orders',
+        {
+          method: editingCode ? 'PATCH' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(editingCode ? details : { holdToken, ...details }),
+        },
+      )
+      if (res.ok) {
         const order = (await res.json()) as { orderCode: string; totalIdr: number }
         saveTicket(order.orderCode)
+        setParticipant(details)
         setOrder(order.orderCode, order.totalIdr)
         setStep('summary')
       } else if (res.status === 409) {
-        setError(t('error.holdExpired'))
-        setHold(null, null, null)
-        setStep('seat')
-        loadSeats()
+        if (editingCode) {
+          setError(t('error.orderLocked'))
+        } else {
+          setError(t('error.holdExpired'))
+          setHold(null, null, null)
+          setOrder(null, null)
+          setSeat(null)
+          setStep('seat')
+          loadSeats()
+        }
       } else if (res.status === 400) {
         setError(t('error.validation'))
       } else {
@@ -128,6 +142,8 @@ export function useBookingFlow(options: { eventPollMs?: number } = {}) {
       } else if (res.status === 409) {
         setError(t('error.holdExpired'))
         setHold(null, null, null)
+        setOrder(null, null)
+        setSeat(null)
         setStep('seat')
         loadSeats()
       } else {

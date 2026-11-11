@@ -1,6 +1,7 @@
 'use client'
 
 import { Dialog } from '@/components/ui/Dialog'
+import { XIcon } from '@/components/ui/icons'
 import { useT } from '@/lib/i18n'
 import { VenueMapCard } from './VenueMapCard'
 
@@ -21,9 +22,10 @@ export function VenueMapDialog({ open, onClose }: { open: boolean; onClose: () =
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full border border-line px-3 py-1.5 text-xs font-medium text-muted transition hover:border-white/30 hover:text-foreground"
+              className="focus-ring inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-muted transition hover:border-white/30 hover:text-foreground"
             >
-              ✕ {t('common.back')}
+              <XIcon className="size-3.5" />
+              {t('common.back')}
             </button>
           </div>
           <VenueMapCard variant="full" />

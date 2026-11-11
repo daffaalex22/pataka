@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from 'react'
 
-export function useCountdown(expiresAt: string | null) {
+export type Countdown = {
+  remaining: number
+  formatted: string
+  expired: boolean
+}
+
+export function useCountdown(expiresAt: string | null): Countdown {
   const [now, setNow] = useState(() => Date.now())
 
   useEffect(() => {
