@@ -3,7 +3,7 @@ import { createTestDb, type TestDb } from './helpers/db'
 import { migrate } from '../src/lib/migrate'
 import { seed } from '../src/lib/seed'
 import { holdSeat } from '../src/services/seats'
-import { createOrder } from '../src/services/orders'
+import { cancelOrder, confirmPayment, createOrder, payOrder } from '../src/services/orders'
 import { applyPromoToOrder, clearPromoFromOrder, createDiscount } from '../src/services/discounts'
 
 let db: TestDb
@@ -28,6 +28,13 @@ async function holdAndOrder(seatId: string) {
     phone: '081200000001',
   })
   if (typeof order === 'string') throw new Error(order)
+  return order
+}
+
+async function comeBackLater(seatId: string, code = 'LIMIT1') {
+  const order = await holdAndOrder(seatId)
+  const applied = await applyPromoToOrder(db, order.orderCode, code)
+  if (!applied.ok) throw new Error(applied.error)
   return order
 }
 
@@ -219,5 +226,81 @@ describe('applyPromoToOrder', () => {
       ok: false,
       error: 'HOLD_EXPIRED',
     })
+  })
+})
+
+async function orderWithCode(seatId: string) {
+  await createDiscount(db, {
+    kind: 'code', code: 'LIMIT1', name: 'Limit 1', nameEn: 'Limit 1',
+    type: 'fixed', value: 100_000, maxUses: 1, ...WINDOW,
+  })
+  const order = await holdAndOrder(seatId)
+  const applied = await applyPromoToOrder(db, order.orderCode, 'LIMIT1')
+  if (!applied.ok) throw new Error(applied.error)
+  return order
+}
+
+describe('promo redemption', () => {
+  it('counts a use on payment and releases it when the paid order is cancelled', async () => {
+    const order = await orderWithCode('CAT1-F1')
+    expect(await payOrder(db, order.orderCode, 'ewallet')).toBe('paid')
+
+    const [used] = await db.query<{ used_count: number }>("SELECT used_count FROM discounts WHERE code = 'LIMIT1'")
+    expect(used.used_count).toBe(1)
+
+    expect(await cancelOrder(db, order.orderCode)).toBe(true)
+    const [released] = await db.query<{ used_count: number }>("SELECT used_count FROM discounts WHERE code = 'LIMIT1'")
+    expect(released.used_count).toBe(0)
+  })
+
+  it('rejects payment when the code was deactivated after it was applied', async () => {
+    const order = await orderWithCode('CAT1-F2')
+    await db.query("UPDATE discounts SET active = false WHERE code = 'LIMIT1'")
+
+    expect(await payOrder(db, order.orderCode, 'ewallet')).toBe('DISCOUNT_UNAVAILABLE')
+    const [seat] = await db.query<{ status: string }>("SELECT status FROM seats WHERE id = 'CAT1-F2'")
+    expect(seat.status).toBe('held')
+    const [used] = await db.query<{ used_count: number }>("SELECT used_count FROM discounts WHERE code = 'LIMIT1'")
+    expect(used.used_count).toBe(0)
+  })
+
+  it('lets exactly one of two orders use the last remaining use', async () => {
+    const first = await orderWithCode('CAT1-F3')
+    const second = await comeBackLater('CAT1-F4')
+
+    expect(await payOrder(db, first.orderCode, 'ewallet')).toBe('paid')
+    expect(await payOrder(db, second.orderCode, 'ewallet')).toBe('DISCOUNT_UNAVAILABLE')
+  })
+
+  it('rejects payment when the code expired after it was applied', async () => {
+    const order = await orderWithCode('CAT1-F9')
+    await db.query("UPDATE discounts SET ends_at = now() - interval '1 minute' WHERE code = 'LIMIT1'")
+
+    expect(await payOrder(db, order.orderCode, 'ewallet')).toBe('DISCOUNT_UNAVAILABLE')
+    const [seat] = await db.query<{ status: string }>("SELECT status FROM seats WHERE id = 'CAT1-F9'")
+    expect(seat.status).toBe('held')
+  })
+
+  it('rolls back a manual confirmation if the seat is owned by someone else', async () => {
+    const order = await orderWithCode('CAT1-F8')
+    await db.query("UPDATE seats SET hold_expires_at = now() - interval '1 minute' WHERE id = 'CAT1-F8'")
+    const rehold = await holdSeat(db, 'CAT1-F8')
+    expect(typeof rehold).toBe('object')
+
+    expect(await confirmPayment(db, order.orderCode)).toBe('HOLD_EXPIRED')
+    const [used] = await db.query<{ used_count: number }>("SELECT used_count FROM discounts WHERE code = 'LIMIT1'")
+    expect(used.used_count).toBe(0)
+  })
+
+  it('lets an organizer confirm a pending order after the hold expired, even past the limit', async () => {
+    const first = await orderWithCode('CAT1-F5')
+    const second = await comeBackLater('CAT1-F6', 'LIMIT1')
+
+    expect(await payOrder(db, first.orderCode, 'ewallet')).toBe('paid')
+    await db.query("UPDATE seats SET hold_expires_at = now() - interval '1 minute' WHERE id = 'CAT1-F6'")
+
+    expect(await confirmPayment(db, second.orderCode)).toBe('paid')
+    const [used] = await db.query<{ used_count: number }>("SELECT used_count FROM discounts WHERE code = 'LIMIT1'")
+    expect(used.used_count).toBe(2)
   })
 })

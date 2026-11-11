@@ -1,6 +1,6 @@
 import type { SqlDb } from '@/lib/db'
 import type { PriceBreakdown } from '@/lib/discounts'
-import { resolvePrice } from '@/services/discounts'
+import { redeemPromoForPayment, releasePromoForPaidCancel, resolvePrice } from '@/services/discounts'
 
 export type CreateOrderInput = {
   holdToken: string
@@ -14,7 +14,19 @@ export type CreateOrderResult =
   | 'HOLD_EXPIRED'
   | 'SALES_CLOSED'
 
-export type PayResult = 'paid' | 'HOLD_EXPIRED' | 'ORDER_CANCELLED' | 'NOT_FOUND'
+export type PayResult =
+  | 'paid'
+  | 'HOLD_EXPIRED'
+  | 'ORDER_CANCELLED'
+  | 'NOT_FOUND'
+  | 'DISCOUNT_UNAVAILABLE'
+
+/**
+ * Thrown inside a payment transaction when the seat update fails after a promo
+ * use was already counted. The adapter commits on a normal return, so only a
+ * throw rolls the increment back; callers translate it to 'HOLD_EXPIRED'.
+ */
+class HoldLostError extends Error {}
 
 function newOrderCode(): string {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -133,65 +145,82 @@ export async function createOrder(db: SqlDb, input: CreateOrderInput): Promise<C
 
 /** Simulated payment: the order must still own the seat's live hold, then seat becomes sold. */
 export async function payOrder(db: SqlDb, code: string, method: string): Promise<PayResult> {
-  return db.transaction(async (tx) => {
-    const rows = await tx.query<{
-      status: string
-      seat_id: string
-      hold_token: string | null
-      seat_status: string
-      seat_hold_token: string | null
-      hold_fresh: boolean
-    }>(
-      `SELECT o.status, o.seat_id, o.hold_token, s.status AS seat_status,
-              s.hold_token AS seat_hold_token,
-              (s.hold_expires_at > now()) AS hold_fresh
-       FROM orders o JOIN seats s ON s.id = o.seat_id
-       WHERE o.code = $1`,
-      [code],
-    )
-    if (rows.length === 0) return 'NOT_FOUND'
-
-    const order = rows[0]
-    if (order.status === 'cancelled') return 'ORDER_CANCELLED'
-    if (order.status === 'paid') return 'paid'
-
-    const ownsSeat = order.hold_token !== null && order.hold_token === order.seat_hold_token
-    if (order.seat_status !== 'held' || !order.hold_fresh || !ownsSeat) {
-      await tx.query(
-        `UPDATE seats SET status = 'available', hold_token = NULL, hold_expires_at = NULL
-         WHERE id = $1 AND status = 'held' AND hold_expires_at <= now()`,
-        [order.seat_id],
+  try {
+    return await db.transaction(async (tx) => {
+      const rows = await tx.query<{
+        status: string
+        seat_id: string
+        hold_token: string | null
+        promo_discount_id: number | null
+        seat_status: string
+        seat_hold_token: string | null
+        hold_fresh: boolean
+      }>(
+        `SELECT o.status, o.seat_id, o.hold_token, o.promo_discount_id, s.status AS seat_status,
+                s.hold_token AS seat_hold_token,
+                (s.hold_expires_at > now()) AS hold_fresh
+         FROM orders o JOIN seats s ON s.id = o.seat_id
+         WHERE o.code = $1`,
+        [code],
       )
-      return 'HOLD_EXPIRED'
-    }
+      if (rows.length === 0) return 'NOT_FOUND'
 
-    const sold = await tx.query(
-      `UPDATE seats SET status = 'sold', hold_token = NULL, hold_expires_at = NULL
-       WHERE id = $1 AND status = 'held' AND hold_token = $2
-       RETURNING id`,
-      [order.seat_id, order.hold_token],
-    )
-    if (sold.length === 0) return 'HOLD_EXPIRED'
+      const order = rows[0]
+      if (order.status === 'cancelled') return 'ORDER_CANCELLED'
+      if (order.status === 'paid') return 'paid'
 
-    await tx.query(
-      `UPDATE orders SET status = 'paid', payment_method = $1, paid_at = now() WHERE code = $2`,
-      [method, code],
-    )
-    return 'paid'
-  })
+      const ownsSeat = order.hold_token !== null && order.hold_token === order.seat_hold_token
+      if (order.seat_status !== 'held' || !order.hold_fresh || !ownsSeat) {
+        await tx.query(
+          `UPDATE seats SET status = 'available', hold_token = NULL, hold_expires_at = NULL
+           WHERE id = $1 AND status = 'held' AND hold_expires_at <= now()`,
+          [order.seat_id],
+        )
+        return 'HOLD_EXPIRED'
+      }
+
+      // Redeem before any mutation: a stale or exhausted code fails the payment cleanly.
+      const redeemed = await redeemPromoForPayment(tx, { promoDiscountId: order.promo_discount_id })
+      if (!redeemed) return 'DISCOUNT_UNAVAILABLE'
+
+      const sold = await tx.query(
+        `UPDATE seats SET status = 'sold', hold_token = NULL, hold_expires_at = NULL
+         WHERE id = $1 AND status = 'held' AND hold_token = $2
+         RETURNING id`,
+        [order.seat_id, order.hold_token],
+      )
+      if (sold.length === 0) throw new HoldLostError()
+
+      await tx.query(
+        `UPDATE orders SET status = 'paid', payment_method = $1, paid_at = now() WHERE code = $2`,
+        [method, code],
+      )
+      return 'paid'
+    })
+  } catch (error) {
+    if (error instanceof HoldLostError) return 'HOLD_EXPIRED'
+    throw error
+  }
 }
 
 /** Admin action: cancel an order and release its seat only if the seat is still owned by it. */
 export async function cancelOrder(db: SqlDb, code: string): Promise<boolean> {
   return db.transaction(async (tx) => {
-    const rows = await tx.query<{ status: string; seat_id: string; hold_token: string | null }>(
-      'SELECT status, seat_id, hold_token FROM orders WHERE code = $1',
-      [code],
-    )
+    const rows = await tx.query<{
+      status: string
+      seat_id: string
+      hold_token: string | null
+      promo_discount_id: number | null
+    }>('SELECT status, seat_id, hold_token, promo_discount_id FROM orders WHERE code = $1', [code])
     if (rows.length === 0) return false
 
     const order = rows[0]
     if (order.status === 'cancelled') return true
+
+    // Only a paid order ever counted a promo use; pending cancellation must not touch it.
+    if (order.status === 'paid') {
+      await releasePromoForPaidCancel(tx, order.promo_discount_id)
+    }
 
     await tx.query(`UPDATE orders SET status = 'cancelled', cancelled_at = now() WHERE code = $1`, [code])
 
@@ -213,30 +242,45 @@ export async function cancelOrder(db: SqlDb, code: string): Promise<boolean> {
 
 /** Admin action: manually confirm a pending payment even if the hold lapsed, as long as nobody else owns the seat. */
 export async function confirmPayment(db: SqlDb, code: string): Promise<PayResult> {
-  return db.transaction(async (tx) => {
-    const rows = await tx.query<{ status: string; seat_id: string; hold_token: string | null }>(
-      'SELECT status, seat_id, hold_token FROM orders WHERE code = $1',
-      [code],
-    )
-    if (rows.length === 0) return 'NOT_FOUND'
+  try {
+    return await db.transaction(async (tx) => {
+      const rows = await tx.query<{
+        status: string
+        seat_id: string
+        hold_token: string | null
+        promo_discount_id: number | null
+      }>('SELECT status, seat_id, hold_token, promo_discount_id FROM orders WHERE code = $1', [code])
+      if (rows.length === 0) return 'NOT_FOUND'
 
-    const order = rows[0]
-    if (order.status === 'cancelled') return 'ORDER_CANCELLED'
-    if (order.status === 'paid') return 'paid'
+      const order = rows[0]
+      if (order.status === 'cancelled') return 'ORDER_CANCELLED'
+      if (order.status === 'paid') return 'paid'
 
-    const sold = await tx.query(
-      `UPDATE seats SET status = 'sold', hold_token = NULL, hold_expires_at = NULL
-       WHERE id = $1
-         AND (status = 'available' OR (status = 'held' AND hold_token = $2))
-       RETURNING id`,
-      [order.seat_id, order.hold_token],
-    )
-    if (sold.length === 0) return 'HOLD_EXPIRED'
+      // Organizer override: honor the snapshot even past max_uses; only a deleted rule fails.
+      const redeemed = await redeemPromoForPayment(
+        tx,
+        { promoDiscountId: order.promo_discount_id },
+        { allowOverLimit: true },
+      )
+      if (!redeemed) return 'DISCOUNT_UNAVAILABLE'
 
-    await tx.query(
-      `UPDATE orders SET status = 'paid', payment_method = 'manual', paid_at = now() WHERE code = $1`,
-      [code],
-    )
-    return 'paid'
-  })
+      const sold = await tx.query(
+        `UPDATE seats SET status = 'sold', hold_token = NULL, hold_expires_at = NULL
+         WHERE id = $1
+           AND (status = 'available' OR (status = 'held' AND hold_token = $2))
+         RETURNING id`,
+        [order.seat_id, order.hold_token],
+      )
+      if (sold.length === 0) throw new HoldLostError()
+
+      await tx.query(
+        `UPDATE orders SET status = 'paid', payment_method = 'manual', paid_at = now() WHERE code = $1`,
+        [code],
+      )
+      return 'paid'
+    })
+  } catch (error) {
+    if (error instanceof HoldLostError) return 'HOLD_EXPIRED'
+    throw error
+  }
 }

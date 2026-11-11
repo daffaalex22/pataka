@@ -316,3 +316,44 @@ export async function clearPromoFromOrder(
     return { ok: true, breakdown }
   })
 }
+
+/**
+ * Count one promo use at payment time. Category and minimum spend were fixed
+ * when the code was applied; only active/window/usage are rechecked here.
+ * Returns false when the code can no longer be redeemed.
+ */
+export async function redeemPromoForPayment(
+  tx: SqlClient,
+  order: { promoDiscountId: number | null },
+  opts?: { allowOverLimit?: boolean },
+): Promise<boolean> {
+  if (order.promoDiscountId === null) return true
+
+  const rows = opts?.allowOverLimit
+    ? await tx.query<{ id: number }>(
+        'UPDATE discounts SET used_count = used_count + 1 WHERE id = $1 RETURNING id',
+        [order.promoDiscountId],
+      )
+    : await tx.query<{ id: number }>(
+        `UPDATE discounts SET used_count = used_count + 1
+         WHERE id = $1
+           AND active = TRUE
+           AND starts_at <= now()
+           AND (ends_at IS NULL OR now() < ends_at)
+           AND (max_uses IS NULL OR used_count < max_uses)
+         RETURNING id`,
+        [order.promoDiscountId],
+      )
+  return rows.length > 0
+}
+
+/** Give one promo use back when a paid order is cancelled. */
+export async function releasePromoForPaidCancel(
+  tx: SqlClient,
+  promoDiscountId: number | null,
+): Promise<void> {
+  if (promoDiscountId === null) return
+  await tx.query('UPDATE discounts SET used_count = GREATEST(0, used_count - 1) WHERE id = $1', [
+    promoDiscountId,
+  ])
+}
