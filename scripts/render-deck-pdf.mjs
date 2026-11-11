@@ -11,12 +11,6 @@ async function main() {
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
     await page.goto(`${base}/deck`, { waitUntil: 'networkidle' })
 
-    const link = page.locator('a[href^="https://"]').last()
-    await link.waitFor({ timeout: 20000 })
-    const href = await link.getAttribute('href')
-    if (!href) throw new Error('Closing production link not found')
-    if (href.includes('localhost')) throw new Error(`PDF would contain a localhost QR: ${href}`)
-
     await fs.mkdir('public/deck', { recursive: true })
     await page.pdf({
       path: out,
@@ -33,7 +27,6 @@ async function main() {
     }
 
     console.log('wrote', out)
-    console.log('QR URL', href)
   } finally {
     await browser.close()
   }

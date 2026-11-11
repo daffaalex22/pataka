@@ -74,7 +74,7 @@ seeds the new positions through `src/lib/seatLayout.ts`.
 ## Verification
 
 ```bash
-npm test                     # 160 tests
+npm test                     # 161 tests
 npm run build
 npm run db:migrate-trib      # once per existing local/preview DB
 npx next start -p 3010       # production check
@@ -100,6 +100,14 @@ test **headed**; software WebGL is too slow for the scripted walk.
 - [Graphics menu — world HUD](../artifacts/venue-pass/quality-menu-world.png)
 - [Graphics menu — mobile](../artifacts/venue-pass/quality-menu-mobile.png)
 
+## Marketing assets
+
+The home hero (`public/home/venue-night-sawarga.png`), deck screenshots, and
+pitch PDFs are generated from the live app. Run `npm run deck:shots` while the
+server is on `localhost:3000`, then `npm run deck:pdf` and `npm run deck:notes`.
+Local deck links fall back to the public prototype URL rather than a
+`localhost` address so exported PDFs stay usable.
+
 ## Main branch sync
 
 The branch was rebased onto `main` at `eeb89af`, which includes the plaza HUD and
@@ -117,6 +125,7 @@ before merging if `main` moves further.
   the final balcony material direction is chosen.
 - The playground’s Downtown Walk, koi pond and live-music area remain disabled.
 - The event proxies from the playground were not imported; do not re-add them.
+
 
 
 

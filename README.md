@@ -16,7 +16,7 @@ Walk, with occupancy, revenue, check-ins, lifecycle and settlement.
 - Postgres — Neon in production, PGlite (in-process Postgres) for local dev and tests
 - Thin SQL adapter (`src/lib/db.ts`), no ORM
 - HMAC-signed QR payloads, `html5-qrcode` camera scanning on the check-in page
-- Vitest (160 tests) for the business-critical services, curved venue walkability, walk path, ticket store, portfolio builder and email delivery
+- Vitest (161 tests) for the business-critical services, curved venue walkability, walk path, ticket store, portfolio builder and email delivery
 
 ## Local development
 
@@ -63,6 +63,9 @@ Optional ticket email: set `RESEND_API_KEY` and `EMAIL_FROM` to send e-ticket li
 | `node scripts/capture-venue.mjs` | desktop/mobile venue screenshots |
 | `node scripts/smoke-venue.mjs` | headed: pick a TRIB seat, walk to it, verify the seat view |
 | `node scripts/smoke-quality.mjs` | verify graphics presets persist |
+| `npm run deck:shots` | regenerate home/deck marketing images from the current 3D app |
+| `npm run deck:pdf` | regenerate the pitch PDF |
+| `npm run deck:notes` | regenerate the speaker-notes PDF |
 
 ## Demo access
 
@@ -93,6 +96,7 @@ Optional ticket email: set `RESEND_API_KEY` and `EMAIL_FROM` to send e-ticket li
 2. The e-ticket shows a signed QR. Open `/admin` → **Check-in** and scan it
    (or paste the payload) — the first scan is VALID, the second is ALREADY USED.
 3. Double-booking: open two browsers, hold the same seat in both — exactly one wins.
+
 
 
 

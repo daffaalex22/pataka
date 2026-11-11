@@ -137,14 +137,19 @@ export function VenueMap({
           {label(reg, 'Reguler')}
         </text>
 
-        <rect
-          x="88"
-          y="52"
-          width="72"
-          height="148"
-          rx="6"
-          fill={activeTribLeft ? (trib?.colorHex ?? 'var(--accent)') : MUTED}
-          stroke={activeTribLeft ? (trib?.colorHex ?? 'var(--accent)') : OUTLINE}
+        <path
+          d="M 150 56 C 102 68 84 96 84 127 C 84 158 102 186 150 198"
+          fill="none"
+          stroke={OUTLINE}
+          strokeWidth="28"
+          strokeLinecap="round"
+        />
+        <path
+          d="M 150 56 C 102 68 84 96 84 127 C 84 158 102 186 150 198"
+          fill="none"
+          stroke={activeTribLeft ? (trib?.colorHex ?? 'var(--accent)') : MUTED}
+          strokeWidth="24"
+          strokeLinecap="round"
         />
         <text
           x="124"
@@ -157,14 +162,19 @@ export function VenueMap({
           {t('seat.left')}
         </text>
 
-        <rect
-          x="480"
-          y="52"
-          width="72"
-          height="148"
-          rx="6"
-          fill={activeTribRight ? (trib?.colorHex ?? 'var(--accent)') : MUTED}
-          stroke={activeTribRight ? (trib?.colorHex ?? 'var(--accent)') : OUTLINE}
+        <path
+          d="M 490 56 C 538 68 556 96 556 127 C 556 158 538 186 490 198"
+          fill="none"
+          stroke={OUTLINE}
+          strokeWidth="28"
+          strokeLinecap="round"
+        />
+        <path
+          d="M 490 56 C 538 68 556 96 556 127 C 556 158 538 186 490 198"
+          fill="none"
+          stroke={activeTribRight ? (trib?.colorHex ?? 'var(--accent)') : MUTED}
+          strokeWidth="24"
+          strokeLinecap="round"
         />
         <text
           x="516"

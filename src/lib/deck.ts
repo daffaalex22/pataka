@@ -126,7 +126,13 @@ export const DEFAULT_DECK_URL = 'https://pataka-ruby.vercel.app'
 
 export function resolveDeckUrl(configured: string | undefined, origin: string): string {
   const value = configured?.trim()
-  return (value || origin).replace(/\/+$/, '')
+  if (value) return value.replace(/\/+$/, '')
+  // Local deck captures/PDFs should point at the public prototype, not a
+  // localhost origin that will not work for the audience.
+  if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+    return DEFAULT_DECK_URL
+  }
+  return origin.replace(/\/+$/, '')
 }
 
 export function parseDeckHash(hash: string, count: number): number | null {
