@@ -81,6 +81,60 @@ export const BALCONY = {
 
 export const TOTAL_TRIB_SEATS = BALCONY.seatsPerRow * BALCONY.rowY.length * 2
 
+export interface VenuePoint {
+  x: number
+  y: number
+  z: number
+}
+
+export interface AccessStair {
+  /** Ground entry at the foot of the lower flight. */
+  bottom: VenuePoint
+  /** Top of the lower flight, at the landing edge. */
+  lowerTop: VenuePoint
+  /** Centre of the switchback landing. */
+  landing: VenuePoint
+  /** Foot of the upper flight, on the landing edge. */
+  upperStart: VenuePoint
+  /** Top of the upper flight, where the bridge begins. */
+  upperTop: VenuePoint
+  /** Bridge landing on the inner balcony terrace. */
+  bridgeEnd: VenuePoint
+  width: number
+  lowerSteps: number
+  upperSteps: number
+}
+
+/**
+ * The two stage-side access stairs. They sit north of the tribune seating
+ * band and east/west of the stage, clear of the atria and the board/booth.
+ * West is the exact mirror of east.
+ */
+export const ACCESS_STAIRS: Record<'east' | 'west', AccessStair> = {
+  east: {
+    bottom: { x: 20, y: 0, z: -10.5 },
+    lowerTop: { x: 20, y: 2.6, z: -15.0 },
+    landing: { x: 20, y: 2.6, z: -16.2 },
+    upperStart: { x: 20.8, y: 2.6, z: -15.0 },
+    upperTop: { x: 23.5, y: 5.2, z: -11.0 },
+    bridgeEnd: { x: 26.35, y: 5.2, z: -8.7 },
+    width: 2.4,
+    lowerSteps: 16,
+    upperSteps: 16,
+  },
+  west: {
+    bottom: { x: -20, y: 0, z: -10.5 },
+    lowerTop: { x: -20, y: 2.6, z: -15.0 },
+    landing: { x: -20, y: 2.6, z: -16.2 },
+    upperStart: { x: -20.8, y: 2.6, z: -15.0 },
+    upperTop: { x: -23.5, y: 5.2, z: -11.0 },
+    bridgeEnd: { x: -26.35, y: 5.2, z: -8.7 },
+    width: 2.4,
+    lowerSteps: 16,
+    upperSteps: 16,
+  },
+}
+
 export function shellPoint(angle: number): { x: number; z: number } {
   return {
     x: Math.cos(angle) * SHELL.radiusX,

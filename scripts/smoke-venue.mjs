@@ -14,7 +14,7 @@ const errors = []
 page.on('pageerror', (error) => errors.push(error.message))
 
 try {
-  await page.goto(`${base}/`, { waitUntil: 'networkidle' })
+  await page.goto(`${base}/`, { waitUntil: 'domcontentloaded' })
   const enter = page.getByRole('button', { name: /Enter the Plaza|Masuk ke Plaza/ })
   await enter.waitFor({ timeout: 90000 })
   await page.waitForTimeout(1200)

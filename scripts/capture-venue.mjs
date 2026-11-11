@@ -52,7 +52,7 @@ if (await tribuneSeat.count()) {
 
   await page.getByRole('button', { name: /3D Venue|Venue 3D/ }).click()
   await waitForVenue(page)
-  await page.getByRole('button', { name: /Preview from seat|Lihat dari kursi/ }).click()
+  await page.getByRole('button', { name: /Preview from seat|Lihat dari kursi/ }).click({ force: true, timeout: 60000 })
   await page.waitForTimeout(1600)
   await page.screenshot({ path: `${output}/desktop-seat-preview.png`, fullPage: true, timeout: 90000 })
 }

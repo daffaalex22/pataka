@@ -6,7 +6,14 @@
  * tests pin it. Three.js-free on purpose.
  */
 
-import { BALCONY, SHELL, shellInwardNormal, shellOffsetPoint, shellPoint } from '@/lib/sawarga/scene/venue/layout'
+import {
+  ACCESS_STAIRS,
+  BALCONY,
+  SHELL,
+  shellInwardNormal,
+  shellOffsetPoint,
+  shellPoint,
+} from '@/lib/sawarga/scene/venue/layout'
 
 export type Vec3 = { x: number; y: number; z: number }
 export type Rect = { minX: number; maxX: number; minZ: number; maxZ: number }
@@ -62,23 +69,16 @@ const BALCONY_BAND = {
   maxQ: 0.995,
   outerBreak: 0.943,
   middleBreak: 0.886,
-  halfWidth: 1.35,
   deckOffset: 3,
 } as const
 
 /**
- * Courtyard trees. Side rows hug the balcony edge; the back row sits behind
- * the booth and board so it frames the south walkway without blocking them.
- * Kept off the stair ramps (x ±18..21, z 14..20).
+ * Legacy courtyard tree anchors. The venue-side rows were removed when the
+ * stage-side stairs were rebuilt; only the south walkway row remains.
  */
 export const TREES: [number, number][] = [
-  [20.5, -13], [20.5, -7], [20.5, -1], [20.5, 5], [20.5, 11], [20.5, 13],
-  [-20.5, -13], [-20.5, -7], [-20.5, -1], [-20.5, 5], [-20.5, 11], [-20.5, 13],
   [-18, 24.8], [-15, 24.8], [-2.5, 24.8], [2.5, 24.8], [15, 24.8], [18, 24.8],
-  [-18, -15], [18, -15],
 ]
-
-const STAIRS: Rect[] = [WORLD.stairs.east, WORLD.stairs.west]
 
 const ATRIA_CIRCLES = Object.values(BALCONY.atria).map((spec) => {
   const angle = spec.angle * Math.PI
@@ -141,39 +141,6 @@ function balconyHeightAt(x: number, z: number): number | null {
   return BALCONY.rowY[0]
 }
 
-function stairHeightAt(x: number, z: number): number | null {
-  for (const stair of STAIRS) {
-    if (!insideRect(stair, x, z)) continue
-    const t = (stair.maxZ - z) / (stair.maxZ - stair.minZ)
-    return t * WORLD.balcony.y
-  }
-  return null
-}
-
-function deckEndPoint(side: 'east' | 'west'): Vec3 {
-  const angle =
-    side === 'east'
-      ? BALCONY.eastAngleRange[1] * Math.PI
-      : BALCONY.westAngleRange[0] * Math.PI
-  const point = shellOffsetPoint(angle, BALCONY_BAND.deckOffset)
-  return { x: point.x, y: BALCONY.rowY[0], z: point.z }
-}
-
-function towerPoints(side: 'east' | 'west') {
-  const angle =
-    side === 'east'
-      ? BALCONY.eastAngleRange[0] * Math.PI
-      : BALCONY.westAngleRange[1] * Math.PI
-  const ground = shellOffsetPoint(angle, 11)
-  const top = shellOffsetPoint(angle, 4.6)
-  const landing = shellOffsetPoint(angle, BALCONY_BAND.deckOffset)
-  return {
-    ground: { x: ground.x, y: 0, z: ground.z },
-    top: { x: top.x, y: BALCONY.rowY[0], z: top.z },
-    landing: { x: landing.x, y: BALCONY.rowY[0], z: landing.z },
-  }
-}
-
 function segmentHeightAt(from: Vec3, to: Vec3, x: number, z: number, halfWidth: number): number | null {
   const dx = to.x - from.x
   const dz = to.z - from.z
@@ -187,23 +154,62 @@ function segmentHeightAt(from: Vec3, to: Vec3, x: number, z: number, halfWidth: 
   return from.y + (to.y - from.y) * t
 }
 
-function accessBridgeHeightAt(x: number, z: number): number | null {
+/** Angle of the north end of each tribune band, where the access bridge lands. */
+function accessDeckAngle(side: 'east' | 'west'): number {
+  return side === 'east'
+    ? BALCONY.eastAngleRange[0] * Math.PI
+    : BALCONY.westAngleRange[1] * Math.PI
+}
+
+function accessDeckPoint(side: 'east' | 'west'): Vec3 {
+  const point = shellOffsetPoint(accessDeckAngle(side), BALCONY_BAND.deckOffset)
+  return { x: point.x, y: BALCONY.rowY[0], z: point.z }
+}
+
+function accessHeightAt(side: 'east' | 'west', x: number, z: number): number | null {
+  const stair = ACCESS_STAIRS[side]
+  const half = stair.width / 2
+
+  const lower = segmentHeightAt(stair.bottom, stair.lowerTop, x, z, half)
+  if (lower !== null) return lower
+
+  if (
+    Math.abs(x - stair.landing.x) <= half &&
+    Math.abs(z - stair.landing.z) <= half
+  ) {
+    return stair.landing.y
+  }
+
+  const upper = segmentHeightAt(stair.upperStart, stair.upperTop, x, z, half)
+  if (upper !== null) return upper
+
+  return segmentHeightAt(stair.upperTop, stair.bridgeEnd, x, z, half)
+}
+
+function accessHeightAtAny(x: number, z: number): number | null {
   for (const side of ['east', 'west'] as const) {
-    const height = segmentHeightAt(stairTop(side), deckEndPoint(side), x, z, BALCONY_BAND.halfWidth)
+    const height = accessHeightAt(side, x, z)
     if (height !== null) return height
   }
   return null
 }
 
-function towerHeightAt(x: number, z: number): number | null {
-  for (const side of ['east', 'west'] as const) {
-    const points = towerPoints(side)
-    const ramp = segmentHeightAt(points.ground, points.top, x, z, BALCONY_BAND.halfWidth)
-    if (ramp !== null) return ramp
-    const bridge = segmentHeightAt(points.top, points.landing, x, z, BALCONY_BAND.halfWidth)
-    if (bridge !== null) return bridge
-  }
-  return null
+/** Full route through one switchback stair, from the ground to the terrace. */
+function ascentWaypoints(side: 'east' | 'west'): Vec3[] {
+  const stair = ACCESS_STAIRS[side]
+  return [
+    { ...stair.bottom },
+    { ...stair.lowerTop },
+    { ...stair.landing },
+    { ...stair.upperStart },
+    { ...stair.upperTop },
+    { ...stair.bridgeEnd },
+    accessDeckPoint(side),
+  ]
+}
+
+function descentWaypoints(side: 'east' | 'west'): Vec3[] {
+  return [...ascentWaypoints(side)].reverse()
 }
 
 function pushOutOfCircle(pos: Vec3, cx: number, cz: number, radius: number, clearance = 0.4) {
@@ -281,35 +287,23 @@ function clampToBalcony(pos: Vec3) {
 }
 
 /**
- * Height of the walkable surface at (x, z): curved balcony terraces, access
- * ramps/bridges, or the courtyard ground. Region-based, not level-aware:
- * Character keeps a grounded visitor grounded under the balcony overhang by
- * only climbing when already elevated or on a ramp.
+ * Height of the walkable surface at (x, z): curved balcony terraces, the
+ * stage-side switchback stairs/bridges, or the courtyard ground. Region-based,
+ * not level-aware: Character keeps a grounded visitor grounded under the
+ * balcony overhang by only climbing when already elevated or on a stair.
  */
 export function floorHeightAt(x: number, z: number): number {
-  const stair = stairHeightAt(x, z)
-  if (stair !== null) return stair
-  const bridge = accessBridgeHeightAt(x, z)
-  if (bridge !== null) return bridge
-  const tower = towerHeightAt(x, z)
-  if (tower !== null) return tower
+  const access = accessHeightAtAny(x, z)
+  if (access !== null) return access
   const balcony = balconyHeightAt(x, z)
   if (balcony !== null) return balcony
   return 0
 }
 
-export function stairBottom(side: 'east' | 'west'): Vec3 {
-  return side === 'east' ? { x: 19.5, y: 0, z: 20 } : { x: -19.5, y: 0, z: 20 }
-}
-
-export function stairTop(side: 'east' | 'west'): Vec3 {
-  return side === 'east' ? { x: 19.5, y: WORLD.balcony.y, z: 14 } : { x: -19.5, y: WORLD.balcony.y, z: 14 }
-}
-
 /**
  * Height the character should ease toward. A grounded character only takes a
- * surface it can step onto (the ramp foot); it stays grounded under the
- * balcony deck and under mid-ramp instead of popping up through geometry.
+ * surface it can step onto (the stair foot); it stays grounded under the
+ * balcony deck and under mid-flight instead of popping up through geometry.
  */
 export function targetFloorHeight(currentY: number, surface: number): number {
   if (currentY > 1) return surface
@@ -367,12 +361,6 @@ function sideAngle(side: 'east' | 'west', x: number, z: number): number {
   return Math.min(end, Math.max(start, angle))
 }
 
-function deckEndAngle(side: 'east' | 'west'): number {
-  return side === 'east'
-    ? BALCONY.eastAngleRange[1] * Math.PI
-    : BALCONY.westAngleRange[0] * Math.PI
-}
-
 /** Arc waypoints along the inner terrace, ending at the target angle. */
 function balconyArcPoints(side: 'east' | 'west', fromAngle: number, toAngle: number): Vec3[] {
   const start = sideAngle(
@@ -396,10 +384,10 @@ function balconyArcPoints(side: 'east' | 'west', fromAngle: number, toAngle: num
 }
 
 /**
- * Waypoints a scripted walk should follow. Ground → balcony goes up via the
- * retained south stairs, along the access bridge, then follows the curved
- * terrace to the seat. Crossing between balconies descends, crosses the
- * courtyard and re-ascends.
+ * Waypoints a scripted walk should follow. Ground → balcony goes up the
+ * stage-side switchback stair, across the short bridge, then follows the
+ * curved terrace to the seat. Crossing between balconies descends, crosses
+ * the courtyard and re-ascends the other stair.
  */
 export function planWalkRoute(from: Vec3, to: Vec3): Vec3[] {
   const fromUpper = from.y > 1
@@ -411,12 +399,9 @@ export function planWalkRoute(from: Vec3, to: Vec3): Vec3[] {
   const toAngle = sideAngle(toSide, to.x, to.z)
 
   if (!fromUpper && toUpper) {
-    const side = toSide
     return [
-      stairBottom(side),
-      stairTop(side),
-      deckEndPoint(side),
-      ...balconyArcPoints(side, deckEndAngle(side), toAngle),
+      ...ascentWaypoints(toSide),
+      ...balconyArcPoints(toSide, accessDeckAngle(toSide), toAngle),
       to,
     ]
   }
@@ -426,9 +411,8 @@ export function planWalkRoute(from: Vec3, to: Vec3): Vec3[] {
 
   if (fromUpper && !toUpper) {
     return [
-      ...balconyArcPoints(fromSide, fromAngle, deckEndAngle(fromSide)),
-      stairTop(fromSide),
-      stairBottom(fromSide),
+      ...balconyArcPoints(fromSide, fromAngle, accessDeckAngle(fromSide)),
+      ...descentWaypoints(fromSide).slice(1),
       to,
     ]
   }
@@ -438,13 +422,10 @@ export function planWalkRoute(from: Vec3, to: Vec3): Vec3[] {
   }
 
   return [
-    ...balconyArcPoints(fromSide, fromAngle, deckEndAngle(fromSide)),
-    stairTop(fromSide),
-    stairBottom(fromSide),
-    stairBottom(toSide),
-    stairTop(toSide),
-    deckEndPoint(toSide),
-    ...balconyArcPoints(toSide, deckEndAngle(toSide), toAngle),
+    ...balconyArcPoints(fromSide, fromAngle, accessDeckAngle(fromSide)),
+    ...descentWaypoints(fromSide).slice(1),
+    ...ascentWaypoints(toSide),
+    ...balconyArcPoints(toSide, accessDeckAngle(toSide), toAngle),
     to,
   ]
 }
@@ -459,9 +440,7 @@ export function planWalkRoute(from: Vec3, to: Vec3): Vec3[] {
 export function resolveWalkable(pos: Vec3): void {
   if (pos.y > 1) {
     if (
-      stairHeightAt(pos.x, pos.z) !== null ||
-      accessBridgeHeightAt(pos.x, pos.z) !== null ||
-      towerHeightAt(pos.x, pos.z) !== null ||
+      accessHeightAtAny(pos.x, pos.z) !== null ||
       balconyHeightAt(pos.x, pos.z) !== null
     ) {
       return

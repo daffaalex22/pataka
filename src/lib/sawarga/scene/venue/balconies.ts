@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GeometryBatch } from '../batch';
 import type { Materials } from '../materials';
 import {
+  ACCESS_STAIRS,
   BALCONY,
   VENUE_WORLD,
   shellInwardNormal,
@@ -165,40 +166,173 @@ function addBridge(
   const yaw = Math.atan2(direction.x, direction.z);
   const quaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw, 0));
   const mid = from.clone().add(to).multiplyScalar(0.5);
-  addOrientedBox(batch, 'venueStone', width, 0.24, length, mid, quaternion);
-  addOrientedBox(batch, 'venueMetal', width + 0.12, 0.08, 0.08, mid.clone().add(new THREE.Vector3(0, 0.15, 0)), quaternion);
+  // `from`/`to` describe the walking surface; the slab hangs below it.
+  addOrientedBox(batch, 'venueStone', width, 0.24, length, mid.clone().add(new THREE.Vector3(0, -0.12, 0)), quaternion);
+  addOrientedBox(batch, 'venueMetal', width + 0.12, 0.06, 0.06, mid.clone().add(new THREE.Vector3(0, 0.02, 0)), quaternion);
   const perp = direction.clone().normalize().cross(new THREE.Vector3(0, 1, 0)).normalize().multiplyScalar(width / 2);
   for (const side of [-1, 1]) {
-    const railMid = mid.clone().addScaledVector(perp, side).add(new THREE.Vector3(0, 0.55, 0));
+    const railMid = mid.clone().addScaledVector(perp, side).add(new THREE.Vector3(0, 0.5, 0));
     addOrientedBox(batch, 'venueGlass', 0.035, 1.0, length, railMid, quaternion);
     const topMid = mid.clone().addScaledVector(perp, side).add(new THREE.Vector3(0, 1.08, 0));
     addOrientedBox(batch, 'venueMetal', 0.07, 0.07, length, topMid, quaternion);
   }
 }
 
-function addRamp(
+function addSlopedBox(
+  batch: GeometryBatch,
+  key: string,
+  from: THREE.Vector3,
+  to: THREE.Vector3,
+  width: number,
+  height: number,
+  lateralOffset = 0,
+  verticalOffset = 0,
+): void {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const dz = to.z - from.z;
+  const run = Math.hypot(dx, dz);
+  if (run < 0.02) return;
+  const yaw = Math.atan2(dx, dz);
+  const pitch = -Math.atan2(dy, run);
+  const quaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+  const horizontal = new THREE.Vector3(dx, 0, dz).normalize();
+  const perp = new THREE.Vector3(-horizontal.z, 0, horizontal.x);
+  const mid = from
+    .clone()
+    .add(to)
+    .multiplyScalar(0.5)
+    .addScaledVector(perp, lateralOffset)
+    .add(new THREE.Vector3(0, verticalOffset, 0));
+  addOrientedBox(batch, key, width, height, Math.hypot(run, dy), mid, quaternion);
+}
+
+/** Solid stepped flight with a soffit, side stringers and handrails. */
+function addStairFlight(
   batch: GeometryBatch,
   from: { x: number; y: number; z: number },
   to: { x: number; y: number; z: number },
-  width = 2.6,
+  width: number,
+  steps: number,
 ): void {
-  const start = new THREE.Vector3(from.x, from.y, from.z);
-  const end = new THREE.Vector3(to.x, to.y, to.z);
-  const direction = end.clone().sub(start);
-  const length = direction.length();
-  if (length < 0.1) return;
-  const quaternion = new THREE.Quaternion().setFromUnitVectors(
-    new THREE.Vector3(0, 0, 1),
-    direction.clone().normalize(),
-  );
-  const mid = start.clone().add(end).multiplyScalar(0.5);
-  addOrientedBox(batch, 'venueStone', width, 0.28, length, mid, quaternion);
-  // Approximate side rails following the ramp direction.
-  const side = new THREE.Vector3(1, 0, 0).applyQuaternion(quaternion).multiplyScalar(width / 2 + 0.08);
-  for (const sign of [-1, 1]) {
-    const railMid = mid.clone().addScaledVector(side, sign).add(new THREE.Vector3(0, 0.6, 0));
-    addOrientedBox(batch, 'venueMetal', 0.08, 1.1, length, railMid, quaternion);
+  const dx = to.x - from.x;
+  const dz = to.z - from.z;
+  const run = Math.hypot(dx, dz);
+  const rise = to.y - from.y;
+  if (run < 0.1 || steps < 1) return;
+
+  const horizontal = new THREE.Vector3(dx, 0, dz).normalize();
+  const perp = new THREE.Vector3(-horizontal.z, 0, horizontal.x);
+  const yaw = Math.atan2(dx, dz);
+  const quaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw, 0));
+  const tread = run / steps;
+  const stepRise = rise / steps;
+
+  // Solid stepped mass: each tread is a box rising one step above the last.
+  for (let i = 0; i < steps; i += 1) {
+    const topY = from.y + stepRise * (i + 1);
+    const height = stepRise + 0.06;
+    const position = new THREE.Vector3(
+      from.x + horizontal.x * tread * (i + 0.5),
+      topY - height / 2,
+      from.z + horizontal.z * tread * (i + 0.5),
+    );
+    addOrientedBox(batch, 'venueStone', width, height, tread + 0.02, position, quaternion);
   }
+
+  // Soffit and side stringers close the underside of the flight.
+  const soffitStart = new THREE.Vector3(from.x, from.y - 0.06, from.z);
+  const soffitEnd = new THREE.Vector3(to.x, to.y - 0.06, to.z);
+  addSlopedBox(batch, 'venueConcrete', soffitStart, soffitEnd, width - 0.2, 0.2);
+  for (const sign of [-1, 1]) {
+    addSlopedBox(
+      batch,
+      'venueMetal',
+      soffitStart,
+      soffitEnd,
+      0.18,
+      0.38,
+      sign * (width / 2 - 0.09),
+      -0.16,
+    );
+  }
+
+  // Handrails follow the stair pitch.
+  const railStart = new THREE.Vector3(from.x, from.y + 0.95, from.z);
+  const railEnd = new THREE.Vector3(to.x, to.y + 0.95, to.z);
+  for (const sign of [-1, 1]) {
+    addSlopedBox(batch, 'venueMetal', railStart, railEnd, 0.06, 0.06, sign * (width / 2 + 0.06));
+  }
+
+  for (let i = 1; i < steps; i += 4) {
+    const t = i / steps;
+    const x = from.x + dx * t;
+    const z = from.z + dz * t;
+    const topY = from.y + rise * t;
+    for (const sign of [-1, 1]) {
+      const post = new THREE.CylinderGeometry(0.035, 0.045, 0.95, 6);
+      post.translate(x + perp.x * sign * (width / 2 + 0.06), topY + 0.475, z + perp.z * sign * (width / 2 + 0.06));
+      batch.add('venueMetal', post);
+    }
+  }
+}
+
+function addStairLanding(
+  batch: GeometryBatch,
+  stair: (typeof ACCESS_STAIRS)['east'],
+  sign: 1 | -1,
+): void {
+  const { landing, width } = stair;
+  const platform = new THREE.BoxGeometry(width, 0.26, width);
+  platform.translate(landing.x, landing.y - 0.13, landing.z);
+  batch.add('venueStone', platform);
+
+  // Two columns ground the cantilevered landing.
+  const columnHeight = landing.y - 0.26;
+  if (columnHeight > 0.5) {
+    for (const offset of [-0.8, 0.8]) {
+      const column = new THREE.CylinderGeometry(0.13, 0.17, columnHeight, 10);
+      column.translate(landing.x + offset, columnHeight / 2, landing.z - width / 2 + 0.35);
+      batch.add('venueMetal', column);
+    }
+  }
+
+  const half = width / 2;
+  const railY = landing.y + 0.06;
+  const topY = landing.y + 1.01;
+  // North edge and the outer side edge; the south/east sides stay open for
+  // the two flights.
+  const edges: Array<[{ x: number; z: number }, { x: number; z: number }]> = [
+    [
+      { x: landing.x - half, z: landing.z - half },
+      { x: landing.x + half, z: landing.z - half },
+    ],
+    [
+      { x: landing.x - sign * half, z: landing.z - half },
+      { x: landing.x - sign * half, z: landing.z + half },
+    ],
+  ];
+  for (const [from, to] of edges) {
+    addSegmentBox(batch, 'venueGlass', from, to, railY, 0.95, 0.035);
+    addSegmentBox(batch, 'venueMetal', from, to, topY, 0.05, 0.05);
+  }
+}
+
+function addStairTower(
+  batch: GeometryBatch,
+  side: 'east' | 'west',
+  sign: 1 | -1,
+): void {
+  const stair = ACCESS_STAIRS[side];
+  addStairFlight(batch, stair.bottom, stair.lowerTop, stair.width, stair.lowerSteps);
+  addStairLanding(batch, stair, sign);
+  addStairFlight(batch, stair.upperStart, stair.upperTop, stair.width, stair.upperSteps);
+  addBridge(
+    batch,
+    new THREE.Vector3(stair.upperTop.x, stair.upperTop.y, stair.upperTop.z),
+    new THREE.Vector3(stair.bridgeEnd.x, stair.bridgeEnd.y, stair.bridgeEnd.z),
+    stair.width,
+  );
 }
 
 function addPortal(
@@ -261,53 +395,6 @@ function connectAtrium(
   addPortal(batch, surfaceTop, direction, 2.8, 3.2);
 }
 
-function addStairTower(
-  batch: GeometryBatch,
-  angle: number,
-  deckEndAngle: number,
-): void {
-  const groundPoint = shellOffsetPoint(angle, 11);
-  const topPoint = shellOffsetPoint(angle, 4.6);
-  addRamp(
-    batch,
-    { x: groundPoint.x, y: 0.1, z: groundPoint.z },
-    { x: topPoint.x, y: BALCONY.rowY[0], z: topPoint.z },
-    2.7,
-  );
-  const landing = shellOffsetPoint(angle, 3);
-  addBridge(
-    batch,
-    new THREE.Vector3(topPoint.x, BALCONY.rowY[0], topPoint.z),
-    new THREE.Vector3(landing.x, BALCONY.rowY[0], landing.z),
-    2.6,
-  );
-  const deckEnd = shellOffsetPoint(deckEndAngle, 3);
-  addBridge(
-    batch,
-    new THREE.Vector3(landing.x, BALCONY.rowY[0], landing.z),
-    new THREE.Vector3(deckEnd.x, BALCONY.rowY[0], deckEnd.z),
-    2.6,
-  );
-}
-
-function addOriginalStair(
-  batch: GeometryBatch,
-  side: 'east' | 'west',
-  deckEndAngle: number,
-): void {
-  const x = side === 'east' ? 19.5 : -19.5;
-  const ground = { x, y: 0, z: 20 };
-  const top = { x, y: BALCONY.rowY[0], z: 14 };
-  addRamp(batch, ground, top, 3);
-  const deckEnd = shellOffsetPoint(deckEndAngle, 3);
-  addBridge(
-    batch,
-    new THREE.Vector3(top.x, top.y, top.z),
-    new THREE.Vector3(deckEnd.x, BALCONY.rowY[0], deckEnd.z),
-    2.4,
-  );
-}
-
 export function buildCurvedBalconies(materials: Materials): BalconyResult {
   const batch = new GeometryBatch();
   const collisions: BalconyCollision[] = [];
@@ -351,11 +438,10 @@ export function buildCurvedBalconies(materials: Materials): BalconyResult {
   connectAtrium(batch, BALCONY.eastAngleRange[0] * Math.PI, BALCONY.atria.cileutik);
   connectAtrium(batch, BALCONY.westAngleRange[0] * Math.PI, BALCONY.atria.ciunik);
 
-  // Secondary original stairs retained, plus the two new access towers.
-  addOriginalStair(batch, 'east', BALCONY.eastAngleRange[1] * Math.PI);
-  addOriginalStair(batch, 'west', BALCONY.westAngleRange[0] * Math.PI);
-  addStairTower(batch, BALCONY.eastAngleRange[0] * Math.PI, BALCONY.eastAngleRange[0] * Math.PI);
-  addStairTower(batch, BALCONY.westAngleRange[1] * Math.PI, BALCONY.westAngleRange[1] * Math.PI);
+  // Two switchback stairs beside the stage, with a short bridge onto the
+  // inner terrace at the north end of each tribune band.
+  addStairTower(batch, 'east', 1);
+  addStairTower(batch, 'west', -1);
 
   // Clone materials double-sided for the custom curved slabs.
   const venueStone = materials.stone.clone();

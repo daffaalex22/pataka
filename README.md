@@ -16,7 +16,7 @@ Walk, with occupancy, revenue, check-ins, lifecycle and settlement.
 - Postgres — Neon in production, PGlite (in-process Postgres) for local dev and tests
 - Thin SQL adapter (`src/lib/db.ts`), no ORM
 - HMAC-signed QR payloads, `html5-qrcode` camera scanning on the check-in page
-- Vitest (151 tests) for the business-critical services, curved venue walkability, walk path, ticket store, portfolio builder and email delivery
+- Vitest (152 tests) for the business-critical services, curved venue walkability, walk path, ticket store, portfolio builder and email delivery
 
 ## Local development
 
@@ -83,3 +83,4 @@ Optional ticket email: set `RESEND_API_KEY` and `EMAIL_FROM` to send e-ticket li
 2. The e-ticket shows a signed QR. Open `/admin` → **Check-in** and scan it
    (or paste the payload) — the first scan is VALID, the second is ALREADY USED.
 3. Double-booking: open two browsers, hold the same seat in both — exactly one wins.
+

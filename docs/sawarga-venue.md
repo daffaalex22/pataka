@@ -11,13 +11,13 @@ old venue shell is replaced.
   landscape, branding) replaces `CourtyardFloor`, `MallRing`, `Atriums`,
   `Sawarga` and `DowntownWalk` in `PlazaScene`.
 - **Curved shell-attached balconies** (6 m deep, three stepped terraces) replace
-  the straight balconies. Access bridges, the retained south stairs and the new
-  NE/NW towers are part of the environment.
+  the straight balconies. Two stage-side switchback stairs, each with two
+  flights, a mid-landing and a short bridge, are part of the environment.
 - **TRIB seats keep 120 IDs** but move from `x ±15.5…19.5` to the curved band
   (`x ≈ ±25…34`, `y 5.2/5.75/6.3`). VIP/CAT1/REG are unchanged.
-- **Walkability** now uses the Sawarga ellipse, curved terrace heights, stair
-  ramps, access bridges, tower ramps, the atria drums, stage, board and booth.
-- **Scripted walks** route through the south stairs, across the bridge, and
+- **Walkability** now uses the Sawarga ellipse, curved terrace heights, the
+  switchback flights/landing/bridge, the atria drums, stage, board and booth.
+- **Scripted walks** route up the stage-side switchback, across the bridge, and
   along the curved terrace with arc waypoints.
 - **The 2D seat map** projects all seats into the shell ellipse, so the curved
   TRIB bands are visible instead of being clipped by the old fixed scale.
@@ -56,7 +56,7 @@ seeds the new positions through `src/lib/seatLayout.ts`.
 ## Verification
 
 ```bash
-npm test                     # 151 tests
+npm test                     # 152 tests
 npm run build
 npm run db:migrate-trib      # once per existing local/preview DB
 npx next start -p 3010       # production check
@@ -80,10 +80,11 @@ test **headed**; software WebGL is too slow for the scripted walk.
 
 ## Known follow-ups
 
-- The atria access bridges are visual; the walkable route uses the south stairs.
-  The new NE/NW towers are visual accents. Adding a walkable atria mezzanine is a
-  later pass.
+- The atria access bridges are visual; the walkable route uses the two
+  stage-side switchback stairs. Adding a walkable atria mezzanine is a later
+  pass.
 - The curved railing is frameless glass; a metal shoe/handrail can be added once
   the final balcony material direction is chosen.
 - The playground’s Downtown Walk, koi pond and live-music area remain disabled.
 - The event proxies from the playground were not imported; do not re-add them.
+

@@ -17,15 +17,20 @@ describe('floorHeightAt', () => {
   it('steps up to the outer row', () => {
     expect(floorHeightAt(34, 0)).toBe(6.3)
   })
-  it('ramps halfway up the stairs at the midpoint', () => {
-    expect(floorHeightAt(19.5, 17)).toBeCloseTo(2.6, 1)
-    expect(floorHeightAt(-19.5, 17)).toBeCloseTo(2.6, 1)
+  it('ramps halfway up the lower flight', () => {
+    expect(floorHeightAt(20, -12.75)).toBeCloseTo(1.3, 1)
+    expect(floorHeightAt(-20, -12.75)).toBeCloseTo(1.3, 1)
   })
-  it('reaches balcony height at the top of the ramp', () => {
-    expect(floorHeightAt(19.5, 14)).toBeCloseTo(5.2, 1)
+  it('reaches the switchback landing', () => {
+    expect(floorHeightAt(20, -16.2)).toBeCloseTo(2.6, 1)
+    expect(floorHeightAt(-20, -16.2)).toBeCloseTo(2.6, 1)
   })
-  it('keeps the stair-to-balcony bridge walkable', () => {
-    expect(floorHeightAt(25.5, 12.2)).toBeCloseTo(5.2, 1)
+  it('ramps up the upper flight to the bridge', () => {
+    expect(floorHeightAt(22.15, -13)).toBeCloseTo(3.9, 1)
+    expect(floorHeightAt(23.5, -11)).toBeCloseTo(5.2, 1)
+  })
+  it('keeps the landing bridge walkable', () => {
+    expect(floorHeightAt(24.9, -9.9)).toBeCloseTo(5.2, 1)
   })
 })
 
@@ -78,30 +83,33 @@ describe('planWalkRoute', () => {
   it('goes direct between ground points', () => {
     expect(planWalkRoute({ x: 0, y: 0, z: 19 }, { x: 5, y: 0, z: -5 })).toEqual([{ x: 5, y: 0, z: -5 }])
   })
-  it('routes a balcony target through the east stairs and curved terrace', () => {
+  it('routes a balcony target through the stage-side switchback', () => {
     const route = planWalkRoute({ x: 5, y: 0, z: 19 }, { x: 30, y: 5.2, z: 0 })
     expect(route[0].y).toBe(0)
     expect(route[0].x).toBeGreaterThan(0)
-    expect(route[1].y).toBeCloseTo(5.2, 1)
-    expect(route[2].x).toBeGreaterThan(28)
+    expect(route[0].z).toBeLessThan(-9)
+    expect(route[1].y).toBeCloseTo(2.6, 1)
+    expect(route[2].y).toBeCloseTo(2.6, 1)
+    expect(route.some((point) => point.y === 5.2)).toBe(true)
     expect(route.at(-1)).toEqual({ x: 30, y: 5.2, z: 0 })
-    expect(route.length).toBeGreaterThan(3)
+    expect(route.length).toBeGreaterThan(6)
   })
-  it('descends via stairs when leaving the balcony', () => {
+  it('descends via the switchback when leaving the balcony', () => {
     const route = planWalkRoute({ x: 30, y: 5.2, z: 0 }, { x: 0, y: 0, z: 19 })
     expect(route.at(-1)?.y).toBe(0)
-    expect(route.some((point) => Math.abs(point.x - 19.5) < 0.1 && point.y > 4)).toBe(true)
+    expect(route.some((point) => point.y > 4)).toBe(true)
+    expect(route.some((point) => point.x > 19 && point.y < 0.1)).toBe(true)
   })
-  it('routes to the west balcony via the west stairs from spawn', () => {
+  it('routes to the west balcony via the west switchback from spawn', () => {
     const route = planWalkRoute({ x: 0, y: 0, z: 19 }, { x: -30, y: 5.2, z: 0 })
-    expect(route[0].x).toBeLessThan(0)
-    expect(route[1].x).toBeLessThan(0)
+    expect(route[0].x).toBeLessThan(-19)
+    expect(route[0].z).toBeLessThan(-9)
     expect(route.at(-1)?.x).toBe(-30)
   })
   it('crosses balconies by descending and re-ascending', () => {
     const route = planWalkRoute({ x: -30, y: 5.2, z: 0 }, { x: 30, y: 5.2, z: 0 })
-    const westBottom = route.findIndex((point) => point.x < -19 && point.y < 0.1)
-    const eastBottom = route.findIndex((point) => point.x > 19 && point.y < 0.1)
+    const westBottom = route.findIndex((point) => point.x < -19.9 && point.y < 0.1)
+    const eastBottom = route.findIndex((point) => point.x > 19.9 && point.y < 0.1)
     expect(westBottom).toBeGreaterThanOrEqual(0)
     expect(eastBottom).toBeGreaterThan(westBottom)
     expect(route.at(-1)?.x).toBe(30)
