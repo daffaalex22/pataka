@@ -1,0 +1,55 @@
+@media print {
+  @page pilot {
+    size: A4;
+    margin: 10mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .pilot-page {
+    page: pilot;
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
+
+  .pilot-page header {
+    margin-top: 0 !important;
+    padding-bottom: 2mm;
+  }
+
+  .pilot-page h1 {
+    font-size: 20pt;
+    line-height: 1.1;
+  }
+
+  .pilot-page h2 {
+    font-size: 8pt;
+  }
+
+  .pilot-page p,
+  .pilot-page li {
+    font-size: 8pt;
+    line-height: 1.25;
+  }
+
+  .pilot-page header p.text-lg {
+    font-size: 10pt;
+  }
+
+  .pilot-page section {
+    margin-top: 2.5mm !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .pilot-page footer {
+    margin-top: 2mm !important;
+    padding-top: 1mm !important;
+  }
+}

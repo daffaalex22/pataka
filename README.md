@@ -5,7 +5,9 @@ Prototype for **Bandung Build Challenge 2026 · Bandung Innovation Week 2026**.
 A mobile-first ticketing experience for a night open-air concert at Summarecon Mall Bandung:
 explore the venue as a walking character, pick a seat on the 3D plaza, preview the stage view
 from that seat, pay (simulated) and receive a signed QR e-ticket. Panitia get a dashboard for
-ticket settings, sales, seat inventory, CSV exports and camera QR check-in.
+ticket settings, sales, seat inventory, CSV exports and camera QR check-in. A Mall operations
+tab adds the venue operator's portfolio view: events across Sawarga, the atriums and Downtown
+Walk, with occupancy, revenue, check-ins, lifecycle and settlement.
 
 ## Stack
 
@@ -14,7 +16,7 @@ ticket settings, sales, seat inventory, CSV exports and camera QR check-in.
 - Postgres — Neon in production, PGlite (in-process Postgres) for local dev and tests
 - Thin SQL adapter (`src/lib/db.ts`), no ORM
 - HMAC-signed QR payloads, `html5-qrcode` camera scanning on the check-in page
-- Vitest (49 tests) for the business-critical services, walk path, ticket store and email delivery
+- Vitest (142 tests) for the business-critical services, walk path, ticket store, portfolio builder and email delivery
 
 ## Local development
 
@@ -48,10 +50,11 @@ Optional ticket email: set `RESEND_API_KEY` and `EMAIL_FROM` to send e-ticket li
 ## Demo access
 
 - Visitor: `/`
-- Organizer panel: `/admin` — demo key `panitia2026`
+- Organizer + mall operations: `/admin` — demo key `panitia2026` (open the **Operasi Mall** tab)
 - Submission deck: `/deck`
 - Pitch deck: `/deck` — arrow/space navigation, `F` fullscreen, print to 16:9 PDF
 - Speaker notes: `/deck/notes`
+- Pilot one-pager: `/pilot`
 - PDF backup: `/deck/pataka-pitch.pdf` · notes PDF: `/deck/pataka-notes.pdf`
 
 ## Prototype assumptions (also on the deck)
@@ -61,6 +64,7 @@ Optional ticket email: set `RESEND_API_KEY` and `EMAIL_FROM` to send e-ticket li
 - One seat per order; 10-minute server-side hold before payment.
 - Payments and WhatsApp reminders are simulated; calendar `.ics` works. E-ticket email uses a Resend-compatible API when configured, otherwise it reports “not configured”.
 - Sample fictional data only — no real transactions or personal data.
+- Mall operations: the live concert row is real database data; other portfolio rows are labelled sample data. Portfolio KPI totals include those sample rows; settlement is live-event only and illustrative.
 - Seat layout is fixed per event; organizers manage price, quota and sales period.
 
 ## Key flows to try

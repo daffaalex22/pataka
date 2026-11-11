@@ -13,7 +13,8 @@
     "db:reset": "tsx src/lib/cli.ts reset",
     "db:demo": "tsx src/lib/cli.ts demo",
     "deck:shots": "node scripts/capture-deck-shots.mjs",
-    "deck:pdf": "node scripts/render-deck-pdf.mjs"
+    "deck:pdf": "node scripts/render-deck-pdf.mjs",
+    "deck:notes": "node scripts/render-notes-pdf.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.15",

@@ -102,3 +102,52 @@ export interface AdminOrder {
   categoryNameEn: string
 }
 
+export type PortfolioStage = 'draft' | 'on_sale' | 'check_in' | 'completed' | 'settled'
+export type PortfolioSource = 'live' | 'sample'
+
+export interface MallSpace {
+  id: string
+  name: string
+  nameEn: string
+}
+
+export interface PortfolioEvent {
+  id: string
+  name: string
+  nameEn: string
+  spaceId: string
+  space: string
+  spaceEn: string
+  startsAt: string
+  stage: PortfolioStage
+  capacity: number
+  sold: number
+  revenueIdr: number
+  checkedIn: number
+  source: PortfolioSource
+}
+
+export interface PortfolioTotals {
+  events: number
+  sampleCount: number
+  capacity: number
+  sold: number
+  occupancyPct: number
+  revenueIdr: number
+  checkedIn: number
+}
+
+export interface PortfolioSettlement {
+  grossIdr: number
+  platformFeePct: number
+  platformFeeIdr: number
+  netIdr: number
+}
+
+export interface PortfolioResponse {
+  events: PortfolioEvent[]
+  totals: PortfolioTotals
+  spaces: MallSpace[]
+  settlement: PortfolioSettlement
+}
+
