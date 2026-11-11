@@ -96,6 +96,7 @@ export function WorldHud({
                 disabled={!mapEnabled}
                 onClick={onToggleMap}
                 aria-pressed={mapOpen}
+                data-world-map-toggle
                 className={`focus-ring inline-flex min-h-11 items-center justify-center gap-2 border-l border-paper/15 px-3 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                   mapOpen ? 'bg-accent text-ink' : 'text-paper/70 hover:text-paper'
                 }`}
