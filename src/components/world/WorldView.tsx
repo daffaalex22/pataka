@@ -66,6 +66,7 @@ export function WorldView({ onExit }: { onExit: () => void }) {
   const [announcement, setAnnouncement] = useState('')
   const hintTimer = useRef<number | null>(null)
   const announcementTimer = useRef<number | null>(null)
+  const focusMapAfterClear = useRef(false)
 
   const showHint = useCallback((message: string) => {
     setHint(message)
@@ -165,12 +166,16 @@ export function WorldView({ onExit }: { onExit: () => void }) {
     setError(null)
     setSeat(null)
     setAnnouncement('')
+    focusMapAfterClear.current = true
     if (announcementTimer.current) window.clearTimeout(announcementTimer.current)
     announcementTimer.current = window.setTimeout(() => setAnnouncement(t('seat.cleared')), 50)
-    window.requestAnimationFrame(() => {
-      document.querySelector<HTMLButtonElement>('[data-world-map-toggle]')?.focus({ preventScroll: true })
-    })
   }, [setAutoWalkSeat, setError, setPreviewSeat, setSeat, t])
+
+  useEffect(() => {
+    if (seat || !focusMapAfterClear.current) return
+    focusMapAfterClear.current = false
+    document.querySelector<HTMLButtonElement>('[data-world-map-toggle]')?.focus({ preventScroll: true })
+  }, [seat])
 
   useEffect(() => {
     if (!seat || holdActive || overlayOpen || mapOpen || previewSeat || boothOpen || boardDetailOpen) return
