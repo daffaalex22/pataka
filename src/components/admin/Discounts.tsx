@@ -149,6 +149,7 @@ function DiscountForm({
     }
     if (!initial) payload.kind = kind
     if (!initial) payload.type = form.type
+    if (!initial) payload.active = form.active
     if (form.type === 'percent') payload.maxDiscountIdr = form.maxDiscount ? Number(form.maxDiscount) : null
     if (kind === 'code') {
       if (!initial) payload.code = normalizeCode(form.code)
@@ -333,8 +334,16 @@ export function Discounts({ adminKey }: { adminKey: string }) {
 
   const load = () =>
     adminFetch<DiscountRule[]>(adminKey, '/api/admin/discounts')
-      .then(setRules)
+      .then((data) => {
+        setRules(data)
+        setError(null)
+      })
       .catch(() => setError(t('error.generic')))
+
+  const retry = () => {
+    setError(null)
+    load()
+  }
 
   useEffect(() => {
     load()
@@ -384,7 +393,27 @@ export function Discounts({ adminKey }: { adminKey: string }) {
     load()
   }
 
-  if (rules === null) return <div className="panel h-48 animate-pulse rounded-2xl" />
+  if (rules === null) {
+    return (
+      <div>
+        <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-muted">{t('admin.discounts.title')}</h2>
+        {error ? (
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <p className="text-sm text-red-300">{error}</p>
+            <button
+              type="button"
+              onClick={retry}
+              className="rounded-full border border-line px-3 py-1.5 text-xs font-medium text-muted transition hover:border-white/30 hover:text-foreground"
+            >
+              {t('admin.discounts.retry')}
+            </button>
+          </div>
+        ) : (
+          <div className="panel mt-4 h-48 animate-pulse rounded-2xl" />
+        )}
+      </div>
+    )
+  }
 
   const phases = rules.filter((d) => d.kind === 'phase')
   const codes = rules.filter((d) => d.kind === 'code')
