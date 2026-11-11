@@ -14,10 +14,16 @@ export function PreviewCamera({ seat }: { seat: Seat }) {
     | { enabled: boolean; target: THREE.Vector3; update?: () => void }
     | null
 
-  const targetPosition = useMemo(
-    () => new THREE.Vector3(seat.x, seat.y + 1.15, seat.z),
-    [seat.x, seat.y, seat.z],
-  )
+  const targetPosition = useMemo(() => {
+    const toStageX = -seat.x
+    const toStageZ = -13 - seat.z
+    const length = Math.hypot(toStageX, toStageZ) || 1
+    return new THREE.Vector3(
+      seat.x + (toStageX / length) * 0.55,
+      seat.y + 1.7,
+      seat.z + (toStageZ / length) * 0.55,
+    )
+  }, [seat.x, seat.y, seat.z])
   const saved = useRef<{ position: THREE.Vector3; target: THREE.Vector3 } | null>(null)
   const wasEnabled = useRef(true)
   const restored = useRef(false)

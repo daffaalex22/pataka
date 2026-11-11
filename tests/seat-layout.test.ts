@@ -29,13 +29,14 @@ describe('buildSummabaSeats', () => {
     }
   })
 
-  it('places tribune seats on the second-floor balconies', () => {
+  it('places tribune seats on the curved shell-attached balconies', () => {
     for (const seat of seats.filter((entry) => entry.categoryKey === 'TRIB')) {
       expect(seat.y).toBeGreaterThanOrEqual(5.2)
-      expect(Math.abs(seat.x)).toBeGreaterThanOrEqual(14)
-      expect(Math.abs(seat.x)).toBeLessThanOrEqual(20)
-      expect(seat.z).toBeGreaterThanOrEqual(-14)
-      expect(seat.z).toBeLessThanOrEqual(14)
+      expect(seat.y).toBeLessThanOrEqual(6.3)
+      expect(Math.abs(seat.x)).toBeGreaterThanOrEqual(24)
+      expect(Math.abs(seat.x)).toBeLessThanOrEqual(34)
+      expect(seat.z).toBeGreaterThanOrEqual(-10.6)
+      expect(seat.z).toBeLessThanOrEqual(11.4)
     }
   })
 

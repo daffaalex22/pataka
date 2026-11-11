@@ -5,6 +5,23 @@ import { STATUS_COLORS } from '@/components/ui/Legend'
 import { useLang, useT } from '@/lib/i18n'
 import { findNextSeat, type SeatDirection } from '@/lib/seatNavigation'
 import { formatIdr, type Seat } from '@/lib/types'
+import { BALCONY, SHELL, shellOffsetPoint } from '@/lib/sawarga/scene/venue/layout'
+
+const MAP_WIDTH = 640
+const MAP_HEIGHT = 620
+const MAP_PADDING = 24
+
+function createProjection() {
+  const scale = Math.min(
+    (MAP_WIDTH - MAP_PADDING * 2) / (SHELL.radiusX * 2),
+    (MAP_HEIGHT - MAP_PADDING * 2) / (SHELL.radiusZ * 2),
+  )
+  return {
+    scale,
+    x: (x: number) => MAP_WIDTH / 2 + x * scale,
+    y: (z: number) => MAP_HEIGHT / 2 + z * scale,
+  }
+}
 
 const KEY_DIRECTIONS: Partial<Record<string, SeatDirection>> = {
   ArrowUp: 'up',
@@ -67,6 +84,20 @@ export function SeatMap2D({
     moved: boolean
   } | null>(null)
   const suppressClickRef = useRef(false)
+  const projection = useMemo(() => createProjection(), [])
+  const balconyBands = useMemo(() => {
+    const band = (range: readonly [number, number]) => {
+      const steps = 30
+      const points: string[] = []
+      for (let i = 0; i < steps; i += 1) {
+        const angle = range[0] * Math.PI + ((range[1] - range[0]) * Math.PI * i) / (steps - 1)
+        const point = shellOffsetPoint(angle, BALCONY.depth / 2)
+        points.push(`${i === 0 ? 'M' : 'L'}${projection.x(point.x).toFixed(1)} ${projection.y(point.z).toFixed(1)}`)
+      }
+      return points.join(' ')
+    }
+    return [band(BALCONY.eastAngleRange), band(BALCONY.westAngleRange)]
+  }, [projection])
 
   const tabStopId = useMemo(() => {
     if (selectedId && seats.some((seat) => seat.id === selectedId)) return selectedId
@@ -125,8 +156,8 @@ export function SeatMap2D({
       return
     }
 
-    const xs = categorySeats.map((seat) => 320 + seat.x * 14)
-    const ys = categorySeats.map((seat) => 20 + (seat.z + 24) * 12)
+    const xs = categorySeats.map((seat) => projection.x(seat.x))
+    const ys = categorySeats.map((seat) => projection.y(seat.z))
     const minX = Math.min(...xs)
     const maxX = Math.max(...xs)
     const minY = Math.min(...ys)
@@ -134,15 +165,15 @@ export function SeatMap2D({
     const padding = 28
     const next = clampScale(
       Math.min(
-        640 / Math.max(1, maxX - minX + padding * 2),
-        620 / Math.max(1, maxY - minY + padding * 2),
+        (MAP_WIDTH - MAP_PADDING * 2) / Math.max(1, maxX - minX + padding * 2),
+        (MAP_HEIGHT - MAP_PADDING * 2) / Math.max(1, maxY - minY + padding * 2),
       ),
     )
 
     setScale(next)
     setPan({
-      x: 320 - ((minX + maxX) / 2) * next,
-      y: 310 - ((minY + maxY) / 2) * next,
+      x: MAP_WIDTH / 2 - ((minX + maxX) / 2) * next,
+      y: MAP_HEIGHT / 2 - ((minY + maxY) / 2) * next,
     })
   }
 
@@ -178,16 +209,25 @@ export function SeatMap2D({
     let best: Seat | null = null
     let bestDistance = Infinity
     for (const seat of seats) {
-      const x = 320 + seat.x * 14
-      const y = 20 + (seat.z + 24) * 12
+      const x = projection.x(seat.x)
+      const y = projection.y(seat.z)
       const distance = (x - point.x) ** 2 + (y - point.y) ** 2
       if (distance < bestDistance) {
         bestDistance = distance
         best = seat
       }
     }
-    if (best && bestDistance <= 24 ** 2) onSelect(best)
+    const hitRadius = Math.max(18, projection.scale * 1.6)
+    if (best && bestDistance <= hitRadius ** 2) onSelect(best)
   }
+
+  const stage = {
+    x: projection.x(-13),
+    y: projection.y(-17.5),
+    width: projection.x(13) - projection.x(-13),
+    height: projection.y(-8.5) - projection.y(-17.5),
+  }
+  const seatRadius = Math.max(2.8, projection.scale * 0.36)
 
   return (
     <div className={`relative ${className}`}>
@@ -282,23 +322,56 @@ export function SeatMap2D({
         </defs>
 
         <g ref={groupRef} transform={`translate(${pan.x} ${pan.y}) scale(${scale})`}>
-          <ellipse cx="320" cy="34" rx="240" ry="70" fill="url(#stageGlow)" opacity="0.7" />
+          <ellipse
+            cx={projection.x(0)}
+            cy={projection.y(0)}
+            rx={SHELL.radiusX * projection.scale}
+            ry={SHELL.radiusZ * projection.scale}
+            fill="rgba(245,197,66,0.025)"
+            stroke="rgba(244,241,255,0.14)"
+            strokeWidth="1.2"
+          />
+          {balconyBands.map((band, index) => (
+            <path
+              key={index}
+              d={band}
+              fill="none"
+              stroke="rgba(56,189,248,0.18)"
+              strokeWidth={BALCONY.depth * projection.scale}
+              strokeLinecap="round"
+            />
+          ))}
+          <ellipse
+            cx={projection.x(0)}
+            cy={stage.y + stage.height / 2}
+            rx={stage.width * 0.62}
+            ry={stage.height * 1.45}
+            fill="url(#stageGlow)"
+            opacity="0.7"
+          />
           <rect
-            x="190"
-            y="8"
-            width="260"
-            height="22"
+            x={stage.x}
+            y={stage.y}
+            width={stage.width}
+            height={stage.height}
             rx="11"
             fill="url(#stage)"
             stroke="rgba(245,197,66,0.55)"
           />
-          <text x="320" y="23" textAnchor="middle" fontSize="12" letterSpacing="3" fill="#f5c542">
+          <text
+            x={projection.x(0)}
+            y={stage.y + stage.height / 2 + 4}
+            textAnchor="middle"
+            fontSize="12"
+            letterSpacing="3"
+            fill="#f5c542"
+          >
             {stageLabel}
           </text>
 
           {seats.map((seat) => {
-            const x = 320 + seat.x * 14
-            const y = 20 + (seat.z + 24) * 12
+            const x = projection.x(seat.x)
+            const y = projection.y(seat.z)
             const dimmed = categoryKey !== null && seat.categoryKey !== categoryKey
             const selected = seat.id === selectedId
             const tabStop = seat.id === activeFocusId
@@ -315,7 +388,7 @@ export function SeatMap2D({
                 data-seat-id={seat.id}
                 cx={x}
                 cy={y}
-                r={selected ? 7.5 : 5.4}
+                r={selected ? seatRadius * 1.4 : seatRadius}
                 fill={selected ? '#ffffff' : STATUS_COLORS[seat.status]}
                 opacity={
                   selected

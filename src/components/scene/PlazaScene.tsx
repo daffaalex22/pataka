@@ -4,24 +4,56 @@ import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber'
 import { OrbitControls, PerformanceMonitor } from '@react-three/drei'
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import type { Category, EventInfo, Lang, Seat } from '@/lib/types'
 import { Character, FollowCamera, useKeyboard, type KeysState, type MoveVector } from '@/components/scene/Character'
 import { AutoWalk } from '@/components/scene/AutoWalk'
 import { PreviewCamera } from '@/components/scene/PreviewCamera'
 import { Board, Booth } from '@/components/world/Interactables'
-import { CourtyardFloor } from '@/components/scene/summaba/CourtyardFloor'
 import { LookDrag } from '@/components/scene/LookDrag'
-import { MallRing } from '@/components/scene/summaba/MallRing'
-import { Atriums } from '@/components/scene/summaba/Atriums'
+import { SawargaEnvironment } from '@/components/scene/SawargaEnvironment'
 import { Stage } from '@/components/scene/summaba/Stage'
-import { Balconies } from '@/components/scene/summaba/Balconies'
-import { DowntownWalk } from '@/components/scene/summaba/DowntownWalk'
-import { Sawarga } from '@/components/scene/summaba/Sawarga'
 
 const STATUS_3D: Record<string, string> = {
   available: '#2dd4bf',
   held: '#fbbf24',
   sold: '#3a3949',
+}
+
+/**
+ * Small procedural night environment so glass, metal, and the paving pick up
+ * believable reflections without loading a sky HDRI into the ticketing scene.
+ */
+function NightEnvironment() {
+  const gl = useThree((state) => state.gl)
+  const scene = useThree((state) => state.scene)
+
+  useEffect(() => {
+    const pmrem = new THREE.PMREMGenerator(gl)
+    const room = new RoomEnvironment()
+    const texture = pmrem.fromScene(room, 0.04).texture
+    // R3F's scene is an imperative Three.js object; these assignments are the
+    // supported way to attach image-based lighting.
+    // eslint-disable-next-line react-hooks/immutability
+    scene.environment = texture
+    scene.environmentIntensity = 0.14
+    return () => {
+      scene.environment = null
+      scene.environmentIntensity = 1
+      texture.dispose()
+      pmrem.dispose()
+      room.traverse((child) => {
+        const mesh = child as THREE.Mesh
+        if (mesh.geometry) mesh.geometry.dispose()
+        if (mesh.material) {
+          const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+          for (const material of materials) material.dispose()
+        }
+      })
+    }
+  }, [gl, scene])
+
+  return null
 }
 
 
@@ -58,13 +90,8 @@ function Venue() {
       <color attach="background" args={['#07060d']} />
       <fog attach="fog" args={['#07060d', 55, 130]} />
 
-      <CourtyardFloor />
-      <MallRing />
-      <Atriums />
+      <SawargaEnvironment />
       <Stage />
-      <Balconies />
-      <Sawarga />
-      <DowntownWalk />
 
       {/* string lights */}
       <instancedMesh ref={bulbsRef} args={[undefined, undefined, lightPoints.length]}>
@@ -73,9 +100,13 @@ function Venue() {
       </instancedMesh>
 
       {/* moon light */}
-      <ambientLight intensity={0.32} color="#8b83ff" />
-      <hemisphereLight args={['#9fb4ff', '#1a1426', 0.5]} />
-      <directionalLight position={[10, 24, 8]} intensity={1.1} color="#aab8ff" />
+      <ambientLight intensity={0.16} color="#8b83ff" />
+      <hemisphereLight args={['#9fb4ff', '#1a1426', 0.28]} />
+      <directionalLight position={[10, 24, 8]} intensity={0.65} color="#aab8ff" />
+      {/* warm practicals: stage wash + the two balcony access ends */}
+      <pointLight position={[0, 8, -11]} intensity={55} distance={55} decay={2} color="#ffd9a2" />
+      <pointLight position={[27, 7.2, 11]} intensity={18} distance={22} decay={2} color="#ffc98a" />
+      <pointLight position={[-27, 7.2, 11]} intensity={18} distance={22} decay={2} color="#ffc98a" />
     </group>
   )
 }
@@ -110,14 +141,24 @@ function Seats({
       const isHighlighted = !isSelected && !isHovered && highlightCategory === seat.categoryKey
       const lift = isSelected ? 0.18 : isHovered ? 0.08 : isHighlighted ? 0.1 : 0
       const scale = isSelected ? 1.45 : isHovered ? 1.18 : 1
+      // Tribune seats follow the curved shell and face the stage; the floor
+      // seats keep their original axis-aligned pads.
+      const rotationY =
+        seat.categoryKey === 'TRIB'
+          ? Math.atan2(seat.x, seat.z + 13)
+          : 0
 
       dummy.position.set(seat.x, seat.y + 0.55 + lift, seat.z)
-      dummy.rotation.set(0, 0, 0)
+      dummy.rotation.set(0, rotationY, 0)
       dummy.scale.setScalar(scale)
       dummy.updateMatrix()
       pads.setMatrixAt(index, dummy.matrix)
 
-      dummy.position.set(seat.x, seat.y + 0.78 + lift, seat.z + 0.42)
+      dummy.position.set(
+        seat.x + Math.sin(rotationY) * 0.42,
+        seat.y + 0.78 + lift,
+        seat.z + Math.cos(rotationY) * 0.42,
+      )
       dummy.updateMatrix()
       backs.setMatrixAt(index, dummy.matrix)
 
@@ -235,9 +276,9 @@ function CameraReset({ mode }: { mode: 'orbit' | 'walk' }) {
     | null
   useEffect(() => {
     if (mode === 'walk') return
-    camera.position.set(0, 24, 46)
+    camera.position.set(20, 17, 20)
     if (controls) {
-      controls.target.set(0, 2, 2)
+      controls.target.set(-2, 3, -7)
       controls.update?.()
     }
   }, [mode, camera, controls])
@@ -291,7 +332,7 @@ export default function PlazaScene({
   return (
     <Canvas
       dpr={dpr}
-      camera={{ position: [0, 24, 46], fov: 42 }}
+      camera={{ position: [20, 17, 20], fov: 55 }}
       gl={{ antialias: true, powerPreference: 'high-performance' }}
     >
       <PerformanceMonitor
@@ -300,6 +341,7 @@ export default function PlazaScene({
         onFallback={() => setDpr(1)}
       />
       <CameraReset mode={mode} />
+      <NightEnvironment />
       <Suspense fallback={null}>
         <Venue />
         <Seats
@@ -337,7 +379,7 @@ export default function PlazaScene({
         <OrbitControls
           makeDefault
           enabled={!previewSeat && !paused}
-          target={[0, 2, 2]}
+          target={[-2, 3, -7]}
           enablePan={false}
           enableDamping
           dampingFactor={0.08}

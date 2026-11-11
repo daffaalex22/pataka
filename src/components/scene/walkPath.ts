@@ -7,6 +7,18 @@ export type WalkPoint = { x: number; y: number; z: number }
 
 /** Where the character stands when it arrives: just behind the seat pad, inside the walkable bounds. */
 export function standTarget(seat: WalkPoint): WalkPoint {
+  if (seat.y > 1) {
+    // Tribune seats follow the curved shell: step outward from the stage so
+    // the visitor stands behind the pad rather than in the row in front.
+    const dx = seat.x
+    const dz = seat.z + 13
+    const length = Math.hypot(dx, dz) || 1
+    return {
+      x: seat.x + (dx / length) * 0.25,
+      y: seat.y,
+      z: seat.z + (dz / length) * 0.25,
+    }
+  }
   return {
     x: Math.max(-24, Math.min(24, seat.x)),
     y: seat.y,

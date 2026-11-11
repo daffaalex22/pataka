@@ -1,3 +1,5 @@
+import { buildTribSeats } from './sawarga/scene/venue/layout'
+
 export type SeatRow = {
   id: string
   categoryKey: string
@@ -68,22 +70,18 @@ export function buildSummabaSeats(): SeatRow[] {
     }
   })
 
-  // TRIB: L2 balcony terraces, 3 stepped rows x 20 per side
-  for (const side of ['L', 'R'] as const) {
-    const section = `TRIB${side}`
-    ;['A', 'B', 'C'].forEach((row, r) => {
-      for (let i = 0; i < 20; i++) {
-        seats.push({
-          id: `${section}-${row}${i + 1}`,
-          categoryKey: 'TRIB',
-          section,
-          row,
-          num: i + 1,
-          x: side === 'L' ? -(15.5 + r * 2) : 15.5 + r * 2,
-          y: 5.2 + r * 0.55,
-          z: -10.5 + i * 1.15,
-        })
-      }
+  // TRIB: 3 stepped rows x 20 per side, re-laid on the curved
+  // shell-attached balconies. Same IDs, counts, and rows as before.
+  for (const seat of buildTribSeats()) {
+    seats.push({
+      id: seat.id,
+      categoryKey: seat.categoryKey,
+      section: seat.section,
+      row: seat.row,
+      num: seat.num,
+      x: seat.x,
+      y: seat.y,
+      z: seat.z,
     })
   }
 

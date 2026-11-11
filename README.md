@@ -16,7 +16,7 @@ Walk, with occupancy, revenue, check-ins, lifecycle and settlement.
 - Postgres — Neon in production, PGlite (in-process Postgres) for local dev and tests
 - Thin SQL adapter (`src/lib/db.ts`), no ORM
 - HMAC-signed QR payloads, `html5-qrcode` camera scanning on the check-in page
-- Vitest (142 tests) for the business-critical services, walk path, ticket store, portfolio builder and email delivery
+- Vitest (151 tests) for the business-critical services, curved venue walkability, walk path, ticket store, portfolio builder and email delivery
 
 ## Local development
 
@@ -33,6 +33,10 @@ npm run dev           # http://localhost:3000
 
 `DATABASE_URL` can also point at a real Postgres (`postgresql://…`), e.g. Neon.
 
+The 3D venue now uses the 70 × 50 m Sawarga shell with curved shell-attached
+tribune balconies. See [`docs/sawarga-venue.md`](docs/sawarga-venue.md) for the
+migration notes, walkability contract and verification commands.
+
 Optional ticket email: set `RESEND_API_KEY` and `EMAIL_FROM` to send e-ticket links through a Resend-compatible API after payment (and via the “Email ticket” button). Without them the app reports “email not configured” and the ticket link is still saved in the browser (`/tickets`).
 
 ## Scripts
@@ -46,6 +50,9 @@ Optional ticket email: set `RESEND_API_KEY` and `EMAIL_FROM` to send e-ticket li
 | `npm run db:seed` | seed event + categories + 446 seats |
 | `npm run db:reset` | drop, recreate and reseed |
 | `npm run db:demo` | add demo orders/holds/check-in |
+| `npm run db:migrate-trib` | move the 120 TRIB rows onto the curved balconies (idempotent) |
+| `node scripts/capture-venue.mjs` | desktop/mobile venue screenshots |
+| `node scripts/smoke-venue.mjs` | headed: pick a TRIB seat, walk to it, verify the seat view |
 
 ## Demo access
 
