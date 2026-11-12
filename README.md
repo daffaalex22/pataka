@@ -56,6 +56,7 @@ Optional ticket email: set `RESEND_API_KEY` and `EMAIL_FROM` to send e-ticket li
 | `npm run build` | production build |
 | `npm test` | Vitest suite |
 | `npm run db:migrate` | apply schema |
+| `npm run db:migrate:deploy` | production-only migration gate (runs automatically from `npm run build` on Vercel) |
 | `npm run db:seed` | seed event + categories + 446 seats |
 | `npm run db:reset` | drop, recreate and reseed |
 | `npm run db:demo` | add demo orders/holds/check-in |
@@ -66,6 +67,23 @@ Optional ticket email: set `RESEND_API_KEY` and `EMAIL_FROM` to send e-ticket li
 | `npm run deck:shots` | regenerate home/deck marketing images from the current 3D app |
 | `npm run deck:pdf` | regenerate the pitch PDF |
 | `npm run deck:notes` | regenerate the speaker-notes PDF |
+
+## Deployment
+
+Production builds apply the schema before `next build`: Vercel sets
+`VERCEL_ENV=production`, so `scripts/migrate-deploy.mjs` runs
+`npm run db:migrate` against `DATABASE_URL_UNPOOLED` (preferred) or
+`DATABASE_URL`. Preview builds skip migrations; point a preview at a Neon
+branch if it needs a live database. The migration statements are additive and
+idempotent, so repeated production builds are safe.
+
+- `GET /api/health` returns `200` only when the database is reachable and the
+  discount schema exists; otherwise it returns `503`.
+- To migrate production manually:
+  `VERCEL_ENV=production npm run db:migrate:deploy`
+  (PowerShell: `$env:VERCEL_ENV='production'; npm run db:migrate:deploy`).
+- CI (`.github/workflows/ci.yml`) applies the schema to a fresh PGlite
+  database, then runs the tests and a production build.
 
 ## Demo access
 
