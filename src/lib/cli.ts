@@ -6,6 +6,7 @@ import { getDb } from './db'
 import { migrate } from './migrate'
 import { seed } from './seed'
 import { seedDemo } from './demo'
+import { syncSeatLayout } from './seatSync'
 
 async function main() {
   const command = process.argv[2]
@@ -14,7 +15,17 @@ async function main() {
   switch (command) {
     case 'migrate': {
       await migrate(db)
+      const sync = await syncSeatLayout(db)
       console.log('migrate: schema applied')
+      if (sync.totalSeats === 0) {
+        console.log('migrate: no seats yet; seat layout sync skipped')
+      } else {
+        const positionResult =
+          sync.seatsUpdated === 0 ? 'already current' : `${sync.seatsUpdated} positions updated`
+        console.log(
+          `migrate: seat layout ${positionResult}${sync.venueUpdated ? ', event venue updated' : ''}`,
+        )
+      }
       break
     }
     case 'seed': {

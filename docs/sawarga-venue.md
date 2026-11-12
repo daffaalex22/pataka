@@ -52,17 +52,20 @@ The preference is stored under `pataka.scene-quality` in `localStorage`.
 
 ## Database migration
 
-The `seats` table stores `x, y, z` and no rotation. The migration is idempotent
-and only updates the 120 TRIB rows:
+The `seats` table stores `x, y, z` and no rotation. `npm run db:migrate` (also
+run by the production build) syncs every seat's `x/y/z` to the current layout
+and updates the event venue:
 
 ```bash
-npm run db:migrate-trib
+npm run db:migrate
 ```
 
-It reads the curved layout from `src/lib/sawarga/scene/venue/layout.ts`, updates
-`x/y/z` by seat ID, and refuses to run if a TRIB ID is missing. Existing holds,
-orders and statuses are untouched. For a local reset, `npm run db:reset` also
-seeds the new positions through `src/lib/seatLayout.ts`.
+It reads the full layout from `src/lib/seatLayout.ts`, updates `x/y/z` by seat
+ID, and refuses to run if the database seat set differs from the layout.
+Existing holds, orders and statuses are untouched, and a second run reports
+zero changes. The older `npm run db:migrate-trib` remains available as a
+TRIB-only migration. For a local reset, `npm run db:reset` also seeds the new
+positions through `src/lib/seatLayout.ts`.
 
 ## Key files
 

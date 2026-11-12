@@ -55,12 +55,12 @@ Optional ticket email: set `RESEND_API_KEY` and `EMAIL_FROM` to send e-ticket li
 | `npm run dev` | local dev server |
 | `npm run build` | production build |
 | `npm test` | Vitest suite |
-| `npm run db:migrate` | apply schema |
+| `npm run db:migrate` | apply schema + sync all 446 seat positions and the event venue |
 | `npm run db:migrate:deploy` | production-only migration gate (runs automatically from `npm run build` on Vercel) |
 | `npm run db:seed` | seed event + categories + 446 seats |
 | `npm run db:reset` | drop, recreate and reseed |
 | `npm run db:demo` | add demo orders/holds/check-in |
-| `npm run db:migrate-trib` | move the 120 TRIB rows onto the curved balconies (idempotent) |
+| `npm run db:migrate-trib` | legacy: move only the 120 TRIB rows onto the curved balconies (idempotent) |
 | `node scripts/capture-venue.mjs` | desktop/mobile venue screenshots |
 | `node scripts/smoke-venue.mjs` | headed: pick a TRIB seat, walk to it, verify the seat view |
 | `node scripts/smoke-quality.mjs` | verify graphics presets persist |
@@ -73,9 +73,12 @@ Optional ticket email: set `RESEND_API_KEY` and `EMAIL_FROM` to send e-ticket li
 Production builds apply the schema before `next build`: Vercel sets
 `VERCEL_ENV=production`, so `scripts/migrate-deploy.mjs` runs
 `npm run db:migrate` against `DATABASE_URL_UNPOOLED` (preferred) or
-`DATABASE_URL`. Preview builds skip migrations; point a preview at a Neon
-branch if it needs a live database. The migration statements are additive and
-idempotent, so repeated production builds are safe.
+`DATABASE_URL`. `db:migrate` also syncs every seat's `x/y/z` to the current
+layout and updates the event venue without touching statuses, holds, or orders,
+so existing databases receive floor-seat moves that used to be missed. Preview
+builds skip migrations; point a preview at a Neon branch if it needs a live
+database. The migration statements are additive and idempotent, so repeated
+production builds are safe.
 
 - `GET /api/health` returns `200` only when the database is reachable and the
   discount schema exists; otherwise it returns `503`.

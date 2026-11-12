@@ -1,4 +1,5 @@
 import type { SqlDb } from './db'
+import { EVENT_VENUE } from './event'
 import { buildSummabaSeats } from './seatLayout'
 
 const CATEGORIES = [
@@ -21,8 +22,8 @@ export async function seed(db: SqlDb): Promise<{ seats: number }> {
       [
         'Bandung Innovation Week 2026 — Closing Night Concert',
         'Bandung Innovation Week 2026 — Closing Night Concert',
-        'Sawarga Courtyard, Summarecon Mall Bandung',
-        'Sawarga Courtyard, Summarecon Mall Bandung',
+        EVENT_VENUE,
+        EVENT_VENUE,
         '2026-11-14T19:00:00+07:00',
         'Konser malam terbuka merayakan penutupan Bandung Innovation Week 2026. Pilih kursimu dan lihat langsung pemandangan panggung dari tempat dudukmu.',
         'An open-air night concert closing Bandung Innovation Week 2026. Pick your seat and preview the stage view from where you will be sitting.',
