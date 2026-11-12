@@ -21,7 +21,6 @@ const id = {
   'board.close': 'Tutup',
   'board.tabEvent': 'Acara',
   'board.tabVenue': 'Lokasi',
-  'world.boothHint': 'Kategori dipilih — kursi yang menyala adalah pilihanmu',
   'world.checkout': 'Pemesanan tiket',
   'world.myTickets': 'Tiket saya',
 
@@ -411,7 +410,6 @@ const en: Record<DictKey, string> = {
   'board.close': 'Close',
   'board.tabEvent': 'Event',
   'board.tabVenue': 'Location',
-  'world.boothHint': 'Category selected — the glowing seats are your pick',
   'world.checkout': 'Ticket checkout',
   'world.myTickets': 'My tickets',
 
