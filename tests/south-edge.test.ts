@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { TREES, WORLD } from '@/components/scene/summaba/layout'
+import { ACCESS_STAIRS } from '@/lib/sawarga/scene/venue/layout'
 import { buildSummabaSeats } from '@/lib/seatLayout'
 
 type Placement = {
@@ -40,11 +41,19 @@ describe('south edge', () => {
     }
   })
 
-  it('keeps trees off the stair ramps', () => {
+  it('keeps trees clear of the stage-side switchback stairs', () => {
     for (const [x, z] of TREES) {
-      const onEast = x >= 18 && x <= 21 && z >= 14 && z <= 20
-      const onWest = x >= -21 && x <= -18 && z >= 14 && z <= 20
-      expect(onEast || onWest, `tree at ${x}, ${z}`).toBe(false)
+      for (const side of ['east', 'west'] as const) {
+        const stair = ACCESS_STAIRS[side]
+        const points = [stair.bottom, stair.lowerTop, stair.landing, stair.upperStart, stair.upperTop, stair.bridgeEnd]
+        const margin = stair.width / 2 + 0.7
+        const minX = Math.min(...points.map((point) => point.x)) - margin
+        const maxX = Math.max(...points.map((point) => point.x)) + margin
+        const minZ = Math.min(...points.map((point) => point.z)) - margin
+        const maxZ = Math.max(...points.map((point) => point.z)) + margin
+        const inside = x >= minX && x <= maxX && z >= minZ && z <= maxZ
+        expect(inside, `tree at ${x}, ${z} on ${side} stair`).toBe(false)
+      }
     }
   })
 })

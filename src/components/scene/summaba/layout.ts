@@ -1,10 +1,19 @@
 /**
- * Pure world geometry for the Summaba approximation.
+ * Pure world geometry for the Sawarga venue.
  *
  * Every coordinate, walkability rule and multi-level height lives here so the
  * scene components render from it, the character/autowalk consume it, and the
  * tests pin it. Three.js-free on purpose.
  */
+
+import {
+  ACCESS_STAIRS,
+  BALCONY,
+  SHELL,
+  shellInwardNormal,
+  shellOffsetPoint,
+  shellPoint,
+} from '@/lib/sawarga/scene/venue/layout'
 
 export type Vec3 = { x: number; y: number; z: number }
 export type Rect = { minX: number; maxX: number; minZ: number; maxZ: number }
@@ -44,50 +53,49 @@ export const WORLD = {
 } as const
 
 /**
- * Courtyard trees. Side rows hug the balcony edge; the back row sits behind
- * the booth and board so it frames the south walkway without blocking them.
- * Kept off the stair ramps (x ±18..21, z 14..20).
+ * Sawarga shell walkability. The paving fills the ellipse; the facades sit on
+ * its edge, so the character stays just inside it. The old rectangular
+ * courtyard rects are retained only as the event-floor contract.
+ */
+export const SHELL_WORLD = {
+  radiusX: SHELL.radiusX,
+  radiusZ: SHELL.radiusZ,
+  walkMargin: 0.5,
+} as const
+
+/** Curved balcony band, measured as an elliptical radius fraction. */
+const BALCONY_BAND = {
+  minQ: 0.82,
+  maxQ: 0.995,
+  outerBreak: 0.943,
+  middleBreak: 0.886,
+  deckOffset: 3,
+} as const
+
+/**
+ * Legacy courtyard tree anchors. The venue-side rows were removed when the
+ * stage-side stairs were rebuilt; only the south walkway row remains.
  */
 export const TREES: [number, number][] = [
-  [20.5, -13], [20.5, -7], [20.5, -1], [20.5, 5], [20.5, 11], [20.5, 13],
-  [-20.5, -13], [-20.5, -7], [-20.5, -1], [-20.5, 5], [-20.5, 11], [-20.5, 13],
   [-18, 24.8], [-15, 24.8], [-2.5, 24.8], [2.5, 24.8], [15, 24.8], [18, 24.8],
-  [-18, -15], [18, -15],
 ]
 
-const BALCONIES: Rect[] = [
-  {
-    minX: WORLD.balcony.innerX,
-    maxX: WORLD.balcony.outerX,
-    minZ: WORLD.balcony.minZ,
-    maxZ: WORLD.balcony.maxZ,
-  },
-  {
-    minX: -WORLD.balcony.outerX,
-    maxX: -WORLD.balcony.innerX,
-    minZ: WORLD.balcony.minZ,
-    maxZ: WORLD.balcony.maxZ,
-  },
-]
+const ATRIA_CIRCLES = Object.values(BALCONY.atria).map((spec) => {
+  const angle = spec.angle * Math.PI
+  const point = shellPoint(angle)
+  const inward = shellInwardNormal(angle)
+  return {
+    x: point.x - inward.x * spec.offset,
+    z: point.z - inward.z * spec.offset,
+    radius: spec.radius,
+  }
+})
 
-const STAIRS: Rect[] = [WORLD.stairs.east, WORLD.stairs.west]
-
-const GROUND_RECTS: Rect[] = [WORLD.courtyard, WORLD.downtown, ...STAIRS]
-const UPPER_RECTS: Rect[] = [...BALCONIES, ...STAIRS]
+/** Six low planters added by the Sawarga landscape. */
+const VENUE_TREES: Array<[number, number]> = []
 
 function insideRect(rect: Rect, x: number, z: number) {
   return x >= rect.minX && x <= rect.maxX && z >= rect.minZ && z <= rect.maxZ
-}
-
-function clampIntoRect(rect: Rect, pos: Vec3) {
-  pos.x = Math.min(rect.maxX, Math.max(rect.minX, pos.x))
-  pos.z = Math.min(rect.maxZ, Math.max(rect.minZ, pos.z))
-}
-
-function distanceToRect(rect: Rect, x: number, z: number) {
-  const dx = Math.max(rect.minX - x, 0, x - rect.maxX)
-  const dz = Math.max(rect.minZ - z, 0, z - rect.maxZ)
-  return Math.hypot(dx, dz)
 }
 
 function pushOutOfRect(rect: Rect, pos: Vec3) {
@@ -102,36 +110,297 @@ function pushOutOfRect(rect: Rect, pos: Vec3) {
   else pos.z = rect.maxZ
 }
 
+function shellAngleAt(x: number, z: number) {
+  const angle = Math.atan2(z / SHELL.radiusZ, x / SHELL.radiusX)
+  return angle < 0 ? angle + Math.PI * 2 : angle
+}
+
+function shellRadiusAt(x: number, z: number) {
+  return Math.hypot(x / SHELL.radiusX, z / SHELL.radiusZ)
+}
+
+function balconySideAt(angle: number): 'east' | 'west' | null {
+  const eastHalf = BALCONY.eastAngleRange[1] * Math.PI
+  if (angle <= eastHalf || angle >= Math.PI * 2 - eastHalf) return 'east'
+  if (
+    angle >= BALCONY.westAngleRange[0] * Math.PI &&
+    angle <= BALCONY.westAngleRange[1] * Math.PI
+  ) {
+    return 'west'
+  }
+  return null
+}
+
+/** Stepped balcony surface at (x, z), or null when outside the curved band. */
+function balconyHeightAt(x: number, z: number): number | null {
+  const q = shellRadiusAt(x, z)
+  if (q < BALCONY_BAND.minQ || q > BALCONY_BAND.maxQ) return null
+  if (!balconySideAt(shellAngleAt(x, z))) return null
+  if (q > BALCONY_BAND.outerBreak) return BALCONY.rowY[2]
+  if (q > BALCONY_BAND.middleBreak) return BALCONY.rowY[1]
+  return BALCONY.rowY[0]
+}
+
+function segmentHeightAt(from: Vec3, to: Vec3, x: number, z: number, halfWidth: number): number | null {
+  const dx = to.x - from.x
+  const dz = to.z - from.z
+  const lengthSq = dx * dx + dz * dz
+  if (lengthSq < 1e-6) return null
+  const t = ((x - from.x) * dx + (z - from.z) * dz) / lengthSq
+  if (t < 0 || t > 1) return null
+  const px = from.x + dx * t
+  const pz = from.z + dz * t
+  if (Math.hypot(x - px, z - pz) > halfWidth) return null
+  return from.y + (to.y - from.y) * t
+}
+
+/** Angle of the north end of each tribune band, where the access bridge lands. */
+function accessDeckAngle(side: 'east' | 'west'): number {
+  return side === 'east'
+    ? BALCONY.eastAngleRange[0] * Math.PI
+    : BALCONY.westAngleRange[1] * Math.PI
+}
+
+function accessDeckPoint(side: 'east' | 'west'): Vec3 {
+  const point = shellOffsetPoint(accessDeckAngle(side), BALCONY_BAND.deckOffset)
+  return { x: point.x, y: BALCONY.rowY[0], z: point.z }
+}
+
+function accessHeightAt(side: 'east' | 'west', x: number, z: number): number | null {
+  const stair = ACCESS_STAIRS[side]
+  const half = stair.width / 2
+
+  const lower = segmentHeightAt(stair.bottom, stair.lowerTop, x, z, half)
+  if (lower !== null) return lower
+
+  if (
+    Math.abs(x - stair.landing.x) <= stair.landingSize / 2 &&
+    Math.abs(z - stair.landing.z) <= stair.landingSize / 2
+  ) {
+    return stair.landing.y
+  }
+
+  const upper = segmentHeightAt(stair.upperStart, stair.upperTop, x, z, half)
+  if (upper !== null) return upper
+
+  return segmentHeightAt(stair.upperTop, stair.bridgeEnd, x, z, half)
+}
+
+function accessHeightAtAny(x: number, z: number): number | null {
+  for (const side of ['east', 'west'] as const) {
+    const height = accessHeightAt(side, x, z)
+    if (height !== null) return height
+  }
+  return null
+}
+
+interface AccessProjection {
+  x: number
+  z: number
+  height: number
+  distance: number
+  corridor: number
+  insideSpan: boolean
+}
+
+function projectToSegment(from: Vec3, to: Vec3, x: number, z: number): AccessProjection {
+  const dx = to.x - from.x
+  const dz = to.z - from.z
+  const lengthSq = dx * dx + dz * dz
+  const rawT = lengthSq > 1e-6
+    ? ((x - from.x) * dx + (z - from.z) * dz) / lengthSq
+    : 0
+  const t = Math.min(1, Math.max(0, rawT))
+  const px = from.x + dx * t
+  const pz = from.z + dz * t
+  return {
+    x: px,
+    z: pz,
+    height: from.y + (to.y - from.y) * t,
+    distance: Math.hypot(x - px, z - pz),
+    corridor: 0,
+    insideSpan: rawT >= 0 && rawT <= 1,
+  }
+}
+
+function projectToLanding(
+  stair: (typeof ACCESS_STAIRS)['east'],
+  x: number,
+  z: number,
+): AccessProjection {
+  const half = stair.landingSize / 2
+  const px = Math.min(stair.landing.x + half, Math.max(stair.landing.x - half, x))
+  const pz = Math.min(stair.landing.z + half, Math.max(stair.landing.z - half, z))
+  return {
+    x: px,
+    z: pz,
+    height: stair.landing.y,
+    distance: Math.hypot(x - px, z - pz),
+    corridor: 0,
+    insideSpan: true,
+  }
+}
+
 /**
- * Height of the walkable surface at (x, z): balcony decks, the stair ramps
- * (0 → 5.2 as z goes 20 → 14), or the courtyard ground. Region-based, not
- * level-aware: Character keeps a grounded visitor grounded under the balcony
- * overhang by only climbing when already elevated or on the ramp.
+ * Keep an elevated character on the access structure they are using. If they
+ * graze a stair side, overshoot the landing, or drift off the bridge, this
+ * pushes them back to the nearest access edge instead of letting the balcony
+ * fallback teleport them across the venue.
+ */
+function clampToAccess(pos: Vec3, capture = 1.0): boolean {
+  const candidates: AccessProjection[] = []
+
+  const consider = (projection: AccessProjection, corridor: number) => {
+    if (!projection.insideSpan) return
+    // Do not latch onto an overhead flight when the character is on the
+    // lower flight or the courtyard below.
+    if (Math.abs(projection.height - pos.y) > 1.3) return
+    if (projection.distance > corridor + capture) return
+    candidates.push({ ...projection, corridor })
+  }
+
+  for (const side of ['east', 'west'] as const) {
+    const stair = ACCESS_STAIRS[side]
+    const half = stair.width / 2
+    consider(projectToSegment(stair.bottom, stair.lowerTop, pos.x, pos.z), half)
+    consider(projectToLanding(stair, pos.x, pos.z), 0)
+    consider(projectToSegment(stair.upperStart, stair.upperTop, pos.x, pos.z), half)
+    consider(projectToSegment(stair.upperTop, stair.bridgeEnd, pos.x, pos.z), half)
+  }
+
+  if (candidates.length === 0) return false
+  // If the point is inside any access corridor, let it move freely. This is
+  // what lets the walker step from the landing onto the upper flight; picking
+  // only the nearest piece would otherwise clamp them to the landing edge.
+  if (candidates.some((candidate) => candidate.distance <= candidate.corridor + 0.001)) {
+    return true
+  }
+
+  const best = candidates.reduce((a, b) => (a.distance <= b.distance ? a : b))
+  const dx = pos.x - best.x
+  const dz = pos.z - best.z
+  const length = Math.hypot(dx, dz) || 1
+  pos.x = best.x + (dx / length) * best.corridor
+  pos.z = best.z + (dz / length) * best.corridor
+  return true
+}
+
+function nearBalconyBand(x: number, z: number): boolean {
+  const q = shellRadiusAt(x, z)
+  if (q < BALCONY_BAND.minQ - 0.12 || q > BALCONY_BAND.maxQ + 0.12) return false
+  return balconySideAt(shellAngleAt(x, z)) !== null
+}
+
+/** Full route through one switchback stair, from the ground to the terrace. */
+function ascentWaypoints(side: 'east' | 'west'): Vec3[] {
+  const stair = ACCESS_STAIRS[side]
+  return [
+    { ...stair.bottom },
+    { ...stair.lowerTop },
+    { ...stair.landing },
+    { ...stair.upperStart },
+    { ...stair.upperTop },
+    { ...stair.bridgeEnd },
+    accessDeckPoint(side),
+  ]
+}
+
+function descentWaypoints(side: 'east' | 'west'): Vec3[] {
+  return [...ascentWaypoints(side)].reverse()
+}
+
+function pushOutOfCircle(pos: Vec3, cx: number, cz: number, radius: number, clearance = 0.4) {
+  const dx = pos.x - cx
+  const dz = pos.z - cz
+  const distance = Math.hypot(dx, dz)
+  const limit = radius + clearance
+  if (distance >= limit) return
+  if (distance < 1e-6) {
+    pos.z = cz + limit
+    return
+  }
+  pos.x = cx + (dx / distance) * limit
+  pos.z = cz + (dz / distance) * limit
+}
+
+/** Atria sit outside the shell: push the intruding sliver back toward the courtyard. */
+function pushInwardFromCircle(pos: Vec3, cx: number, cz: number, radius: number, clearance = 0.15) {
+  const limit = radius + clearance
+  const dx = pos.x - cx
+  const dz = pos.z - cz
+  if (Math.hypot(dx, dz) >= limit) return
+  const centerLength = Math.hypot(cx, cz) || 1
+  pos.x = cx - (cx / centerLength) * limit
+  pos.z = cz - (cz / centerLength) * limit
+}
+
+function pushOutOfFootprint(
+  pos: Vec3,
+  placement: { x: number; z: number; rotationY: number; halfWidth: number; halfDepth: number },
+) {
+  const dx = pos.x - placement.x
+  const dz = pos.z - placement.z
+  const cos = Math.cos(placement.rotationY)
+  const sin = Math.sin(placement.rotationY)
+  const localX = dx * cos - dz * sin
+  const localZ = dx * sin + dz * cos
+  const halfWidth = placement.halfWidth + 0.45
+  const halfDepth = placement.halfDepth + 0.45
+  if (Math.abs(localX) >= halfWidth || Math.abs(localZ) >= halfDepth) return
+  const pushX = halfWidth - Math.abs(localX)
+  const pushZ = halfDepth - Math.abs(localZ)
+  let nextX = localX
+  let nextZ = localZ
+  if (pushX < pushZ) nextX = Math.sign(localX || 1) * halfWidth
+  else nextZ = Math.sign(localZ || 1) * halfDepth
+  pos.x = placement.x + nextX * cos + nextZ * sin
+  pos.z = placement.z - nextX * sin + nextZ * cos
+}
+
+/** Clamp onto the elliptical paving (or the curved balcony). */
+function clampToShell(pos: Vec3, margin = SHELL_WORLD.walkMargin) {
+  const rx = SHELL.radiusX - margin
+  const rz = SHELL.radiusZ - margin
+  const q = Math.hypot(pos.x / rx, pos.z / rz)
+  if (q > 1) {
+    pos.x /= q
+    pos.z /= q
+  }
+}
+
+function clampToBalcony(pos: Vec3) {
+  const angle = shellAngleAt(pos.x, pos.z)
+  const q = Math.min(BALCONY_BAND.maxQ - 0.002, Math.max(BALCONY_BAND.minQ + 0.002, shellRadiusAt(pos.x, pos.z)))
+  let nextAngle = angle
+  const eastHalf = BALCONY.eastAngleRange[1] * Math.PI
+  const westStart = BALCONY.westAngleRange[0] * Math.PI
+  const westEnd = BALCONY.westAngleRange[1] * Math.PI
+  if (!(angle <= eastHalf || angle >= Math.PI * 2 - eastHalf || (angle >= westStart && angle <= westEnd))) {
+    // Snap to the nearest side: west when the point is on the left half.
+    nextAngle = pos.x >= 0 ? eastHalf : westStart
+  }
+  pos.x = Math.cos(nextAngle) * SHELL.radiusX * q
+  pos.z = Math.sin(nextAngle) * SHELL.radiusZ * q
+}
+
+/**
+ * Height of the walkable surface at (x, z): curved balcony terraces, the
+ * stage-side switchback stairs/bridges, or the courtyard ground. Region-based,
+ * not level-aware: Character keeps a grounded visitor grounded under the
+ * balcony overhang by only climbing when already elevated or on a stair.
  */
 export function floorHeightAt(x: number, z: number): number {
-  for (const balcony of BALCONIES) {
-    if (insideRect(balcony, x, z)) return WORLD.balcony.y
-  }
-  for (const stair of STAIRS) {
-    if (!insideRect(stair, x, z)) continue
-    const t = (stair.maxZ - z) / (stair.maxZ - stair.minZ)
-    return t * WORLD.balcony.y
-  }
+  const access = accessHeightAtAny(x, z)
+  if (access !== null) return access
+  const balcony = balconyHeightAt(x, z)
+  if (balcony !== null) return balcony
   return 0
-}
-
-export function stairBottom(side: 'east' | 'west'): Vec3 {
-  return side === 'east' ? { x: 19.5, y: 0, z: 20 } : { x: -19.5, y: 0, z: 20 }
-}
-
-export function stairTop(side: 'east' | 'west'): Vec3 {
-  return side === 'east' ? { x: 19.5, y: WORLD.balcony.y, z: 14 } : { x: -19.5, y: WORLD.balcony.y, z: 14 }
 }
 
 /**
  * Height the character should ease toward. A grounded character only takes a
- * surface it can step onto (the ramp foot); it stays grounded under the
- * balcony deck and under mid-ramp instead of popping up through geometry.
+ * surface it can step onto (the stair foot); it stays grounded under the
+ * balcony deck and under mid-flight instead of popping up through geometry.
  */
 export function targetFloorHeight(currentY: number, surface: number): number {
   if (currentY > 1) return surface
@@ -139,11 +408,14 @@ export function targetFloorHeight(currentY: number, surface: number): number {
   return currentY > 0 ? currentY : 0
 }
 
-const CAMERA_BLOCKERS: Rect[] = [WORLD.ringNorth, WORLD.ringEast, WORLD.ringWest, WORLD.stageObstacle]
+const CAMERA_BLOCKERS: Rect[] = [WORLD.stageObstacle, WORLD.ringNorth]
 
 function isCameraBlocked(point: Vec3, levelY: number): boolean {
   if (CAMERA_BLOCKERS.some((rect) => insideRect(rect, point.x, point.z))) return true
   if (point.y < 0.35) return true
+  // Keep the follow camera inside the Sawarga shell so it never leaves the
+  // facades; allow a small tolerance at the eaves.
+  if (shellRadiusAt(point.x, point.z) > 1.01) return true
   // The surface floor only applies to a camera whose character is elevated;
   // from is the character's head, so ground level sits at y = 1.6.
   if (levelY > 2.6) return point.y < floorHeightAt(point.x, point.z) + 0.35
@@ -172,11 +444,47 @@ function stairSideForX(x: number): 'east' | 'west' {
   return x >= 0 ? 'east' : 'west'
 }
 
+function sideAngle(side: 'east' | 'west', x: number, z: number): number {
+  let angle = Math.atan2(z / SHELL.radiusZ, x / SHELL.radiusX)
+  if (side === 'east') {
+    if (angle > Math.PI) angle -= Math.PI * 2
+    const start = BALCONY.eastAngleRange[0] * Math.PI
+    const end = BALCONY.eastAngleRange[1] * Math.PI
+    return Math.min(end, Math.max(start, angle))
+  }
+  if (angle < 0) angle += Math.PI * 2
+  const start = BALCONY.westAngleRange[0] * Math.PI
+  const end = BALCONY.westAngleRange[1] * Math.PI
+  return Math.min(end, Math.max(start, angle))
+}
+
+/** Arc waypoints along the inner terrace, ending at the target angle. */
+function balconyArcPoints(side: 'east' | 'west', fromAngle: number, toAngle: number): Vec3[] {
+  const start = sideAngle(
+    side,
+    Math.cos(fromAngle) * SHELL.radiusX,
+    Math.sin(fromAngle) * SHELL.radiusZ,
+  )
+  const end = sideAngle(
+    side,
+    Math.cos(toAngle) * SHELL.radiusX,
+    Math.sin(toAngle) * SHELL.radiusZ,
+  )
+  const steps = Math.max(1, Math.ceil(Math.abs(end - start) / 0.06))
+  const points: Vec3[] = []
+  for (let i = 1; i <= steps; i += 1) {
+    const angle = start + ((end - start) * i) / steps
+    const point = shellOffsetPoint(angle, BALCONY_BAND.deckOffset)
+    points.push({ x: point.x, y: BALCONY.rowY[0], z: point.z })
+  }
+  return points
+}
+
 /**
- * Waypoints a scripted walk should follow. Ground → balcony goes up via the
- * stairs on the target balcony's side; balcony → ground comes down the
- * starting balcony's side; crossing between balconies descends, crosses the
- * courtyard and re-ascends.
+ * Waypoints a scripted walk should follow. Ground → balcony goes up the
+ * stage-side switchback stair, across the short bridge, then follows the
+ * curved terrace to the seat. Crossing between balconies descends, crosses
+ * the courtyard and re-ascends the other stair.
  */
 export function planWalkRoute(from: Vec3, to: Vec3): Vec3[] {
   const fromUpper = from.y > 1
@@ -184,91 +492,88 @@ export function planWalkRoute(from: Vec3, to: Vec3): Vec3[] {
 
   if (!fromUpper && !toUpper) return [to]
 
-  if (!fromUpper && toUpper) {
-    const side = stairSideForX(to.x)
-    return [stairBottom(side), stairTop(side), to]
-  }
+  const toSide = stairSideForX(to.x)
+  const toAngle = sideAngle(toSide, to.x, to.z)
 
-  if (fromUpper && !toUpper) {
-    const side = stairSideForX(from.x)
-    return [stairTop(side), stairBottom(side), to]
+  if (!fromUpper && toUpper) {
+    return [
+      ...ascentWaypoints(toSide),
+      ...balconyArcPoints(toSide, accessDeckAngle(toSide), toAngle),
+      to,
+    ]
   }
 
   const fromSide = stairSideForX(from.x)
-  const toSide = stairSideForX(to.x)
-  if (fromSide === toSide) return [to]
-  return [stairTop(fromSide), stairBottom(fromSide), stairBottom(toSide), stairTop(toSide), to]
+  const fromAngle = sideAngle(fromSide, from.x, from.z)
+
+  if (fromUpper && !toUpper) {
+    return [
+      ...balconyArcPoints(fromSide, fromAngle, accessDeckAngle(fromSide)),
+      ...descentWaypoints(fromSide).slice(1),
+      to,
+    ]
+  }
+
+  if (fromSide === toSide) {
+    return [...balconyArcPoints(fromSide, fromAngle, toAngle), to]
+  }
+
+  return [
+    ...balconyArcPoints(fromSide, fromAngle, accessDeckAngle(fromSide)),
+    ...descentWaypoints(fromSide).slice(1),
+    ...ascentWaypoints(toSide),
+    ...balconyArcPoints(toSide, accessDeckAngle(toSide), toAngle),
+    to,
+  ]
 }
 
 /**
  * Clamp a position into the walkable world. Mutates in place.
- * Upper level (y > 1): only balconies and stair ramps are walkable — the
- * courtyard edge acts as a railing. Ground: courtyard, downtown strip,
- * porch recesses and ramps are walkable; ring masses and the koi pond push
- * the character out along the nearest edge.
+ * Upper level (y > 1): the curved balcony band plus the switchback stairs and
+ * bridges are walkable. Leaving an access structure is clamped back to its
+ * edge; leaving the balcony is clamped to the local band edge; a true fall
+ * drops to the courtyard instead of snapping across the venue.
+ * Ground: the Sawarga ellipse inside the facades; the stage, board, booth,
+ * atria drums, and venue planters push the character out.
  */
 export function resolveWalkable(pos: Vec3): void {
-  pos.x = Math.min(WORLD.bounds.maxX, Math.max(WORLD.bounds.minX, pos.x))
-  pos.z = Math.min(WORLD.bounds.maxZ, Math.max(WORLD.bounds.minZ, pos.z))
-
   if (pos.y > 1) {
-    if (UPPER_RECTS.some((rect) => insideRect(rect, pos.x, pos.z))) return
-    let nearest = UPPER_RECTS[0]
-    let best = Infinity
-    for (const rect of UPPER_RECTS) {
-      const distance = distanceToRect(rect, pos.x, pos.z)
-      if (distance < best) {
-        best = distance
-        nearest = rect
-      }
-    }
-    clampIntoRect(nearest, pos)
-    return
-  }
-
-  // The stage platform and its backdrop wall sit inside the courtyard rect.
-  if (insideRect(WORLD.stageObstacle, pos.x, pos.z)) {
-    pushOutOfRect(WORLD.stageObstacle, pos)
-    return
-  }
-
-  if (GROUND_RECTS.some((rect) => insideRect(rect, pos.x, pos.z))) {
-    // The koi pond sits inside the walkable downtown strip.
-    const koi = WORLD.koiPond
-    const dx = (pos.x - koi.x) / koi.rx
-    const dz = (pos.z - koi.z) / koi.rz
-    const t = Math.hypot(dx, dz)
-    if (t < 1) {
-      const scale = 1.04 / Math.max(t, 1e-6)
-      if (t < 1e-6) {
-        pos.x = koi.x
-        pos.z = koi.z + koi.rz * 1.04
-      } else {
-        pos.x = koi.x + dx * koi.rx * scale
-        pos.z = koi.z + dz * koi.rz * scale
-      }
-    }
-    return
-  }
-
-  const rings: Rect[] = [WORLD.ringNorth, WORLD.ringEast, WORLD.ringWest]
-  for (const ring of rings) {
-    if (insideRect(ring, pos.x, pos.z)) {
-      pushOutOfRect(ring, pos)
+    if (clampToAccess(pos)) return
+    if (balconyHeightAt(pos.x, pos.z) !== null) return
+    if (nearBalconyBand(pos.x, pos.z)) {
+      clampToBalcony(pos)
       return
     }
+    // No local balcony or access surface: fall to the courtyard at this XZ
+    // rather than teleporting to the nearest balcony end.
+    pos.y = 0
+    resolveGround(pos)
+    return
   }
 
-  // Outside every known region (e.g. beyond the south strip): pull back to
-  // the closest walkable ground rect.
-  let nearest = GROUND_RECTS[0]
-  let best = Infinity
-  for (const rect of GROUND_RECTS) {
-    const distance = distanceToRect(rect, pos.x, pos.z)
-    if (distance < best) {
-      best = distance
-      nearest = rect
-    }
+  resolveGround(pos)
+}
+
+function resolveGround(pos: Vec3): void {
+  clampToShell(pos)
+
+  // The stage backdrop/hero wall closes the north end of the event floor.
+  if (pos.z < WORLD.courtyard.minZ) pos.z = WORLD.courtyard.minZ
+
+  if (insideRect(WORLD.stageObstacle, pos.x, pos.z)) {
+    pushOutOfRect(WORLD.stageObstacle, pos)
+    clampToShell(pos)
   }
-  clampIntoRect(nearest, pos)
+
+  pushOutOfFootprint(pos, WORLD.southEdge.board)
+  pushOutOfFootprint(pos, WORLD.southEdge.booth)
+
+  for (const atrium of ATRIA_CIRCLES) {
+    pushInwardFromCircle(pos, atrium.x, atrium.z, atrium.radius)
+  }
+  for (const [x, z] of VENUE_TREES) {
+    pushOutOfCircle(pos, x, z, 2.2, 0.15)
+  }
+
+  clampToShell(pos)
 }

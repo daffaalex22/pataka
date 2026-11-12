@@ -24,8 +24,20 @@ export function SectionMiniMap({
         <rect x="16" y="26" width="40" height="14" rx="1.5" fill={zone('CAT1')} />
         <rect x="16" y="43" width="40" height="15" rx="1.5" fill={zone('REG')} />
 
-        <rect x="4" y="20" width="8" height="34" rx="2" fill={zone('TRIB')} />
-        <rect x="60" y="20" width="8" height="34" rx="2" fill={zone('TRIB')} />
+        <path
+          d="M 18 20 C 10 27 10 45 18 52"
+          fill="none"
+          stroke={categoryKey === 'TRIB' ? colorHex : MUTED_ZONE}
+          strokeWidth="7"
+          strokeLinecap="round"
+        />
+        <path
+          d="M 54 20 C 62 27 62 45 54 52"
+          fill="none"
+          stroke={categoryKey === 'TRIB' ? colorHex : MUTED_ZONE}
+          strokeWidth="7"
+          strokeLinecap="round"
+        />
       </svg>
     </span>
   )

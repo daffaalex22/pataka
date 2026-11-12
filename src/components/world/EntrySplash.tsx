@@ -37,7 +37,7 @@ export function EntrySplash({
   return (
     <div className="relative flex min-h-svh flex-col overflow-hidden bg-ink text-paper">
       <Image
-        src="/home/venue-night.png"
+        src="/home/venue-night-sawarga.png"
         alt=""
         fill
         preload

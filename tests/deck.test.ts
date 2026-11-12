@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   DECK_SLIDES,
   DECK_SLIDE_COUNT,
+  DEFAULT_DECK_URL,
   nextSlideIndex,
   parseDeckHash,
   resolveDeckUrl,
@@ -35,12 +36,16 @@ describe('resolveDeckUrl', () => {
     )
   })
 
-  it('falls back to the current origin when unset', () => {
-    expect(resolveDeckUrl(undefined, 'http://localhost:3000')).toBe('http://localhost:3000')
+  it('falls back to the public prototype for local origins', () => {
+    expect(resolveDeckUrl(undefined, 'http://localhost:3000')).toBe(DEFAULT_DECK_URL)
   })
 
-  it('falls back to the current origin when blank', () => {
-    expect(resolveDeckUrl('   ', 'http://localhost:3000')).toBe('http://localhost:3000')
+  it('falls back to the public prototype when blank on localhost', () => {
+    expect(resolveDeckUrl('   ', 'http://127.0.0.1:3000')).toBe(DEFAULT_DECK_URL)
+  })
+
+  it('keeps a non-local origin when unset', () => {
+    expect(resolveDeckUrl(undefined, 'https://pataka.example.com')).toBe('https://pataka.example.com')
   })
 })
 

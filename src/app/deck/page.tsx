@@ -17,25 +17,25 @@ function Card({ label, body }: { label: string; body: string }) {
 
 const PRODUCT_PROOF = [
   {
-    src: '/deck/venue.png',
+    src: '/deck/venue-sawarga.png',
     alt: 'Pataka 3D venue at Sawarga Courtyard',
     label: 'Venue 3D · kamera orbit',
     caption: 'Plaza malam Sawarga Courtyard: panggung, tribun, signage, dan taman dalam satu pandangan.',
   },
   {
-    src: '/deck/seat-view.png',
+    src: '/deck/seat-view-tribune.png',
     alt: 'Seat preview facing the stage',
     label: 'Pratinjau dari kursi',
     caption: 'Kamera ke ketinggian mata, menghadap panggung — tahu persis yang akan dilihat.',
   },
   {
-    src: '/deck/eticket.png',
+    src: '/deck/eticket-2026.png',
     alt: 'E-ticket with a signed QR code',
     label: 'E-ticket + check-in',
     caption: 'QR bertanda tangan HMAC; VALID / SUDAH DIGUNAKAN / TIDAK VALID dalam sekali pindai.',
   },
   {
-    src: '/deck/mall-operations.png',
+    src: '/deck/mall-operations-2026.png',
     alt: 'Pataka mall operations dashboard',
     label: 'Operasi mall',
     caption: 'Portofolio acara, okupansi, pendapatan, check-in, dan settlement — panel panitia tetap di tab yang sama.',
@@ -52,7 +52,7 @@ export default function DeckPage() {
           background={
             <>
               <Image
-                src="/deck/venue.png"
+                src="/deck/venue-sawarga.png"
                 alt=""
                 fill
                 priority
@@ -155,7 +155,7 @@ export default function DeckPage() {
             </div>
             <div className="relative min-h-[260px] overflow-hidden rounded-2xl border border-line bg-black/40">
               <Image
-                src="/deck/venue.png"
+                src="/deck/venue-sawarga.png"
                 alt="Pataka 3D venue at Sawarga Courtyard"
                 fill
                 unoptimized
@@ -318,3 +318,4 @@ export default function DeckPage() {
     </>
   )
 }
+

@@ -20,6 +20,7 @@ import { SeatViewPanel } from '@/components/world/SeatViewPanel'
 import { StepOverlay } from '@/components/world/StepOverlay'
 import { WorldHud } from '@/components/world/WorldHud'
 import { ChevronRightIcon, XIcon } from '@/components/ui/icons'
+import { useSceneQuality } from '@/components/scene/useSceneQuality'
 import { useLang, useT } from '@/lib/i18n'
 import { useBooking } from '@/lib/store'
 import type { Category, Seat } from '@/lib/types'
@@ -53,9 +54,7 @@ export function WorldView({ onExit }: { onExit: () => void }) {
 
   const [mode, setMode] = useState<'walk' | 'orbit'>('walk')
   const [mapOpen, setMapOpen] = useState(false)
-  const [maxDpr] = useState(() =>
-    typeof window !== 'undefined' && window.innerWidth < 768 ? 1.25 : 1.5,
-  )
+  const [quality, setQuality] = useSceneQuality()
   const moveRef = useRef<MoveVector>({ x: 0, y: 0 })
   const characterRef = useRef<Group | null>(null)
   const [previewSeat, setPreviewSeat] = useState<Seat | null>(null)
@@ -64,7 +63,10 @@ export function WorldView({ onExit }: { onExit: () => void }) {
   const [boardDetailOpen, setBoardDetailOpen] = useState(false)
   const [highlightCategory, setHighlightCategory] = useState<string | null>(null)
   const [hint, setHint] = useState<string | null>(() => `${t('world.hint')} · ${t('world.lookHint')}`)
+  const [announcement, setAnnouncement] = useState('')
   const hintTimer = useRef<number | null>(null)
+  const announcementTimer = useRef<number | null>(null)
+  const focusMapAfterClear = useRef(false)
 
   const showHint = useCallback((message: string) => {
     setHint(message)
@@ -76,6 +78,7 @@ export function WorldView({ onExit }: { onExit: () => void }) {
     hintTimer.current = window.setTimeout(() => setHint(null), 6000)
     return () => {
       if (hintTimer.current) window.clearTimeout(hintTimer.current)
+      if (announcementTimer.current) window.clearTimeout(announcementTimer.current)
     }
   }, [])
 
@@ -146,6 +149,7 @@ export function WorldView({ onExit }: { onExit: () => void }) {
   const summaryOpen = visibleStep === 'summary' && Boolean(orderCode && breakdown)
   const paymentOpen = visibleStep === 'payment' && Boolean(orderCode && breakdown)
   const overlayOpen = formOpen || summaryOpen || paymentOpen
+  const holdActive = Boolean(holdExpiresAt && holdSeatId && seat && holdSeatId === seat.id)
 
   const chooseSeatAgain = () => {
     setHold(null, null, null)
@@ -155,6 +159,34 @@ export function WorldView({ onExit }: { onExit: () => void }) {
     loadSeats()
     setStep('seat')
   }
+
+  const clearSeat = useCallback(() => {
+    setPreviewSeat(null)
+    setAutoWalkSeat(null)
+    setError(null)
+    setSeat(null)
+    setAnnouncement('')
+    focusMapAfterClear.current = true
+    if (announcementTimer.current) window.clearTimeout(announcementTimer.current)
+    announcementTimer.current = window.setTimeout(() => setAnnouncement(t('seat.cleared')), 50)
+  }, [setAutoWalkSeat, setError, setPreviewSeat, setSeat, t])
+
+  useEffect(() => {
+    if (seat || !focusMapAfterClear.current) return
+    focusMapAfterClear.current = false
+    document.querySelector<HTMLButtonElement>('[data-world-map-toggle]')?.focus({ preventScroll: true })
+  }, [seat])
+
+  useEffect(() => {
+    if (!seat || holdActive || overlayOpen || mapOpen || previewSeat || boothOpen || boardDetailOpen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return
+      event.preventDefault()
+      clearSeat()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [seat, holdActive, overlayOpen, mapOpen, previewSeat, boothOpen, boardDetailOpen, clearSeat])
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-ink">
@@ -179,7 +211,7 @@ export function WorldView({ onExit }: { onExit: () => void }) {
           mode={mode}
           moveRef={moveRef}
           previewSeat={previewSeat}
-          maxDpr={maxDpr}
+          quality={quality}
           paused={overlayOpen || mapOpen || boothOpen || boardDetailOpen}
           showInteractables={Boolean(data)}
           boardData={data ? { event: data.event, categories: data.categories, lang } : undefined}
@@ -203,6 +235,8 @@ export function WorldView({ onExit }: { onExit: () => void }) {
         mapEnabled
         mapOpen={mapOpen}
         onToggleMap={() => setMapOpen((open) => !open)}
+        quality={quality}
+        onQuality={setQuality}
         hint={seat ? null : hint}
         onExit={onExit}
       />
@@ -216,7 +250,7 @@ export function WorldView({ onExit }: { onExit: () => void }) {
           seat={seat}
           busy={busy}
           error={error}
-          holdActive={Boolean(holdExpiresAt && holdSeatId && seat && holdSeatId === seat.id)}
+          holdActive={holdActive}
           holdExpiresAt={holdExpiresAt}
           onPreview={() => seat && setPreviewSeat(seat)}
           onWalkToSeat={() => {
@@ -226,6 +260,7 @@ export function WorldView({ onExit }: { onExit: () => void }) {
           }}
           onHold={handleHold}
           onResume={() => setStep('form')}
+          onClear={clearSeat}
         />
       )}
 
@@ -360,6 +395,10 @@ export function WorldView({ onExit }: { onExit: () => void }) {
           onClose={() => setBoardDetailOpen(false)}
         />
       )}
+
+      <p role="status" aria-live="polite" className="sr-only">
+        {announcement}
+      </p>
     </div>
   )
 }

@@ -8,6 +8,8 @@ import { SceneBoundary } from '@/components/scene/SceneBoundary'
 import { ArrowLeftIcon, CompassIcon, EyeIcon, RotateIcon } from '@/components/ui/icons'
 import { SeatLegend } from '@/components/visitor/SeatLegend'
 import { SeatPicker2D } from '@/components/visitor/SeatPicker2D'
+import { QualityMenu } from '@/components/scene/QualityMenu'
+import { useSceneQuality } from '@/components/scene/useSceneQuality'
 import { useLang, useT } from '@/lib/i18n'
 import { formatIdr, type Seat } from '@/lib/types'
 import { defaultSeatView, hasWebGL } from '@/lib/webgl'
@@ -54,6 +56,7 @@ export function SeatStep({
   const [webglAvailable] = useState(() => typeof window !== 'undefined' && hasWebGL())
   const [view, setView] = useState<'3d' | 'map'>(() => defaultView ?? defaultSeatView(webglAvailable))
   const [mode, setMode] = useState<'orbit' | 'walk'>('orbit')
+  const [quality, setQuality] = useSceneQuality()
   const [previewSeat, setPreviewSeat] = useState<Seat | null>(null)
   const moveRef = useRef<MoveVector>({ x: 0, y: 0 })
   const headingRef = useRef<HTMLHeadingElement>(null)
@@ -101,27 +104,32 @@ export function SeatStep({
           <p className="mt-1 text-sm text-paper/60">{t('seat.subtitle')}</p>
         </div>
 
-        <div className="flex rounded-sm border border-paper/15 p-0.5 text-xs font-medium">
-          <button
-            type="button"
-            onClick={() => setView('map')}
-            className={`focus-ring rounded-sm px-3 py-2.5 transition-colors ${
-              view === 'map' ? 'bg-accent text-ink' : 'text-paper/55 hover:text-paper'
-            }`}
-          >
-            {t('seat.viewList')}
-          </button>
-          {webglAvailable && (
+        <div className="flex items-center gap-2">
+          {view === '3d' && webglAvailable && (
+            <QualityMenu quality={quality} onChange={setQuality} align="left" />
+          )}
+          <div className="flex rounded-sm border border-paper/15 p-0.5 text-xs font-medium">
             <button
               type="button"
-              onClick={() => setView('3d')}
+              onClick={() => setView('map')}
               className={`focus-ring rounded-sm px-3 py-2.5 transition-colors ${
-                view === '3d' ? 'bg-accent text-ink' : 'text-paper/55 hover:text-paper'
+                view === 'map' ? 'bg-accent text-ink' : 'text-paper/55 hover:text-paper'
               }`}
             >
-              {t('seat.view3d')}
+              {t('seat.viewList')}
             </button>
-          )}
+            {webglAvailable && (
+              <button
+                type="button"
+                onClick={() => setView('3d')}
+                className={`focus-ring rounded-sm px-3 py-2.5 transition-colors ${
+                  view === '3d' ? 'bg-accent text-ink' : 'text-paper/55 hover:text-paper'
+                }`}
+              >
+                {t('seat.view3d')}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -167,6 +175,7 @@ export function SeatStep({
                 mode={mode}
                 moveRef={moveRef}
                 previewSeat={previewSeat}
+                quality={quality}
               />
             </SceneBoundary>
 

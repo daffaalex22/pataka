@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { BALCONY, shellInwardNormal, shellOffsetPoint, shellPoint } from '@/lib/sawarga/scene/venue/layout'
 import {
   clearCameraPosition,
   floorHeightAt,
@@ -9,47 +10,103 @@ import {
 
 describe('floorHeightAt', () => {
   it('is 0 on the courtyard floor', () => expect(floorHeightAt(0, 0)).toBe(0))
-  it('is balcony height on both balconies', () => {
-    expect(floorHeightAt(17, 0)).toBe(5.2)
-    expect(floorHeightAt(-17, 0)).toBe(5.2)
+  it('is balcony height on both curved terraces', () => {
+    expect(floorHeightAt(30, 0)).toBe(5.2)
+    expect(floorHeightAt(-30, 0)).toBe(5.2)
   })
-  it('ramps halfway up the stairs at the midpoint', () => {
-    expect(floorHeightAt(19.5, 17)).toBeCloseTo(2.6, 1)
-    expect(floorHeightAt(-19.5, 17)).toBeCloseTo(2.6, 1)
+  it('steps up to the outer row', () => {
+    expect(floorHeightAt(34, 0)).toBe(6.3)
   })
-  it('reaches balcony height at the top of the ramp', () => {
-    expect(floorHeightAt(19.5, 14)).toBeCloseTo(5.2, 1)
+  it('ramps halfway up the lower flight', () => {
+    expect(floorHeightAt(20, -12.75)).toBeCloseTo(1.3, 1)
+    expect(floorHeightAt(-20, -12.75)).toBeCloseTo(1.3, 1)
+  })
+  it('reaches the switchback landing', () => {
+    expect(floorHeightAt(20, -16.2)).toBeCloseTo(2.6, 1)
+    expect(floorHeightAt(-20, -16.2)).toBeCloseTo(2.6, 1)
+  })
+  it('ramps up the upper flight to the bridge', () => {
+    expect(floorHeightAt(22.25, -13.5)).toBeCloseTo(3.9, 1)
+    expect(floorHeightAt(23.5, -11.5)).toBeCloseTo(5.2, 1)
+  })
+  it('keeps the landing bridge walkable', () => {
+    expect(floorHeightAt(24.9, -9.9)).toBeCloseTo(5.2, 1)
   })
 })
 
 describe('resolveWalkable', () => {
-  it('blocks the north ring wall', () => {
-    const pos = { x: 20, y: 0, z: -19 }
+  it('clamps to the elliptical shell', () => {
+    const pos = { x: 20, y: 0, z: -30 }
     resolveWalkable(pos)
-    expect(pos.z).toBeGreaterThanOrEqual(-18)
+    expect(Math.hypot(pos.x / 34.5, pos.z / 24.5)).toBeLessThanOrEqual(1.001)
   })
-  it('blocks the east ring at the atrium face', () => {
-    const face = { x: 21.5, y: 0, z: 0 }
-    resolveWalkable(face)
-    expect(face.x).toBe(21.5)
-    const wall = { x: 23, y: 0, z: 0 }
-    resolveWalkable(wall)
-    expect(wall.x).toBeLessThanOrEqual(22)
-  })
-  it('keeps the character out of the koi pond', () => {
-    const pos = { x: -12, y: 0, z: 31 }
+  it('keeps the character inside the east shell edge', () => {
+    const pos = { x: 40, y: 0, z: 0 }
     resolveWalkable(pos)
-    expect(Math.hypot(pos.x + 12, (pos.z - 31) / 0.57)).toBeGreaterThanOrEqual(7)
+    expect(pos.x).toBeLessThanOrEqual(34.5)
   })
-  it('railing stops an upper-level walk off the balcony', () => {
-    const pos = { x: 12, y: 5.2, z: 0 }
+  it('keeps the character out of the atria drums', () => {
+    const atrium = BALCONY.atria.cibadak
+    const angle = atrium.angle * Math.PI
+    const point = shellPoint(angle)
+    const inward = shellInwardNormal(angle)
+    const center = {
+      x: point.x - inward.x * atrium.offset,
+      z: point.z - inward.z * atrium.offset,
+    }
+    const shell = shellOffsetPoint(angle, 1)
+    const pos = { x: shell.x, y: 0, z: shell.z }
     resolveWalkable(pos)
-    expect(pos.x).toBeGreaterThanOrEqual(14)
+    expect(Math.hypot(pos.x - center.x, pos.z - center.z)).toBeGreaterThan(atrium.radius)
+  })
+  it('railing stops an upper-level walk off the curved balcony', () => {
+    const pos = { x: 28, y: 5.2, z: 0 }
+    resolveWalkable(pos)
+    expect(pos.x).toBeGreaterThanOrEqual(28.5)
+  })
+  it('keeps an elevated walker on the landing at the north edge', () => {
+    for (const sign of [1, -1]) {
+      const pos = { x: 19.5 * sign, y: 2.6, z: -17.5 }
+      pos.z = -17.9
+      resolveWalkable(pos)
+      expect(pos.x).toBeCloseTo(19.5 * sign, 1)
+      expect(pos.z).toBeGreaterThanOrEqual(-17.71)
+      expect(pos.y).toBe(2.6)
+    }
+  })
+  it('pushes a lower-flight walker back onto the flight', () => {
+    for (const sign of [1, -1]) {
+      const pos = { x: 21.3 * sign, y: 1.5, z: -13 }
+      resolveWalkable(pos)
+      expect(Math.abs(pos.x)).toBeLessThanOrEqual(20.71)
+      expect(pos.z).toBeCloseTo(-13, 1)
+      expect(pos.y).toBe(1.5)
+    }
+  })
+  it('does not lift a lower-flight walker onto the upper flight', () => {
+    const pos = { x: 21.3, y: 1.5, z: -13 }
+    resolveWalkable(pos)
+    expect(floorHeightAt(pos.x, pos.z)).toBeLessThan(2.2)
+  })
+  it('falls to the courtyard instead of teleporting across the venue', () => {
+    const pos = { x: 19.5, y: 2.6, z: -20 }
+    resolveWalkable(pos)
+    expect(pos.y).toBe(0)
+    expect(pos.x).toBeCloseTo(19.5, 1)
+    expect(pos.z).toBeGreaterThanOrEqual(-18.01)
   })
   it('keeps the character off the stage platform', () => {
     const pos = { x: 0, y: 0, z: -12 }
     resolveWalkable(pos)
     expect(pos.z).toBeGreaterThanOrEqual(-8.5)
+  })
+  it('keeps the character out of the board and booth', () => {
+    const board = { x: -9, y: 0, z: 22 }
+    resolveWalkable(board)
+    expect(board.x !== -9 || board.z !== 22).toBe(true)
+    const booth = { x: 9, y: 0, z: 22 }
+    resolveWalkable(booth)
+    expect(booth.x !== 9 || booth.z !== 22).toBe(true)
   })
 })
 
@@ -57,41 +114,41 @@ describe('planWalkRoute', () => {
   it('goes direct between ground points', () => {
     expect(planWalkRoute({ x: 0, y: 0, z: 19 }, { x: 5, y: 0, z: -5 })).toEqual([{ x: 5, y: 0, z: -5 }])
   })
-  it('routes a balcony target through the east stairs', () => {
-    const route = planWalkRoute({ x: 5, y: 0, z: 19 }, { x: 17.5, y: 5.75, z: 0 })
-    expect(route).toHaveLength(3)
+  it('routes a balcony target through the stage-side switchback', () => {
+    const route = planWalkRoute({ x: 5, y: 0, z: 19 }, { x: 30, y: 5.2, z: 0 })
     expect(route[0].y).toBe(0)
     expect(route[0].x).toBeGreaterThan(0)
-    expect(route[1].y).toBeCloseTo(5.2, 1)
-    expect(route[2]).toEqual({ x: 17.5, y: 5.75, z: 0 })
+    expect(route[0].z).toBeLessThan(-9)
+    expect(route[1].y).toBeCloseTo(2.6, 1)
+    expect(route[2].y).toBeCloseTo(2.6, 1)
+    expect(route.some((point) => point.y === 5.2)).toBe(true)
+    expect(route.at(-1)).toEqual({ x: 30, y: 5.2, z: 0 })
+    expect(route.length).toBeGreaterThan(6)
   })
-  it('descends via stairs when leaving the balcony', () => {
-    const route = planWalkRoute({ x: -17.5, y: 5.75, z: 0 }, { x: 0, y: 0, z: 19 })
-    expect(route).toHaveLength(3)
-    expect(route[0].x).toBeLessThan(0)
-    expect(route[2].y).toBe(0)
+  it('descends via the switchback when leaving the balcony', () => {
+    const route = planWalkRoute({ x: 30, y: 5.2, z: 0 }, { x: 0, y: 0, z: 19 })
+    expect(route.at(-1)?.y).toBe(0)
+    expect(route.some((point) => point.y > 4)).toBe(true)
+    expect(route.some((point) => point.x > 19 && point.y < 0.1)).toBe(true)
   })
-  it('routes to a west balcony seat via the west stairs from spawn', () => {
-    const route = planWalkRoute({ x: 0, y: 0, z: 19 }, { x: -17.5, y: 5.75, z: 0 })
-    expect(route).toHaveLength(3)
-    expect(route[0].x).toBeLessThan(0)
-    expect(route[1].x).toBeLessThan(0)
-  })
-  it('routes to an east balcony seat via the east stairs from the west side', () => {
-    const route = planWalkRoute({ x: -5, y: 0, z: 19 }, { x: 17.5, y: 5.75, z: 0 })
-    expect(route[0].x).toBeGreaterThan(0)
+  it('routes to the west balcony via the west switchback from spawn', () => {
+    const route = planWalkRoute({ x: 0, y: 0, z: 19 }, { x: -30, y: 5.2, z: 0 })
+    expect(route[0].x).toBeLessThan(-19)
+    expect(route[0].z).toBeLessThan(-9)
+    expect(route.at(-1)?.x).toBe(-30)
   })
   it('crosses balconies by descending and re-ascending', () => {
-    const route = planWalkRoute({ x: -17.5, y: 5.75, z: 0 }, { x: 17.5, y: 5.75, z: 0 })
-    expect(route).toHaveLength(5)
-    expect(route[0].x).toBeLessThan(0)
-    expect(route[1].x).toBeLessThan(0)
-    expect(route[2].x).toBeGreaterThan(0)
-    expect(route[3].x).toBeGreaterThan(0)
+    const route = planWalkRoute({ x: -30, y: 5.2, z: 0 }, { x: 30, y: 5.2, z: 0 })
+    const westBottom = route.findIndex((point) => point.x < -19 && point.y < 0.1)
+    const eastBottom = route.findIndex((point) => point.x > 19 && point.y < 0.1)
+    expect(westBottom).toBeGreaterThanOrEqual(0)
+    expect(eastBottom).toBeGreaterThan(westBottom)
+    expect(route.at(-1)?.x).toBe(30)
   })
-  it('goes direct on the same balcony', () => {
-    const route = planWalkRoute({ x: -17.5, y: 5.75, z: 0 }, { x: -15.5, y: 5.75, z: 5 })
-    expect(route).toEqual([{ x: -15.5, y: 5.75, z: 5 }])
+  it('follows the curved terrace on the same balcony', () => {
+    const route = planWalkRoute({ x: 30, y: 5.2, z: -8 }, { x: 30, y: 5.2, z: 8 })
+    expect(route.length).toBeGreaterThan(2)
+    expect(route.at(-1)).toEqual({ x: 30, y: 5.2, z: 8 })
   })
 })
 
@@ -118,13 +175,13 @@ describe('clearCameraPosition', () => {
     const to = { x: 0, y: 3.6, z: 16.6 }
     expect(clearCameraPosition({ x: 0, y: 1.6, z: 10 }, to)).toEqual(to)
   })
-  it('pulls the camera out of the north ring', () => {
+  it('pulls the camera back inside the north shell', () => {
     const result = clearCameraPosition({ x: 0, y: 1.6, z: -8 }, { x: 0, y: 3.6, z: -30 })
-    expect(result.z).toBeGreaterThanOrEqual(-18)
+    expect(result.z).toBeGreaterThan(-25)
   })
-  it('pulls the camera out of the east ring', () => {
-    const result = clearCameraPosition({ x: 17, y: 1.6, z: 0 }, { x: 26, y: 3.6, z: 0 })
-    expect(result.x).toBeLessThanOrEqual(22)
+  it('pulls the camera back inside the east shell', () => {
+    const result = clearCameraPosition({ x: 17, y: 1.6, z: 0 }, { x: 40, y: 3.6, z: 0 })
+    expect(result.x).toBeLessThanOrEqual(35.5)
   })
   it('keeps the camera above the floor', () => {
     const result = clearCameraPosition({ x: 0, y: 1.6, z: 0 }, { x: 0, y: 0.1, z: 6.6 })
@@ -136,7 +193,7 @@ describe('clearCameraPosition', () => {
     expect(clearCameraPosition(from, to)).toEqual(to)
   })
   it('keeps an elevated camera above the balcony deck', () => {
-    const result = clearCameraPosition({ x: 17, y: 6.8, z: 0 }, { x: 17, y: 2.0, z: 0 })
+    const result = clearCameraPosition({ x: 30, y: 6.8, z: 0 }, { x: 30, y: 2.0, z: 0 })
     expect(result.y).toBeGreaterThanOrEqual(5.55)
   })
 })

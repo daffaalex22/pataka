@@ -2,7 +2,7 @@
 
 import { HoldTimer } from '@/components/visitor/HoldTimer'
 import { useCountdown } from '@/components/ui/useCountdown'
-import { ChevronRightIcon, EyeIcon, WalkIcon } from '@/components/ui/icons'
+import { ChevronRightIcon, EyeIcon, WalkIcon, XIcon } from '@/components/ui/icons'
 import { useLang, useT } from '@/lib/i18n'
 import { formatIdr, type Seat } from '@/lib/types'
 
@@ -16,6 +16,7 @@ export function SeatBar({
   onWalkToSeat,
   onHold,
   onResume,
+  onClear,
 }: {
   seat: Seat | null
   busy: boolean
@@ -26,6 +27,7 @@ export function SeatBar({
   onWalkToSeat: () => void
   onHold: () => void
   onResume: () => void
+  onClear: () => void
 }) {
   const { lang } = useLang()
   const t = useT()
@@ -45,11 +47,14 @@ export function SeatBar({
       )}
 
       {seat && (
-        <div className="pointer-events-auto mx-auto max-w-md rounded-sm border border-paper/15 bg-ink/95 px-4 py-3 text-paper">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="pointer-events-auto mx-auto max-w-2xl rounded-sm border border-paper/15 bg-ink/95 px-4 py-3 text-paper">
+          <p className="text-xs text-paper/55">
+            {holdActive ? t('seat.yourSeat') : t('seat.selected')}
+          </p>
+
+          <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <p className="text-xs text-paper/55">{t('seat.yourSeat')}</p>
-              <p className="mt-0.5 truncate font-display text-2xl uppercase leading-none tracking-[0.02em] text-paper">
+              <p className="truncate font-display text-2xl uppercase leading-none tracking-[0.02em] text-paper">
                 {t('seat.rowLabel')} {seat.row}
                 <span aria-hidden className="px-2 text-paper/35">
                   ·
@@ -91,6 +96,17 @@ export function SeatBar({
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
+              {!holdActive && (
+                <button
+                  type="button"
+                  onClick={onClear}
+                  aria-label={t('seat.clear')}
+                  title={t('seat.clear')}
+                  className="focus-ring grid size-11 shrink-0 place-items-center rounded-sm border border-paper/20 text-paper/70 transition-colors hover:border-paper/40 hover:text-paper"
+                >
+                  <XIcon className="size-4" />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={onPreview}
