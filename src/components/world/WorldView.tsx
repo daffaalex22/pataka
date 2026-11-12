@@ -13,7 +13,7 @@ import { SeatMap2D } from '@/components/visitor/SeatMap2D'
 import { SummaryStep } from '@/components/visitor/SummaryStep'
 import { Dialog } from '@/components/ui/Dialog'
 import type { Group } from 'three'
-import { BoothOverlay } from '@/components/world/BoothOverlay'
+import { BoothOverlay, type BoothStage } from '@/components/world/BoothOverlay'
 import { BoardDetail } from '@/components/world/BoardDetail'
 import { SeatBar } from '@/components/world/SeatBar'
 import { SeatViewPanel } from '@/components/world/SeatViewPanel'
@@ -60,24 +60,18 @@ export function WorldView({ onExit }: { onExit: () => void }) {
   const [previewSeat, setPreviewSeat] = useState<Seat | null>(null)
   const [autoWalkSeat, setAutoWalkSeat] = useState<Seat | null>(null)
   const [boothOpen, setBoothOpen] = useState(false)
+  const [boothStage, setBoothStage] = useState<BoothStage>('categories')
   const [boardDetailOpen, setBoardDetailOpen] = useState(false)
   const [highlightCategory, setHighlightCategory] = useState<string | null>(null)
   const [hint, setHint] = useState<string | null>(() => `${t('world.hint')} · ${t('world.lookHint')}`)
   const [announcement, setAnnouncement] = useState('')
-  const hintTimer = useRef<number | null>(null)
   const announcementTimer = useRef<number | null>(null)
   const focusMapAfterClear = useRef(false)
 
-  const showHint = useCallback((message: string) => {
-    setHint(message)
-    if (hintTimer.current) window.clearTimeout(hintTimer.current)
-    hintTimer.current = window.setTimeout(() => setHint(null), 6000)
-  }, [])
-
   useEffect(() => {
-    hintTimer.current = window.setTimeout(() => setHint(null), 6000)
+    const timer = window.setTimeout(() => setHint(null), 6000)
     return () => {
-      if (hintTimer.current) window.clearTimeout(hintTimer.current)
+      window.clearTimeout(timer)
       if (announcementTimer.current) window.clearTimeout(announcementTimer.current)
     }
   }, [])
@@ -137,11 +131,15 @@ export function WorldView({ onExit }: { onExit: () => void }) {
     setCategory(next.categoryKey)
   }
 
+  const openBooth = () => {
+    setBoothStage('categories')
+    setBoothOpen(true)
+  }
+
   const chooseCategory = (category: Category) => {
     setCategory(category.key)
-    setBoothOpen(false)
     setHighlightCategory(category.key)
-    showHint(t('world.boothHint'))
+    setBoothStage('seats')
   }
 
   const visibleStep = step === 'form' && !holdToken ? 'seat' : step
@@ -150,6 +148,7 @@ export function WorldView({ onExit }: { onExit: () => void }) {
   const paymentOpen = visibleStep === 'payment' && Boolean(orderCode && breakdown)
   const overlayOpen = formOpen || summaryOpen || paymentOpen
   const holdActive = Boolean(holdExpiresAt && holdSeatId && seat && holdSeatId === seat.id)
+  const boothSeat = seat && seat.categoryKey === categoryKey ? seat : null
 
   const chooseSeatAgain = () => {
     setHold(null, null, null)
@@ -215,7 +214,7 @@ export function WorldView({ onExit }: { onExit: () => void }) {
           paused={overlayOpen || mapOpen || boothOpen || boardDetailOpen}
           showInteractables={Boolean(data)}
           boardData={data ? { event: data.event, categories: data.categories, lang } : undefined}
-          onBoothTap={() => setBoothOpen(true)}
+          onBoothTap={openBooth}
           onBoardTap={() => setBoardDetailOpen(true)}
           highlightCategory={highlightCategory}
           characterRef={characterRef}
@@ -381,9 +380,21 @@ export function WorldView({ onExit }: { onExit: () => void }) {
       </Dialog>
 
       <BoothOverlay
-        open={boothOpen}
+        open={boothOpen && !overlayOpen}
+        stage={boothStage}
         categories={data?.categories ?? null}
+        categoryKey={categoryKey}
+        seats={seats}
+        selected={boothSeat}
+        busy={busy}
+        error={error}
+        holdExpiresAt={holdExpiresAt}
+        holdSeatId={holdSeatId}
         onChoose={chooseCategory}
+        onSelect={selectSeat}
+        onHold={handleHold}
+        onResume={() => setStep('form')}
+        onBack={() => setBoothStage('categories')}
         onClose={() => setBoothOpen(false)}
       />
 

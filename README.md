@@ -114,10 +114,11 @@ idempotent, so repeated production builds are safe.
 
 ## Key flows to try
 
-1. Open `/` (splash → 3D plaza), visit the ticket booth or tap a seat directly,
-   hit **Walk to seat** to see the stage from your seat, then hold it, fill
-   sample details and pay. No WebGL? Direct booking (`/book`) still works, and
-   purchased tickets stay recoverable at `/tickets` on the same device.
+1. Open `/` (splash → 3D plaza), visit the ticket booth for the in-world tier
+   and seat picker, or tap a seat directly, hit **Walk to seat** to see the
+   stage from your seat, then hold it, fill sample details and pay. No WebGL?
+   Direct booking (`/book`) still works, and purchased tickets stay recoverable
+   at `/tickets` on the same device.
 2. The e-ticket shows a signed QR. Open `/admin` → **Check-in** and scan it
    (or paste the payload) — the first scan is VALID, the second is ALREADY USED.
 3. Double-booking: open two browsers, hold the same seat in both — exactly one wins.
