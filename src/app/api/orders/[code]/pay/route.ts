@@ -23,6 +23,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ code: string }
       return Response.json({ error: 'NOT_FOUND' }, { status: 404 })
     case 'HOLD_EXPIRED':
     case 'ORDER_CANCELLED':
+    case 'DISCOUNT_UNAVAILABLE':
       return Response.json({ error: result }, { status: 409 })
   }
 }

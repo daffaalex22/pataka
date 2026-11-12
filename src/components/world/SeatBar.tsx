@@ -69,6 +69,18 @@ export function SeatBar({
                 <span className="font-medium tabular-nums text-paper/85">
                   {formatIdr(seat.priceIdr, lang)}
                 </span>
+                {seat.autoDiscountIdr > 0 && (
+                  <>
+                    <span aria-hidden className="text-paper/25">
+                      ·
+                    </span>
+                    <span className="text-paper/50 line-through">{formatIdr(seat.listPriceIdr, lang)}</span>
+                    <span className="text-emerald-300">
+                      {lang === 'id' ? seat.autoDiscountName : seat.autoDiscountNameEn} · −
+                      {formatIdr(seat.autoDiscountIdr, lang)}
+                    </span>
+                  </>
+                )}
                 {seat.status !== 'available' && (
                   <>
                     <span aria-hidden className="text-paper/25">

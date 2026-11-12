@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
+import type { PriceBreakdown } from '@/lib/discounts'
 import { useT } from '@/lib/i18n'
 import { useBooking } from '@/lib/store'
 import { saveTicket } from '@/lib/ticketStore'
@@ -17,8 +18,19 @@ type EventResponse = { event: EventInfo; categories: Category[] }
 export function useBookingFlow(options: { eventPollMs?: number } = {}) {
   const router = useRouter()
   const t = useT()
-  const { seat, holdToken, orderCode, setStep, setSeat, setHold, setOrder, setParticipant, reset } =
-    useBooking((state) => state)
+  const {
+    seat,
+    holdToken,
+    orderCode,
+    breakdown,
+    setStep,
+    setSeat,
+    setHold,
+    setOrder,
+    setBreakdown,
+    setParticipant,
+    reset,
+  } = useBooking((state) => state)
 
   const [data, setData] = useState<EventResponse | null>(null)
   const [seats, setSeats] = useState<Seat[]>([])
@@ -97,10 +109,18 @@ export function useBookingFlow(options: { eventPollMs?: number } = {}) {
         },
       )
       if (res.ok) {
-        const order = (await res.json()) as { orderCode: string; totalIdr: number }
+        const order = (await res.json()) as { orderCode: string; totalIdr: number } & Partial<PriceBreakdown>
+        let nextBreakdown: PriceBreakdown | null = null
+        if (editingCode) {
+          const detail = await fetch(`/api/orders/${encodeURIComponent(order.orderCode)}`)
+          if (detail.ok) nextBreakdown = (await detail.json()) as PriceBreakdown
+        } else {
+          nextBreakdown = order as PriceBreakdown
+        }
         saveTicket(order.orderCode)
         setParticipant(details)
         setOrder(order.orderCode, order.totalIdr)
+        if (nextBreakdown) setBreakdown(nextBreakdown)
         setStep('summary')
       } else if (res.status === 409) {
         if (editingCode) {
@@ -140,6 +160,23 @@ export function useBookingFlow(options: { eventPollMs?: number } = {}) {
         reset()
         router.push(`/eticket/${orderCode}`)
       } else if (res.status === 409) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string }
+        if (body.error === 'DISCOUNT_UNAVAILABLE') {
+          try {
+            const clearRes = await fetch(`/api/orders/${encodeURIComponent(orderCode)}/discount`, {
+              method: 'DELETE',
+            })
+            if (clearRes.ok) {
+              const breakdown = (await clearRes.json()) as PriceBreakdown
+              setBreakdown(breakdown)
+              setOrder(orderCode, breakdown.totalIdr)
+              setError(t('error.discountUnavailable'))
+              return
+            }
+          } catch {
+            // fall through to the hold-expired reset below
+          }
+        }
         setError(t('error.holdExpired'))
         setHold(null, null, null)
         setOrder(null, null)
@@ -156,5 +193,5 @@ export function useBookingFlow(options: { eventPollMs?: number } = {}) {
     }
   }
 
-  return { data, seats, busy, error, loadSeats, setError, handleHold, handleOrder, handlePay }
+  return { data, seats, busy, error, loadSeats, setError, handleHold, handleOrder, handlePay, breakdown, setBreakdown }
 }

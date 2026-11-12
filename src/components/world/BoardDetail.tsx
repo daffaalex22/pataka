@@ -120,9 +120,20 @@ export function BoardDetail({
                       </span>
                     </span>
                     <span className="flex shrink-0 flex-col items-end gap-0.5">
-                      <span className="text-sm font-medium tabular-nums text-accent">
+                      <span className="flex items-baseline gap-1.5 text-sm font-medium tabular-nums text-accent">
                         {formatIdr(category.priceIdr, lang)}
+                        {category.autoDiscountIdr > 0 && (
+                          <span className="text-xs font-normal text-paper/50 line-through">
+                            {formatIdr(category.listPriceIdr, lang)}
+                          </span>
+                        )}
                       </span>
+                      {category.autoDiscountIdr > 0 && (
+                        <span className="text-xs text-emerald-300">
+                          {lang === 'id' ? category.autoDiscountName : category.autoDiscountNameEn} · −
+                          {formatIdr(category.autoDiscountIdr, lang)}
+                        </span>
+                      )}
                       <span className="text-xs text-paper/50">
                         {category.remaining} {t('cat.available')}
                       </span>

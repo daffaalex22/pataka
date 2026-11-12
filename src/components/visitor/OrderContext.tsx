@@ -57,9 +57,19 @@ export function OrderContext({
           {category && <p className="mt-0.5 text-sm text-paper/60">{category}</p>}
         </div>
         {price !== null && (
-          <p className="shrink-0 text-sm font-semibold tabular-nums text-paper">
-            {formatIdr(price, lang)}
-          </p>
+          <div className="shrink-0 text-right">
+            <p className="text-sm font-semibold tabular-nums text-paper">{formatIdr(price, lang)}</p>
+            {seat && seat.autoDiscountIdr > 0 && (
+              <p className="mt-0.5 text-xs text-paper/55">
+                <span className="line-through">{formatIdr(seat.listPriceIdr, lang)}</span>
+                {' · '}
+                <span className="text-emerald-300">
+                  {lang === 'id' ? seat.autoDiscountName : seat.autoDiscountNameEn} · −
+                  {formatIdr(seat.autoDiscountIdr, lang)}
+                </span>
+              </p>
+            )}
+          </div>
         )}
       </div>
 

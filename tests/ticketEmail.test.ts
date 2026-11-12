@@ -36,6 +36,10 @@ describe('loadTicketEmail', () => {
       `SELECT c.price_idr AS price FROM seats s JOIN ticket_categories c ON c.id = s.category_id WHERE s.id = 'VIP-A8'`,
     )
     expect(loaded?.ticket.totalIdr).toBe(price)
+    expect(loaded?.ticket.listPriceIdr).toBe(price)
+    expect(loaded?.ticket.autoDiscountIdr).toBe(0)
+    expect(loaded?.ticket.promoDiscountIdr).toBe(0)
+    expect(loaded?.ticket.promoCode).toBeNull()
     expect(loaded?.ticket.categoryName.length ?? 0).toBeGreaterThan(0)
   })
 })

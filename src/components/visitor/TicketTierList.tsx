@@ -37,7 +37,13 @@ export function TicketTierList({
           : !category.salesOpen
             ? t('cat.salesClosed')
             : `${category.remaining} ${t('cat.available')} ${t('cat.of')} ${category.quota}`
-        const ariaLabel = [t('cat.choose'), name, viewNote, remainingLabel, price].filter(Boolean).join(', ')
+        const discountLabel =
+          category.autoDiscountIdr > 0
+            ? `${lang === 'id' ? category.autoDiscountName : category.autoDiscountNameEn} −${formatIdr(category.autoDiscountIdr, lang)}`
+            : null
+        const ariaLabel = [t('cat.choose'), name, viewNote, remainingLabel, price, discountLabel]
+          .filter(Boolean)
+          .join(', ')
 
         return (
           <li key={category.key} className="border-b border-paper/10 last:border-b-0">
@@ -73,8 +79,21 @@ export function TicketTierList({
               </span>
 
               <span className="flex items-center gap-2 sm:gap-3">
-                <span className="whitespace-nowrap text-right text-base font-semibold tabular-nums text-paper">
-                  {price}
+                <span className="flex flex-col items-end gap-0.5">
+                  <span className="flex items-baseline gap-1.5 whitespace-nowrap text-right text-base font-semibold tabular-nums text-paper">
+                    {price}
+                    {category.autoDiscountIdr > 0 && (
+                      <span className="text-xs font-normal text-paper/50 line-through">
+                        {formatIdr(category.listPriceIdr, lang)}
+                      </span>
+                    )}
+                  </span>
+                  {category.autoDiscountIdr > 0 && (
+                    <span className="text-right text-xs text-emerald-300">
+                      {lang === 'id' ? category.autoDiscountName : category.autoDiscountNameEn} · −
+                      {formatIdr(category.autoDiscountIdr, lang)}
+                    </span>
+                  )}
                 </span>
                 <ChevronRightIcon className="size-4 shrink-0 text-paper/35 transition-colors group-hover:text-paper/60" />
               </span>

@@ -14,6 +14,10 @@ const STATUS_STYLES: Record<AdminOrder['status'], { dot: string; text: string }>
   cancelled: { dot: 'bg-red-400', text: 'text-red-300' },
 }
 
+function discountTotal(order: AdminOrder) {
+  return order.autoDiscountIdr + order.promoDiscountIdr
+}
+
 const fieldClass =
   'focus-ring min-h-11 w-full rounded-sm border border-paper/15 bg-paper/[0.04] px-3 text-sm text-paper outline-none transition-colors placeholder:text-paper/55 focus:border-accent/70'
 
@@ -199,6 +203,18 @@ export function OrdersTable({ adminKey }: { adminKey: string }) {
                   <span aria-hidden>·</span>
                   <span>{order.paymentMethod ?? '—'}</span>
                 </p>
+                {(order.promoCode || discountTotal(order) > 0) && (
+                  <p className="mt-1.5 text-xs text-emerald-300/80">
+                    {order.promoCode && <span className="font-mono">{order.promoCode}</span>}
+                    {order.promoCode && discountTotal(order) > 0 && ' · '}
+                    {discountTotal(order) > 0 && (
+                      <>
+                        {order.autoDiscountName && <span>{order.autoDiscountName} · </span>}
+                        −{formatIdr(discountTotal(order), lang)}
+                      </>
+                    )}
+                  </p>
+                )}
 
                 <div className="mt-3 flex flex-wrap gap-2">
                   {order.status === 'pending' && (

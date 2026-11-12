@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useCountdown } from '@/components/ui/useCountdown'
 import { ArrowLeftIcon, BankIcon, QrIcon, WalletIcon } from '@/components/ui/icons'
 import { OrderContext } from '@/components/visitor/OrderContext'
+import { PromoCodeField } from '@/components/visitor/PromoCodeField'
+import type { PriceBreakdown } from '@/lib/discounts'
 import { useLang, useT } from '@/lib/i18n'
 import { formatIdr, type Seat } from '@/lib/types'
 
@@ -17,22 +19,28 @@ const METHOD_ICONS = {
 } as const
 
 export function PaymentStep({
+  breakdown,
   totalIdr,
+  orderCode,
   holdExpiresAt,
   seat = null,
   contextLabel,
   paying,
   error,
+  onBreakdownChange,
   onBack,
   onPay,
   onChooseSeat,
 }: {
-  totalIdr: number
+  breakdown?: PriceBreakdown
+  totalIdr?: number
+  orderCode?: string
   holdExpiresAt: string | null
   seat?: Seat | null
   contextLabel?: string | null
   paying: boolean
   error: string | null
+  onBreakdownChange?: (breakdown: PriceBreakdown) => void
   onBack: () => void
   onPay: (method: Method) => void
   onChooseSeat?: () => void
@@ -83,12 +91,47 @@ export function PaymentStep({
         />
 
         <div className="border-t border-paper/10 px-4 pb-4 pt-3 sm:px-5 sm:pb-5 sm:pt-4">
-          <div className="flex items-baseline justify-between gap-4">
-            <span className="text-sm text-paper/55">{t('summary.total')}</span>
-            <span className="text-2xl font-semibold tabular-nums text-paper">
-              {formatIdr(totalIdr, lang)}
-            </span>
-          </div>
+          {breakdown ? (
+            <dl className="space-y-2 text-sm">
+              <div className="flex items-center justify-between gap-4">
+                <dt className="text-paper/55">{t('discount.listPrice')}</dt>
+                <dd className="tabular-nums">{formatIdr(breakdown.listPriceIdr, lang)}</dd>
+              </div>
+              {breakdown.autoDiscountIdr > 0 && (
+                <div className="flex items-center justify-between gap-4 text-emerald-300">
+                  <dt>{lang === 'id' ? breakdown.autoDiscountName : breakdown.autoDiscountNameEn}</dt>
+                  <dd className="tabular-nums">−{formatIdr(breakdown.autoDiscountIdr, lang)}</dd>
+                </div>
+              )}
+              {(breakdown.autoDiscountIdr > 0 || breakdown.promoDiscountIdr > 0) && (
+                <div className="flex items-center justify-between gap-4">
+                  <dt className="text-paper/55">{t('discount.subtotal')}</dt>
+                  <dd className="tabular-nums">{formatIdr(breakdown.subtotalIdr, lang)}</dd>
+                </div>
+              )}
+              {breakdown.promoDiscountIdr > 0 && (
+                <div className="flex items-center justify-between gap-4 text-emerald-300">
+                  <dt>
+                    {breakdown.promoCode} · {t('discount.promo')}
+                  </dt>
+                  <dd className="tabular-nums">−{formatIdr(breakdown.promoDiscountIdr, lang)}</dd>
+                </div>
+              )}
+              <div className="flex items-baseline justify-between gap-4 border-t border-paper/10 pt-2">
+                <dt className="text-paper/55">{t('summary.total')}</dt>
+                <dd className="text-2xl font-semibold tabular-nums text-paper">
+                  {formatIdr(breakdown.totalIdr, lang)}
+                </dd>
+              </div>
+            </dl>
+          ) : (
+            <div className="flex items-baseline justify-between gap-4">
+              <span className="text-sm text-paper/55">{t('summary.total')}</span>
+              <span className="text-2xl font-semibold tabular-nums text-paper">
+                {formatIdr(totalIdr ?? 0, lang)}
+              </span>
+            </div>
+          )}
 
           <div className="mt-4 grid gap-2">
           {METHODS.map((option) => {
@@ -144,6 +187,16 @@ export function PaymentStep({
               </button>
             )}
           </div>
+        )}
+
+        {breakdown && orderCode && onBreakdownChange && (
+          <PromoCodeField
+            orderCode={orderCode}
+            promoCode={breakdown.promoCode}
+            promoDiscountIdr={breakdown.promoDiscountIdr}
+            disabled={countdown.expired}
+            onChanged={onBreakdownChange}
+          />
         )}
 
           <button

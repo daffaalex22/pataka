@@ -11,6 +11,11 @@ const ticket: TicketEmail = {
   seatLabel: 'VIP-A3',
   categoryName: 'VIP Depan',
   orderCode: 'PTK-ABC123',
+  listPriceIdr: 1_500_000,
+  autoDiscountIdr: 300_000,
+  autoDiscountName: 'Early Bird',
+  promoDiscountIdr: 120_000,
+  promoCode: 'PATKA10',
   totalIdr: 1500000,
   ticketUrl: 'https://pataka.example/eticket/PTK-ABC123',
 }
@@ -59,6 +64,48 @@ describe('sendTicketEmail', () => {
       content_id: 'tiket-qr',
     })
     expect(body.attachments[0].content.startsWith('iVBORw0KGgo')).toBe(true)
+  })
+
+  it('shows the discount breakdown in the email', async () => {
+    const calls: { init: RequestInit }[] = []
+    const fetchImpl = fetchStub((_url, init) => {
+      calls.push({ init })
+      return { ok: true, status: 200 } as Response
+    })
+    await sendTicketEmail(ticket, { apiKey: 'key-123', from: 'tickets@pataka.test', fetchImpl })
+    const body = JSON.parse(String(calls[0].init.body)) as { text: string; html: string }
+    expect(body.text.replace(/\u00a0/g, ' ')).toContain('Harga: Rp 1.500.000')
+    expect(body.text.replace(/\u00a0/g, ' ')).toContain('Early Bird: -Rp 300.000')
+    expect(body.text.replace(/\u00a0/g, ' ')).toContain('PATKA10: -Rp 120.000')
+    expect(body.html).toContain('Early Bird')
+    expect(body.html).toContain('PATKA10')
+  })
+
+  it('omits list-price and discount rows when there is no discount', async () => {
+    const noDiscount: TicketEmail = {
+      ...ticket,
+      autoDiscountIdr: 0,
+      autoDiscountName: null,
+      promoDiscountIdr: 0,
+      promoCode: null,
+      totalIdr: 1_500_000,
+    }
+    const calls: { init: RequestInit }[] = []
+    const fetchImpl = fetchStub((_url, init) => {
+      calls.push({ init })
+      return { ok: true, status: 200 } as Response
+    })
+    await sendTicketEmail(noDiscount, { apiKey: 'key-123', from: 'tickets@pataka.test', fetchImpl })
+    const body = JSON.parse(String(calls[0].init.body)) as { text: string; html: string }
+    const text = body.text.replace(/\u00a0/g, ' ')
+    expect(text).not.toContain('Harga:')
+    expect(text).not.toContain('Early Bird')
+    expect(text).not.toContain('PATKA10')
+    expect(text).toContain('Total: Rp 1.500.000')
+    expect(body.html).not.toContain('Harga')
+    expect(body.html).not.toContain('Early Bird')
+    expect(body.html).not.toContain('PATKA10')
+    expect(body.html).toContain('Total')
   })
 
   it('escapes hostile input in the html body', async () => {
