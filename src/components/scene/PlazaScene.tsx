@@ -163,6 +163,7 @@ function Seats({
   highlightCategory?: string | null
   dragStateRef?: React.RefObject<{ dragging: boolean }>
 }) {
+  const basesRef = useRef<THREE.InstancedMesh>(null)
   const padsRef = useRef<THREE.InstancedMesh>(null)
   const backsRef = useRef<THREE.InstancedMesh>(null)
   const hitsRef = useRef<THREE.InstancedMesh>(null)
@@ -193,6 +194,7 @@ function Seats({
   }, [])
 
   useEffect(() => {
+    const bases = basesRef.current
     const pads = padsRef.current
     const backs = backsRef.current
     const hits = hitsRef.current
@@ -202,7 +204,6 @@ function Seats({
       const isSelected = seat.id === selectedId
       const isHovered = index === hovered
       const isHighlighted = !isSelected && !isHovered && highlightCategory === seat.categoryKey
-      const lift = isSelected ? 0.18 : isHovered ? 0.08 : isHighlighted ? 0.1 : 0
       const scale = isSelected ? 1.45 : isHovered ? 1.18 : 1
       // Tribune seats follow the curved shell and face the stage; the floor
       // seats keep their original axis-aligned pads.
@@ -211,7 +212,16 @@ function Seats({
           ? Math.atan2(seat.x, seat.z + 13)
           : 0
 
-      dummy.position.set(seat.x, seat.y + 0.55 + lift, seat.z)
+      if (bases) {
+        // A small pedestal grounds the seat on the floor or balcony deck.
+        dummy.position.set(seat.x, seat.y + 0.225, seat.z)
+        dummy.rotation.set(0, rotationY, 0)
+        dummy.scale.setScalar(1)
+        dummy.updateMatrix()
+        bases.setMatrixAt(index, dummy.matrix)
+      }
+
+      dummy.position.set(seat.x, seat.y + 0.55, seat.z)
       dummy.rotation.set(0, rotationY, 0)
       dummy.scale.setScalar(scale)
       dummy.updateMatrix()
@@ -219,7 +229,7 @@ function Seats({
 
       dummy.position.set(
         seat.x + Math.sin(rotationY) * 0.42,
-        seat.y + 0.78 + lift,
+        seat.y + 0.78,
         seat.z + Math.cos(rotationY) * 0.42,
       )
       dummy.updateMatrix()
@@ -228,7 +238,7 @@ function Seats({
       if (hits) {
         // Coarse pointers get one forgiving target around the pad and back,
         // without changing the visible seat size.
-        dummy.position.set(seat.x, seat.y + 0.72 + lift, seat.z)
+        dummy.position.set(seat.x, seat.y + 0.72, seat.z)
         dummy.rotation.set(0, rotationY, 0)
         dummy.scale.setScalar(1)
         dummy.updateMatrix()
@@ -243,6 +253,7 @@ function Seats({
       backs.setColorAt(index, color)
     })
 
+    if (bases) bases.instanceMatrix.needsUpdate = true
     pads.instanceMatrix.needsUpdate = true
     backs.instanceMatrix.needsUpdate = true
     if (pads.instanceColor) pads.instanceColor.needsUpdate = true
@@ -295,6 +306,11 @@ function Seats({
 
   return (
     <group>
+      <instancedMesh ref={basesRef} args={[undefined, undefined, seats.length]}>
+        <boxGeometry args={[0.5, 0.45, 0.5]} />
+        <meshStandardMaterial color="#1a1426" roughness={0.7} metalness={0.15} />
+      </instancedMesh>
+
       <instancedMesh
         ref={padsRef}
         args={[undefined, undefined, seats.length]}
