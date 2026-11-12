@@ -18,17 +18,12 @@ export async function GET(req: Request) {
     category_name: string
     status: string
     payment_method: string | null
-    list_price_idr: number | null
-    auto_discount_idr: number
-    promo_discount_idr: number
-    promo_code: string | null
     total_idr: number
     created_at: string
     paid_at: string | null
     checked_in_at: string | null
   }>(`
-    SELECT o.code, o.name, o.email, o.phone, o.status, o.payment_method,
-           o.list_price_idr, o.auto_discount_idr, o.promo_discount_idr, o.promo_code, o.total_idr,
+    SELECT o.code, o.name, o.email, o.phone, o.status, o.payment_method, o.total_idr,
            o.created_at, o.paid_at, o.checked_in_at,
            s.id AS seat_id, c.name AS category_name
     FROM orders o
@@ -41,29 +36,16 @@ export async function GET(req: Request) {
   let filename: string
 
   if (type === 'transactions') {
-    csv = toCsv(
-      rows.map((row) => ({
-        ...row,
-        list_price_idr: row.list_price_idr ?? row.total_idr,
-        discount_code: row.promo_code ?? '',
-        discount_idr: row.auto_discount_idr + row.promo_discount_idr,
-      })),
-      [
-        { key: 'code', label: 'Order Code' },
-        { key: 'seat_id', label: 'Seat' },
-        { key: 'category_name', label: 'Category' },
-        { key: 'status', label: 'Status' },
-        { key: 'payment_method', label: 'Payment Method' },
-        { key: 'list_price_idr', label: 'List Price IDR' },
-        { key: 'auto_discount_idr', label: 'Auto Discount IDR' },
-        { key: 'promo_discount_idr', label: 'Promo Discount IDR' },
-        { key: 'discount_code', label: 'Discount Code' },
-        { key: 'discount_idr', label: 'Discount IDR' },
-        { key: 'total_idr', label: 'Total IDR' },
-        { key: 'created_at', label: 'Created At' },
-        { key: 'paid_at', label: 'Paid At' },
-      ],
-    )
+    csv = toCsv(rows, [
+      { key: 'code', label: 'Order Code' },
+      { key: 'seat_id', label: 'Seat' },
+      { key: 'category_name', label: 'Category' },
+      { key: 'status', label: 'Status' },
+      { key: 'payment_method', label: 'Payment Method' },
+      { key: 'total_idr', label: 'Total IDR' },
+      { key: 'created_at', label: 'Created At' },
+      { key: 'paid_at', label: 'Paid At' },
+    ])
     filename = 'pataka-transactions.csv'
   } else {
     csv = toCsv(rows, [

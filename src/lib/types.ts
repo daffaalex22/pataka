@@ -7,11 +7,6 @@ export interface Category {
   name: string
   nameEn: string
   priceIdr: number
-  listPriceIdr: number
-  autoDiscountIdr: number
-  autoDiscountName: string | null
-  autoDiscountNameEn: string | null
-  autoDiscountPercent: number | null
   colorHex: string
   sortOrder: number
   quota: number
@@ -47,11 +42,6 @@ export interface Seat {
   categoryName: string
   categoryNameEn: string
   priceIdr: number
-  listPriceIdr: number
-  autoDiscountIdr: number
-  autoDiscountName: string | null
-  autoDiscountNameEn: string | null
-  autoDiscountPercent: number | null
   colorHex: string
 }
 
@@ -90,15 +80,7 @@ export interface AdminCategory {
 }
 
 export interface AdminStats {
-  orders: {
-    total: number
-    pending: number
-    paid: number
-    cancelled: number
-    checkedIn: number
-    revenueIdr: number
-    discountIdr: number
-  }
+  orders: { total: number; pending: number; paid: number; cancelled: number; checkedIn: number; revenueIdr: number }
   seats: { available: number; held: number; sold: number }
   categories: AdminCategory[]
 }
@@ -110,11 +92,6 @@ export interface AdminOrder {
   phone: string
   status: 'pending' | 'paid' | 'cancelled'
   paymentMethod: string | null
-  listPriceIdr: number
-  autoDiscountIdr: number
-  autoDiscountName: string | null
-  promoDiscountIdr: number
-  promoCode: string | null
   totalIdr: number
   createdAt: string
   paidAt: string | null

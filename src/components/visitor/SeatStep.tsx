@@ -241,15 +241,6 @@ export function SeatStep({
                 </p>
                 <p className="mt-0.5 text-xs text-paper/55">
                   {categoryName} · {formatIdr(selected.priceIdr, lang)}
-                  {selected.autoDiscountIdr > 0 && (
-                    <>
-                      <span className="ml-1.5 line-through">{formatIdr(selected.listPriceIdr, lang)}</span>
-                      <span className="ml-1.5 text-emerald-300">
-                        {lang === 'id' ? selected.autoDiscountName : selected.autoDiscountNameEn} · −
-                        {formatIdr(selected.autoDiscountIdr, lang)}
-                      </span>
-                    </>
-                  )}
                   {selected.status !== 'available' && (
                     <span className={selected.status === 'held' ? 'text-amber-300' : 'text-paper/40'}>
                       {' '}

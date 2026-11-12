@@ -23,11 +23,6 @@ type OrderRow = {
   starts_at: string
   venue: string
   category_name: string
-  list_price_idr: number | null
-  auto_discount_idr: number
-  auto_discount_name: string | null
-  promo_discount_idr: number
-  promo_code: string | null
   total_idr: number
 }
 
@@ -44,11 +39,6 @@ export async function loadTicketEmail(
             e.starts_at,
             e.venue,
             c.name AS category_name,
-            o.list_price_idr,
-            o.auto_discount_idr,
-            o.auto_discount_name,
-            o.promo_discount_idr,
-            o.promo_code,
             o.total_idr
      FROM orders o
      JOIN seats s ON s.id = o.seat_id
@@ -72,11 +62,6 @@ export async function loadTicketEmail(
       seatLabel: order.seat_label,
       categoryName: order.category_name,
       orderCode: code,
-      listPriceIdr: Number(order.list_price_idr ?? order.total_idr),
-      autoDiscountIdr: Number(order.auto_discount_idr),
-      autoDiscountName: order.auto_discount_name,
-      promoDiscountIdr: Number(order.promo_discount_idr),
-      promoCode: order.promo_code,
       totalIdr: Number(order.total_idr),
       ticketUrl: `${origin}/eticket/${encodeURIComponent(code)}`,
     },

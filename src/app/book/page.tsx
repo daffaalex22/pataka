@@ -32,8 +32,7 @@ export default function BookPage() {
     setStep, setCategory, setSeat, setHold, setOrder, reset,
   } = useBooking((state) => state)
 
-  const { data, seats, busy, error, loadSeats, setError, handleHold, handleOrder, handlePay, breakdown, setBreakdown } =
-    useBookingFlow()
+  const { data, seats, busy, error, loadSeats, setError, handleHold, handleOrder, handlePay } = useBookingFlow()
 
   useEffect(() => {
     loadSeats()
@@ -211,12 +210,12 @@ export default function BookPage() {
               />
             )}
 
-            {visibleStep === 'summary' && orderCode && breakdown && (
+            {visibleStep === 'summary' && orderCode && (
               <SummaryStep
                 seat={seat}
                 participant={participant}
                 orderCode={orderCode}
-                breakdown={breakdown}
+                totalIdr={totalIdr ?? 0}
                 holdExpiresAt={holdExpiresAt}
                 onEdit={() => setStep('form')}
                 onChooseSeat={chooseSeatAgain}
@@ -227,16 +226,13 @@ export default function BookPage() {
               />
             )}
 
-            {visibleStep === 'payment' && orderCode && breakdown && (
+            {visibleStep === 'payment' && orderCode && (
               <PaymentStep
-                breakdown={breakdown}
-                orderCode={orderCode}
-                totalIdr={totalIdr ?? breakdown.totalIdr}
+                totalIdr={totalIdr ?? 0}
                 holdExpiresAt={holdExpiresAt}
                 seat={seat}
                 paying={busy}
                 error={error}
-                onBreakdownChange={setBreakdown}
                 onBack={() => setStep('summary')}
                 onChooseSeat={chooseSeatAgain}
                 onPay={handlePay}

@@ -5,7 +5,6 @@ import { useCountdown } from '@/components/ui/useCountdown'
 import { ArrowLeftIcon, CompassIcon } from '@/components/ui/icons'
 import { OrderContext } from '@/components/visitor/OrderContext'
 import { VenueMapDialog } from '@/components/venue/VenueMapDialog'
-import type { PriceBreakdown } from '@/lib/discounts'
 import { useLang, useT } from '@/lib/i18n'
 import type { Participant } from '@/lib/store'
 import { formatIdr, type Seat } from '@/lib/types'
@@ -14,7 +13,7 @@ export function SummaryStep({
   seat,
   participant,
   orderCode,
-  breakdown,
+  totalIdr,
   holdExpiresAt,
   onEdit,
   onContinue,
@@ -23,7 +22,7 @@ export function SummaryStep({
   seat: Seat | null
   participant: Participant | null
   orderCode: string
-  breakdown: PriceBreakdown
+  totalIdr: number
   holdExpiresAt: string | null
   onEdit: () => void
   onContinue: () => void
@@ -105,37 +104,10 @@ export function SummaryStep({
               </dd>
             </div>
 
-            <div className="space-y-2 border-t border-paper/10 pt-3">
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-paper/55">{t('discount.listPrice')}</dt>
-                <dd className="tabular-nums">{formatIdr(breakdown.listPriceIdr, lang)}</dd>
-              </div>
-              {breakdown.autoDiscountIdr > 0 && (
-                <div className="flex items-center justify-between gap-4 text-emerald-300">
-                  <dt>{lang === 'id' ? breakdown.autoDiscountName : breakdown.autoDiscountNameEn}</dt>
-                  <dd className="tabular-nums">−{formatIdr(breakdown.autoDiscountIdr, lang)}</dd>
-                </div>
-              )}
-              {(breakdown.autoDiscountIdr > 0 || breakdown.promoDiscountIdr > 0) && (
-                <div className="flex items-center justify-between gap-4">
-                  <dt className="text-paper/55">{t('discount.subtotal')}</dt>
-                  <dd className="tabular-nums">{formatIdr(breakdown.subtotalIdr, lang)}</dd>
-                </div>
-              )}
-              {breakdown.promoDiscountIdr > 0 && (
-                <div className="flex items-center justify-between gap-4 text-emerald-300">
-                  <dt>
-                    {breakdown.promoCode} · {t('discount.promo')}
-                  </dt>
-                  <dd className="tabular-nums">−{formatIdr(breakdown.promoDiscountIdr, lang)}</dd>
-                </div>
-              )}
-            </div>
-
             <div className="flex items-baseline justify-between gap-4 border-t border-paper/10 pt-3">
               <dt className="text-paper/55">{t('summary.total')}</dt>
               <dd className="text-xl font-semibold tabular-nums text-paper">
-                {formatIdr(breakdown.totalIdr, lang)}
+                {totalIdr ? formatIdr(totalIdr, lang) : '—'}
               </dd>
             </div>
           </dl>

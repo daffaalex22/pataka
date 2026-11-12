@@ -43,10 +43,9 @@ const PlazaScene = dynamic(() => import('@/components/scene/PlazaScene'), {
 export function WorldView({ onExit }: { onExit: () => void }) {
   const t = useT()
   const { lang } = useLang()
-  const { data, seats, busy, error, loadSeats, setError, handleHold, handleOrder, handlePay, breakdown, setBreakdown } =
-    useBookingFlow({
-      eventPollMs: 5000,
-    })
+  const { data, seats, busy, error, loadSeats, setError, handleHold, handleOrder, handlePay } = useBookingFlow({
+    eventPollMs: 5000,
+  })
   const {
     step, categoryKey, seat, holdToken, holdExpiresAt, holdSeatId, orderCode, totalIdr, participant,
     setStep, setCategory, setSeat, setHold, setOrder,
@@ -146,8 +145,8 @@ export function WorldView({ onExit }: { onExit: () => void }) {
 
   const visibleStep = step === 'form' && !holdToken ? 'seat' : step
   const formOpen = visibleStep === 'form'
-  const summaryOpen = visibleStep === 'summary' && Boolean(orderCode && breakdown)
-  const paymentOpen = visibleStep === 'payment' && Boolean(orderCode && breakdown)
+  const summaryOpen = visibleStep === 'summary' && Boolean(orderCode)
+  const paymentOpen = visibleStep === 'payment' && Boolean(orderCode)
   const overlayOpen = formOpen || summaryOpen || paymentOpen
   const holdActive = Boolean(holdExpiresAt && holdSeatId && seat && holdSeatId === seat.id)
 
@@ -300,39 +299,32 @@ export function WorldView({ onExit }: { onExit: () => void }) {
       </StepOverlay>
 
       <StepOverlay open={summaryOpen} onBack={() => setStep('form')}>
-        {orderCode && breakdown && (
-          <SummaryStep
-            seat={seat}
-            participant={participant}
-            orderCode={orderCode}
-            breakdown={breakdown}
-            holdExpiresAt={holdExpiresAt}
-            onEdit={() => setStep('form')}
-            onChooseSeat={chooseSeatAgain}
-            onContinue={() => {
-              setError(null)
-              setStep('payment')
-            }}
-          />
-        )}
+        <SummaryStep
+          seat={seat}
+          participant={participant}
+          orderCode={orderCode ?? ''}
+          totalIdr={totalIdr ?? 0}
+          holdExpiresAt={holdExpiresAt}
+          onEdit={() => setStep('form')}
+          onChooseSeat={chooseSeatAgain}
+          onContinue={() => {
+            setError(null)
+            setStep('payment')
+          }}
+        />
       </StepOverlay>
 
       <StepOverlay open={paymentOpen} onBack={() => setStep('summary')}>
-        {orderCode && breakdown && (
-          <PaymentStep
-            breakdown={breakdown}
-            orderCode={orderCode}
-            totalIdr={totalIdr ?? breakdown.totalIdr}
-            holdExpiresAt={holdExpiresAt}
-            seat={seat}
-            paying={busy}
-            error={error}
-            onBreakdownChange={setBreakdown}
-            onBack={() => setStep('summary')}
-            onChooseSeat={chooseSeatAgain}
-            onPay={handlePay}
-          />
-        )}
+        <PaymentStep
+          totalIdr={totalIdr ?? 0}
+          holdExpiresAt={holdExpiresAt}
+          seat={seat}
+          paying={busy}
+          error={error}
+          onBack={() => setStep('summary')}
+          onChooseSeat={chooseSeatAgain}
+          onPay={handlePay}
+        />
       </StepOverlay>
 
       <Dialog

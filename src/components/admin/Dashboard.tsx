@@ -34,16 +34,12 @@ export function Dashboard({ adminKey, onOpenOrders }: { adminKey: string; onOpen
   if (error) return <p role="alert" className="text-sm text-red-300">{t('error.generic')}</p>
   if (!stats) return <p role="status" className="text-sm text-paper/55">{t('common.loading')}</p>
 
-  const cards: { label: string; value: string; sub?: string }[] = [
+  const cards = [
     { label: t('admin.stats.registrants'), value: String(stats.orders.total) },
     { label: t('admin.stats.sold'), value: String(stats.orders.paid) },
     { label: t('admin.stats.held'), value: String(stats.seats.held) },
     { label: t('admin.stats.checkedIn'), value: String(stats.orders.checkedIn) },
-    {
-      label: t('admin.stats.revenue'),
-      value: formatIdr(stats.orders.revenueIdr, lang),
-      sub: `${t('admin.stats.discount')} ${formatIdr(stats.orders.discountIdr, lang)}`,
-    },
+    { label: t('admin.stats.revenue'), value: formatIdr(stats.orders.revenueIdr, lang) },
   ]
 
   const countColumns = [
@@ -63,7 +59,6 @@ export function Dashboard({ adminKey, onOpenOrders }: { adminKey: string; onOpen
           >
             <dt className="text-xs leading-snug text-paper/55">{card.label}</dt>
             <dd className="mt-2 break-words text-xl font-semibold tabular-nums tracking-tight">{card.value}</dd>
-            {card.sub && <p className="mt-1 text-xs text-paper/55">{card.sub}</p>}
           </div>
         ))}
       </dl>

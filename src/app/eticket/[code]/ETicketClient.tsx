@@ -21,23 +21,12 @@ import { VenueMapDialog } from '@/components/venue/VenueMapDialog'
 import { useLang, useT } from '@/lib/i18n'
 import { saveTicket } from '@/lib/ticketStore'
 import { formatEventDate, formatIdr, type EventInfo } from '@/lib/types'
-import type { PriceBreakdown } from '@/lib/discounts'
 
 type Ticket = {
   orderCode: string
   name: string
   status: 'pending' | 'paid' | 'cancelled'
   paymentMethod: string | null
-  listPriceIdr: number
-  autoDiscountId: number | null
-  autoDiscountIdr: number
-  autoDiscountName: string | null
-  autoDiscountNameEn: string | null
-  autoDiscountPercent: number | null
-  subtotalIdr: number
-  promoDiscountId: number | null
-  promoDiscountIdr: number
-  promoCode: string | null
   totalIdr: number
   holdExpiresAt: string | null
   holdActive: boolean
@@ -55,22 +44,6 @@ const METHOD_LABELS: Record<string, string> = {
   va: 'Virtual Account',
   qrpay: 'QRIS',
   manual: 'Manual',
-}
-
-function toBreakdown(ticket: Ticket): PriceBreakdown {
-  return {
-    listPriceIdr: ticket.listPriceIdr,
-    autoDiscountId: ticket.autoDiscountId,
-    autoDiscountIdr: ticket.autoDiscountIdr,
-    autoDiscountName: ticket.autoDiscountName,
-    autoDiscountNameEn: ticket.autoDiscountNameEn,
-    autoDiscountPercent: ticket.autoDiscountPercent,
-    subtotalIdr: ticket.subtotalIdr,
-    promoDiscountId: ticket.promoDiscountId,
-    promoDiscountIdr: ticket.promoDiscountIdr,
-    promoCode: ticket.promoCode,
-    totalIdr: ticket.totalIdr,
-  }
 }
 
 export function ETicketClient() {
@@ -143,27 +116,6 @@ export function ETicketClient() {
     }
   }
 
-  const applyBreakdown = (breakdown: PriceBreakdown) => {
-    setTicket((prev) =>
-      prev
-        ? {
-            ...prev,
-            listPriceIdr: breakdown.listPriceIdr,
-            autoDiscountId: breakdown.autoDiscountId,
-            autoDiscountIdr: breakdown.autoDiscountIdr,
-            autoDiscountName: breakdown.autoDiscountName,
-            autoDiscountNameEn: breakdown.autoDiscountNameEn,
-            autoDiscountPercent: breakdown.autoDiscountPercent,
-            subtotalIdr: breakdown.subtotalIdr,
-            promoDiscountId: breakdown.promoDiscountId,
-            promoDiscountIdr: breakdown.promoDiscountIdr,
-            promoCode: breakdown.promoCode,
-            totalIdr: breakdown.totalIdr,
-          }
-        : prev,
-    )
-  }
-
   const payPending = async (method: 'ewallet' | 'va' | 'qrpay') => {
     if (!ticket) return
     setPaying(true)
@@ -178,17 +130,6 @@ export function ETicketClient() {
         saveTicket(ticket.orderCode)
         await refreshTicket(ticket.orderCode)
       } else if (res.status === 409) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string }
-        if (body.error === 'DISCOUNT_UNAVAILABLE') {
-          const clearRes = await fetch(`/api/orders/${encodeURIComponent(ticket.orderCode)}/discount`, {
-            method: 'DELETE',
-          })
-          if (clearRes.ok) {
-            applyBreakdown((await clearRes.json()) as PriceBreakdown)
-            setPayError(t('error.discountUnavailable'))
-            return
-          }
-        }
         setHoldLost(true)
         setPayError(t('error.holdExpired'))
         await refreshTicket(ticket.orderCode)
@@ -293,7 +234,6 @@ export function ETicketClient() {
                   </div>
                   <div className="mt-6 h-48 rounded-sm bg-paper/10 sm:mt-0" />
                 </div>
-
               </div>
             </div>
           )}
@@ -325,14 +265,11 @@ export function ETicketClient() {
           {ticket && ticket.status === 'pending' && !pendingExpired && (
             <div className="pt-6 sm:pt-8">
               <PaymentStep
-                breakdown={toBreakdown(ticket)}
                 totalIdr={ticket.totalIdr}
-                orderCode={ticket.orderCode}
                 holdExpiresAt={ticket.holdExpiresAt}
                 contextLabel={pendingContext}
                 paying={paying}
                 error={payError}
-                onBreakdownChange={applyBreakdown}
                 onBack={() => router.push('/tickets')}
                 onPay={payPending}
               />
@@ -431,34 +368,6 @@ export function ETicketClient() {
                         <dt className="text-xs text-ink/65">{t('eticket.name')}</dt>
                         <dd className="mt-1 break-words text-sm font-medium leading-snug">{ticket.name}</dd>
                       </div>
-                      {(ticket.autoDiscountIdr > 0 || ticket.promoDiscountIdr > 0) && (
-                        <div>
-                          <dt className="text-xs text-ink/65">{t('discount.listPrice')}</dt>
-                          <dd className="mt-1 text-sm font-medium tabular-nums">
-                            {formatIdr(ticket.listPriceIdr, lang)}
-                          </dd>
-                        </div>
-                      )}
-                      {ticket.autoDiscountIdr > 0 && (
-                        <div>
-                          <dt className="text-xs text-ink/65">
-                            {lang === 'id' ? ticket.autoDiscountName : ticket.autoDiscountNameEn}
-                          </dt>
-                          <dd className="mt-1 text-sm font-medium tabular-nums text-emerald-700">
-                            −{formatIdr(ticket.autoDiscountIdr, lang)}
-                          </dd>
-                        </div>
-                      )}
-                      {ticket.promoDiscountIdr > 0 && (
-                        <div>
-                          <dt className="text-xs text-ink/65">
-                            {ticket.promoCode} · {t('discount.promo')}
-                          </dt>
-                          <dd className="mt-1 text-sm font-medium tabular-nums text-emerald-700">
-                            −{formatIdr(ticket.promoDiscountIdr, lang)}
-                          </dd>
-                        </div>
-                      )}
                       <div>
                         <dt className="text-xs text-ink/65">{t('summary.total')}</dt>
                         <dd className="mt-1 text-sm font-semibold tabular-nums">

@@ -77,13 +77,6 @@ Optional ticket email: set `RESEND_API_KEY` and `EMAIL_FROM` to send e-ticket li
 - Pilot one-pager: `/pilot`
 - PDF backup: `/deck/pataka-pitch.pdf` · notes PDF: `/deck/pataka-notes.pdf`
 
-## Demo discounts
-
-- The admin **Diskon** tab creates automatic phases and promo codes.
-- Demo promo codes: `PATKA10` (10% off), `HEMAT50` (Rp 50.000 off, min Rp 500.000), `VIP100` (Rp 100.000 off, VIP only).
-- Demo phases: Early Bird 20% (until 13 Nov 2026) and Final Call 10% (14–15 Nov 2026).
-- `npm run db:demo` seeds them idempotently; promo usage is counted at payment.
-
 ## Prototype assumptions (also on the deck)
 
 - Closing Night Concert, Sawarga Courtyard (open-air), Summarecon Mall Bandung, 14 Nov 2026, 19:00 WIB.
