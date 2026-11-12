@@ -1,8 +1,8 @@
 'use client'
 
-import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber'
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { OrbitControls, PerformanceMonitor } from '@react-three/drei'
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import type { Category, EventInfo, Lang, Seat } from '@/lib/types'
@@ -13,6 +13,8 @@ import { Board, Booth } from '@/components/world/Interactables'
 import { LookDrag } from '@/components/scene/LookDrag'
 import { SawargaEnvironment } from '@/components/scene/SawargaEnvironment'
 import { Stage } from '@/components/scene/summaba/Stage'
+import { clearCameraPosition } from '@/components/scene/summaba/layout'
+import { refreshInstancedBounds } from '@/lib/instancedBounds'
 import {
   assetQualityFor,
   effectiveQuality,
@@ -173,26 +175,54 @@ function Seats({
       (window.matchMedia('(pointer: coarse)').matches ||
         window.matchMedia('(any-pointer: coarse)').matches),
   )
+  const gl = useThree((state) => state.gl)
   const touchStartRef = useRef<{ pointerId: number; x: number; y: number } | null>(null)
+  const suppressClickRef = useRef(false)
   const touchSelectRef = useRef<{ id: string; at: number } | null>(null)
   const dummy = useMemo(() => new THREE.Object3D(), [])
   const color = useMemo(() => new THREE.Color(), [])
 
   useEffect(() => {
-    // A release over empty space never reaches a seat handler; clear the
-    // pending touch start after the canvas has processed the event.
-    const clear = () => {
+    // A release over empty space never reaches a seat handler, so track the
+    // whole canvas gesture. A drag must not turn into a seat click when it
+    // ends over a seat (orbit mode has no LookDrag to set dragStateRef).
+    const canvas = gl.domElement
+    let start: { pointerId: number; x: number; y: number } | null = null
+
+    const down = (event: PointerEvent) => {
+      start = { pointerId: event.pointerId, x: event.clientX, y: event.clientY }
+      suppressClickRef.current = false
+    }
+    const up = (event: PointerEvent) => {
+      if (start && start.pointerId === event.pointerId) {
+        const travelled = Math.hypot(event.clientX - start.x, event.clientY - start.y)
+        if (travelled > SEAT_TAP_SLOP_PX) {
+          suppressClickRef.current = true
+          // Cover both the immediate mouse click and the delayed touch click.
+          window.setTimeout(() => {
+            suppressClickRef.current = false
+          }, 400)
+        }
+      }
+      start = null
       touchStartRef.current = null
     }
-    window.addEventListener('pointerup', clear)
-    window.addEventListener('pointercancel', clear)
-    return () => {
-      window.removeEventListener('pointerup', clear)
-      window.removeEventListener('pointercancel', clear)
+    const cancel = () => {
+      start = null
+      touchStartRef.current = null
     }
-  }, [])
 
-  useEffect(() => {
+    canvas.addEventListener('pointerdown', down)
+    window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', cancel)
+    return () => {
+      canvas.removeEventListener('pointerdown', down)
+      window.removeEventListener('pointerup', up)
+      window.removeEventListener('pointercancel', cancel)
+    }
+  }, [gl])
+
+  useLayoutEffect(() => {
     const pads = padsRef.current
     const backs = backsRef.current
     const hits = hitsRef.current
@@ -248,6 +278,15 @@ function Seats({
     if (pads.instanceColor) pads.instanceColor.needsUpdate = true
     if (backs.instanceColor) backs.instanceColor.needsUpdate = true
     if (hits) hits.instanceMatrix.needsUpdate = true
+
+    // Three.js caches the instanced bounds and uses them for both raycasting
+    // and frustum culling. The 5s seat poll can move instances while the page
+    // is open, so recompute after every matrix update or seats become visible
+    // but unclickable (or disappear as a whole when the stale sphere is out of
+    // view).
+    refreshInstancedBounds(pads)
+    refreshInstancedBounds(backs)
+    refreshInstancedBounds(hits)
   }, [seats, selectedId, hovered, highlightCategory, dummy, color])
 
   const handlePointerMove = (event: ThreeEvent<PointerEvent>) => {
@@ -282,6 +321,7 @@ function Seats({
   }
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
+    if (suppressClickRef.current) return
     if (dragStateRef?.current.dragging) return
     if (event.instanceId === undefined) return
     const seat = seats[event.instanceId]
@@ -298,6 +338,7 @@ function Seats({
       <instancedMesh
         ref={padsRef}
         args={[undefined, undefined, seats.length]}
+        frustumCulled={false}
         onPointerMove={handlePointerMove}
         onPointerOut={handlePointerOut}
         onPointerDown={handlePointerDown}
@@ -311,6 +352,7 @@ function Seats({
       <instancedMesh
         ref={backsRef}
         args={[undefined, undefined, seats.length]}
+        frustumCulled={false}
         onPointerMove={handlePointerMove}
         onPointerOut={handlePointerOut}
         onPointerDown={handlePointerDown}
@@ -325,11 +367,12 @@ function Seats({
         <instancedMesh
           ref={hitsRef}
           args={[undefined, undefined, seats.length]}
+          frustumCulled={false}
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
           onClick={handleClick}
         >
-          <boxGeometry args={[1.15, 1.5, 1.15]} />
+          <boxGeometry args={[1.35, 1.7, 1.35]} />
           <meshBasicMaterial
             transparent
             opacity={0}
@@ -414,6 +457,36 @@ function CameraReset({ mode }: { mode: 'orbit' | 'walk' }) {
   return null
 }
 
+/**
+ * OrbitControls can swing outside the shell or into the stage; from there the
+ * seats are hidden behind the venue geometry and cannot be clicked. Keep the
+ * orbit camera in the same clear volume as the follow camera.
+ */
+function OrbitCameraGuard({ enabled }: { enabled: boolean }) {
+  const camera = useThree((state) => state.camera)
+  const controls = useThree((state) => state.controls) as unknown as
+    | { target: THREE.Vector3 }
+    | null
+
+  useFrame(() => {
+    if (!enabled || !controls) return
+    const target = controls.target
+    const position = camera.position
+    const clear = clearCameraPosition(
+      { x: target.x, y: target.y + 1.6, z: target.z },
+      { x: position.x, y: position.y, z: position.z },
+    )
+    if (
+      Math.abs(clear.x - position.x) > 1e-4 ||
+      Math.abs(clear.y - position.y) > 1e-4 ||
+      Math.abs(clear.z - position.z) > 1e-4
+    ) {
+      position.set(clear.x, clear.y, clear.z)
+    }
+  })
+  return null
+}
+
 export default function PlazaScene({
   seats,
   selectedId,
@@ -471,11 +544,7 @@ export default function PlazaScene({
   const dragStateRef = useRef({ dragging: false })
 
   return (
-    <div
-      className={
-        mode === 'walk' ? 'h-full w-full touch-none select-none' : 'h-full w-full'
-      }
-    >
+    <div className="h-full w-full touch-none select-none">
       <Canvas
         dpr={dpr}
         camera={{ position: [20, 17, 20], fov: 55 }}
@@ -537,8 +606,11 @@ export default function PlazaScene({
             maxDistance={80}
             minPolarAngle={0.25}
             maxPolarAngle={Math.PI / 2.05}
+            minAzimuthAngle={-Math.PI / 2}
+            maxAzimuthAngle={Math.PI / 2}
           />
         )}
+        {mode === 'orbit' && <OrbitCameraGuard enabled={!previewSeat && !paused} />}
         {previewSeat && <PreviewCamera seat={previewSeat} />}
       </Canvas>
     </div>
