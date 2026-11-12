@@ -15,6 +15,7 @@ import { SawargaEnvironment } from '@/components/scene/SawargaEnvironment'
 import { Stage } from '@/components/scene/summaba/Stage'
 import { clearCameraPosition } from '@/components/scene/summaba/layout'
 import { refreshInstancedBounds } from '@/lib/instancedBounds'
+import { nearestSeatAtScreenPoint } from '@/lib/seatProjection'
 import {
   assetQualityFor,
   effectiveQuality,
@@ -176,6 +177,7 @@ function Seats({
         window.matchMedia('(any-pointer: coarse)').matches),
   )
   const gl = useThree((state) => state.gl)
+  const camera = useThree((state) => state.camera)
   const touchStartRef = useRef<{ pointerId: number; x: number; y: number } | null>(null)
   const suppressClickRef = useRef(false)
   const touchSelectRef = useRef<{ id: string; at: number } | null>(null)
@@ -289,6 +291,11 @@ function Seats({
     refreshInstancedBounds(hits)
   }, [seats, selectedId, hovered, highlightCategory, dummy, color])
 
+  const pickSeatAt = (clientX: number, clientY: number, radiusPx: number) => {
+    const rect = gl.domElement.getBoundingClientRect()
+    return nearestSeatAtScreenPoint(seats, camera, rect, clientX, clientY, radiusPx)
+  }
+
   const handlePointerMove = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation()
     if (event.instanceId !== undefined && event.instanceId !== hovered) setHovered(event.instanceId)
@@ -312,19 +319,37 @@ function Seats({
     if (dragStateRef?.current.dragging) return
     const travelled = Math.hypot(event.clientX - start.x, event.clientY - start.y)
     if (travelled > SEAT_TAP_SLOP_PX) return
-    if (event.instanceId === undefined) return
-    const seat = seats[event.instanceId]
+    // The coarse-pointer hit boxes overlap the next row; use the projected
+    // seat center so the seat under the finger wins instead of the row behind.
+    const seat =
+      pickSeatAt(event.clientX, event.clientY, 30) ??
+      (event.instanceId !== undefined ? seats[event.instanceId] : null)
+    if (!seat) return
     // Browsers stop emitting click once a touch drifts past their tap slop;
     // select on pointerup too, and skip the duplicate synthetic click.
     touchSelectRef.current = { id: seat.id, at: performance.now() }
+    suppressClickRef.current = true
+    // The footer/hold button can appear under the finger after a seat tap.
+    // Block the synthetic click so it cannot activate a newly-rendered button.
+    const blockClick = (clickEvent: MouseEvent) => {
+      clickEvent.preventDefault()
+      clickEvent.stopPropagation()
+    }
+    window.addEventListener('click', blockClick, { capture: true, once: true })
+    window.setTimeout(() => {
+      suppressClickRef.current = false
+      window.removeEventListener('click', blockClick, { capture: true })
+    }, 400)
     onSelect(seat)
   }
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
     if (suppressClickRef.current) return
     if (dragStateRef?.current.dragging) return
-    if (event.instanceId === undefined) return
-    const seat = seats[event.instanceId]
+    const seat =
+      pickSeatAt(event.clientX, event.clientY, 20) ??
+      (event.instanceId !== undefined ? seats[event.instanceId] : null)
+    if (!seat) return
     const touched = touchSelectRef.current
     if (touched && touched.id === seat.id && performance.now() - touched.at < 500) {
       touchSelectRef.current = null
