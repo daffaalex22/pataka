@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import Delaunator from 'delaunator';
 import { makeRng, randRange, type Rng } from './rng';
+import { drawSpacedText, fitFontToWidth, spacedTextWidth } from './textLayout';
 
 export interface TextureOptions {
   srgb?: boolean;
@@ -464,23 +465,6 @@ export function makeInteriorTexture(variant: InteriorVariant, seed = 55): THREE.
   return canvasTexture(canvas, { anisotropy: 4 });
 }
 
-function drawSpacedText(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  x: number,
-  y: number,
-  spacing: number,
-): void {
-  const chars = [...text];
-  const widths = chars.map((char) => ctx.measureText(char).width);
-  const total = widths.reduce((sum, width) => sum + width, 0) + spacing * Math.max(0, chars.length - 1);
-  let cursor = x - total / 2;
-  for (let i = 0; i < chars.length; i += 1) {
-    ctx.fillText(chars[i], cursor, y);
-    cursor += widths[i] + spacing;
-  }
-}
-
 export interface SignOptions {
   text: string;
   subtext?: string;
@@ -532,10 +516,13 @@ export function makeSignTexture(options: SignOptions): THREE.CanvasTexture {
 
   ctx.fillStyle = color;
   ctx.font = font;
-  ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   const textY = options.mark ? height * 0.64 : height * 0.5;
-  drawSpacedText(ctx, options.text, centerX, textY, options.spacing ?? height * 0.02);
+  const spacing = options.spacing ?? height * 0.02;
+  const glyphWidths = [...options.text].map((glyph) => ctx.measureText(glyph).width);
+  const fitted = fitFontToWidth(font, spacing, spacedTextWidth(glyphWidths, spacing), width * 0.9);
+  ctx.font = fitted.font;
+  drawSpacedText(ctx, options.text, centerX, textY, fitted.spacing);
 
   if (options.subtext) {
     ctx.fillStyle = subColor;
