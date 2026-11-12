@@ -79,7 +79,7 @@ seeds the new positions through `src/lib/seatLayout.ts`.
 ## Verification
 
 ```bash
-npm test                     # 171 tests
+npm test                     # 214 tests
 npm run build
 npm run db:migrate-trib      # once per existing local/preview DB
 npx next start -p 3010       # production check
