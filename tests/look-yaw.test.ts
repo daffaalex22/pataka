@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  CLICK_SUPPRESSION_PX,
   DRAG_THRESHOLD_PX,
   LOOK_PITCH_SENSITIVITY,
   LOOK_SENSITIVITY,
   PITCH_MAX,
   PITCH_MIN,
+  TOUCH_DRAG_THRESHOLD_PX,
   dragEnd,
   dragMove,
   dragStart,
@@ -31,6 +33,8 @@ describe('updateLookYaw', () => {
     expect(LOOK_SENSITIVITY).toBe(0.0035)
     expect(LOOK_PITCH_SENSITIVITY).toBe(0.0025)
     expect(DRAG_THRESHOLD_PX).toBe(12)
+    expect(TOUCH_DRAG_THRESHOLD_PX).toBe(16)
+    expect(CLICK_SUPPRESSION_PX).toBe(24)
     expect(PITCH_MIN).toBe(-0.35)
     expect(PITCH_MAX).toBe(0.45)
   })
@@ -105,5 +109,38 @@ describe('drag tracker', () => {
   it('other pointers cannot end the active drag', () => {
     const result = dragEnd(dragStart(5, 100, 200), 7)
     expect(result.tracker.pointerId).toBe(5)
+  })
+
+  it('touches need more travel before the look starts', () => {
+    const first = dragMove(dragStart(5, 100, 200, 'touch'), 5, 112, 200)
+    expect(first.tracker.dragging).toBe(false)
+    expect(first.yawDeltaPx).toBe(0)
+
+    const second = dragMove(first.tracker, 5, 118, 200)
+    expect(second.tracker.dragging).toBe(true)
+    expect(second.yawDeltaPx).toBe(6)
+  })
+
+  it('keeps the tighter mouse threshold', () => {
+    const first = dragMove(dragStart(5, 100, 200), 5, 110, 200)
+    expect(first.tracker.dragging).toBe(false)
+
+    const second = dragMove(first.tracker, 5, 113, 200)
+    expect(second.tracker.dragging).toBe(true)
+  })
+
+  it('does not suppress a seat tap for small touch drift', () => {
+    const moved = dragMove(dragStart(5, 100, 200, 'touch'), 5, 114, 200).tracker
+    expect(moved.dragging).toBe(false)
+    expect(dragEnd(moved, 5).suppressClick).toBe(false)
+  })
+
+  it('suppresses the click only after a deliberate drag', () => {
+    let tracker = dragStart(5, 100, 200, 'touch')
+    for (let step = 1; step <= 4; step += 1) {
+      tracker = dragMove(tracker, 5, 100 + step * 7, 200).tracker
+    }
+    expect(tracker.travelled).toBe(28)
+    expect(dragEnd(tracker, 5).suppressClick).toBe(true)
   })
 })

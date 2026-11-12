@@ -29,6 +29,9 @@ const STATUS_3D: Record<string, string> = {
   sold: '#3a3949',
 }
 
+/** A touch that moves farther than this is a look/orbit drag, not a seat tap. */
+const SEAT_TAP_SLOP_PX = 24
+
 /**
  * Small procedural night environment so glass, metal, and the paving pick up
  * believable reflections without loading a sky HDRI into the ticketing scene.
@@ -162,13 +165,37 @@ function Seats({
 }) {
   const padsRef = useRef<THREE.InstancedMesh>(null)
   const backsRef = useRef<THREE.InstancedMesh>(null)
+  const hitsRef = useRef<THREE.InstancedMesh>(null)
   const [hovered, setHovered] = useState<number | null>(null)
+  const [coarsePointer] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      (window.matchMedia('(pointer: coarse)').matches ||
+        window.matchMedia('(any-pointer: coarse)').matches),
+  )
+  const touchStartRef = useRef<{ pointerId: number; x: number; y: number } | null>(null)
+  const touchSelectRef = useRef<{ id: string; at: number } | null>(null)
   const dummy = useMemo(() => new THREE.Object3D(), [])
   const color = useMemo(() => new THREE.Color(), [])
 
   useEffect(() => {
+    // A release over empty space never reaches a seat handler; clear the
+    // pending touch start after the canvas has processed the event.
+    const clear = () => {
+      touchStartRef.current = null
+    }
+    window.addEventListener('pointerup', clear)
+    window.addEventListener('pointercancel', clear)
+    return () => {
+      window.removeEventListener('pointerup', clear)
+      window.removeEventListener('pointercancel', clear)
+    }
+  }, [])
+
+  useEffect(() => {
     const pads = padsRef.current
     const backs = backsRef.current
+    const hits = hitsRef.current
     if (!pads || !backs) return
 
     seats.forEach((seat, index) => {
@@ -198,6 +225,16 @@ function Seats({
       dummy.updateMatrix()
       backs.setMatrixAt(index, dummy.matrix)
 
+      if (hits) {
+        // Coarse pointers get one forgiving target around the pad and back,
+        // without changing the visible seat size.
+        dummy.position.set(seat.x, seat.y + 0.72 + lift, seat.z)
+        dummy.rotation.set(0, rotationY, 0)
+        dummy.scale.setScalar(1)
+        dummy.updateMatrix()
+        hits.setMatrixAt(index, dummy.matrix)
+      }
+
       const base = STATUS_3D[seat.status] ?? STATUS_3D.available
       color.set(isSelected ? '#f5c542' : base)
       if (isHovered && !isSelected) color.offsetHSL(0, 0.15, 0.12)
@@ -210,6 +247,7 @@ function Seats({
     backs.instanceMatrix.needsUpdate = true
     if (pads.instanceColor) pads.instanceColor.needsUpdate = true
     if (backs.instanceColor) backs.instanceColor.needsUpdate = true
+    if (hits) hits.instanceMatrix.needsUpdate = true
   }, [seats, selectedId, hovered, highlightCategory, dummy, color])
 
   const handlePointerMove = (event: ThreeEvent<PointerEvent>) => {
@@ -217,10 +255,42 @@ function Seats({
     if (event.instanceId !== undefined && event.instanceId !== hovered) setHovered(event.instanceId)
   }
   const handlePointerOut = () => setHovered(null)
+  const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
+    if (event.pointerType !== 'touch') return
+    event.stopPropagation()
+    touchStartRef.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+    }
+  }
+  const handlePointerUp = (event: ThreeEvent<PointerEvent>) => {
+    if (event.pointerType !== 'touch') return
+    const start = touchStartRef.current
+    touchStartRef.current = null
+    if (!start || start.pointerId !== event.pointerId) return
+    event.stopPropagation()
+    if (dragStateRef?.current.dragging) return
+    const travelled = Math.hypot(event.clientX - start.x, event.clientY - start.y)
+    if (travelled > SEAT_TAP_SLOP_PX) return
+    if (event.instanceId === undefined) return
+    const seat = seats[event.instanceId]
+    // Browsers stop emitting click once a touch drifts past their tap slop;
+    // select on pointerup too, and skip the duplicate synthetic click.
+    touchSelectRef.current = { id: seat.id, at: performance.now() }
+    onSelect(seat)
+  }
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
     if (dragStateRef?.current.dragging) return
-    if (event.instanceId !== undefined) onSelect(seats[event.instanceId])
+    if (event.instanceId === undefined) return
+    const seat = seats[event.instanceId]
+    const touched = touchSelectRef.current
+    if (touched && touched.id === seat.id && performance.now() - touched.at < 500) {
+      touchSelectRef.current = null
+      return
+    }
+    onSelect(seat)
   }
 
   return (
@@ -230,6 +300,8 @@ function Seats({
         args={[undefined, undefined, seats.length]}
         onPointerMove={handlePointerMove}
         onPointerOut={handlePointerOut}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
         onClick={handleClick}
       >
         <boxGeometry args={[0.78, 0.24, 0.78]} />
@@ -241,11 +313,32 @@ function Seats({
         args={[undefined, undefined, seats.length]}
         onPointerMove={handlePointerMove}
         onPointerOut={handlePointerOut}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
         onClick={handleClick}
       >
         <boxGeometry args={[0.78, 0.4, 0.14]} />
         <meshStandardMaterial roughness={0.6} metalness={0.1} />
       </instancedMesh>
+
+      {coarsePointer && (
+        <instancedMesh
+          ref={hitsRef}
+          args={[undefined, undefined, seats.length]}
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onClick={handleClick}
+        >
+          <boxGeometry args={[1.15, 1.5, 1.15]} />
+          <meshBasicMaterial
+            transparent
+            opacity={0}
+            depthWrite={false}
+            colorWrite={false}
+            toneMapped={false}
+          />
+        </instancedMesh>
+      )}
     </group>
   )
 }
@@ -378,68 +471,76 @@ export default function PlazaScene({
   const dragStateRef = useRef({ dragging: false })
 
   return (
-    <Canvas
-      dpr={dpr}
-      camera={{ position: [20, 17, 20], fov: 55 }}
-      gl={{ antialias: true, powerPreference: 'high-performance' }}
+    <div
+      className={
+        mode === 'walk' ? 'h-full w-full touch-none select-none' : 'h-full w-full'
+      }
     >
-      {quality === 'auto' && (
-        <PerformanceMonitor
-          onDecline={() => setDprState({ quality, dpr: 1 })}
-          onIncline={() => setDprState({ quality, dpr: maxDpr })}
-          onFallback={() => setDprState({ quality, dpr: 1 })}
-        />
-      )}
-      <CameraReset mode={mode} />
-      <NightEnvironment intensity={SCENE_PRESETS[effective].envIntensity} />
-      <Suspense fallback={null}>
-        <Venue quality={effective} assetQuality={assetQuality} />
-        <Seats
-          seats={seats}
-          selectedId={selectedId}
-          onSelect={onSelect}
-          highlightCategory={highlightCategory}
-          dragStateRef={dragStateRef}
-        />
-        {showInteractables && boardData && (
-          <Board
-            event={boardData.event}
-            categories={boardData.categories}
-            lang={boardData.lang}
-            onTap={onBoardTap}
-            dragStateRef={dragStateRef}
+      <Canvas
+        dpr={dpr}
+        camera={{ position: [20, 17, 20], fov: 55 }}
+        gl={{ antialias: true, powerPreference: 'high-performance' }}
+      >
+        {quality === 'auto' && (
+          <PerformanceMonitor
+            onDecline={() => setDprState({ quality, dpr: 1 })}
+            onIncline={() => setDprState({ quality, dpr: maxDpr })}
+            onFallback={() => setDprState({ quality, dpr: 1 })}
           />
         )}
-        {showInteractables && onBoothTap && <Booth onTap={onBoothTap} dragStateRef={dragStateRef} />}
-        {mode === 'walk' && moveRef && (
-          <WalkRig
-            moveRef={moveRef}
-            paused={paused || Boolean(previewSeat)}
-            characterRef={characterRef}
-            lookYawRef={lookYawRef}
-            pitchRef={pitchRef}
+        <CameraReset mode={mode} />
+        <NightEnvironment intensity={SCENE_PRESETS[effective].envIntensity} />
+        <Suspense fallback={null}>
+          <Venue quality={effective} assetQuality={assetQuality} />
+          <Seats
+            seats={seats}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            highlightCategory={highlightCategory}
             dragStateRef={dragStateRef}
-            autoWalkSeat={autoWalkSeat}
-            onAutoWalkArrived={onAutoWalkArrived}
-            onAutoWalkCancel={onAutoWalkCancel}
+          />
+          {showInteractables && boardData && (
+            <Board
+              event={boardData.event}
+              categories={boardData.categories}
+              lang={boardData.lang}
+              onTap={onBoardTap}
+              dragStateRef={dragStateRef}
+            />
+          )}
+          {showInteractables && onBoothTap && (
+            <Booth onTap={onBoothTap} dragStateRef={dragStateRef} />
+          )}
+          {mode === 'walk' && moveRef && (
+            <WalkRig
+              moveRef={moveRef}
+              paused={paused || Boolean(previewSeat)}
+              characterRef={characterRef}
+              lookYawRef={lookYawRef}
+              pitchRef={pitchRef}
+              dragStateRef={dragStateRef}
+              autoWalkSeat={autoWalkSeat}
+              onAutoWalkArrived={onAutoWalkArrived}
+              onAutoWalkCancel={onAutoWalkCancel}
+            />
+          )}
+        </Suspense>
+        {mode === 'orbit' && (
+          <OrbitControls
+            makeDefault
+            enabled={!previewSeat && !paused}
+            target={[-2, 3, -7]}
+            enablePan={false}
+            enableDamping
+            dampingFactor={0.08}
+            minDistance={15}
+            maxDistance={80}
+            minPolarAngle={0.25}
+            maxPolarAngle={Math.PI / 2.05}
           />
         )}
-      </Suspense>
-      {mode === 'orbit' && (
-        <OrbitControls
-          makeDefault
-          enabled={!previewSeat && !paused}
-          target={[-2, 3, -7]}
-          enablePan={false}
-          enableDamping
-          dampingFactor={0.08}
-          minDistance={15}
-          maxDistance={80}
-          minPolarAngle={0.25}
-          maxPolarAngle={Math.PI / 2.05}
-        />
-      )}
-      {previewSeat && <PreviewCamera seat={previewSeat} />}
-    </Canvas>
+        {previewSeat && <PreviewCamera seat={previewSeat} />}
+      </Canvas>
+    </div>
   )
 }

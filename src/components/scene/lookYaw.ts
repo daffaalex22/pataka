@@ -3,6 +3,10 @@
 export const LOOK_SENSITIVITY = 0.0035
 export const LOOK_PITCH_SENSITIVITY = 0.0025
 export const DRAG_THRESHOLD_PX = 12
+/** Fingers wobble during a tap; touch drags start later than mouse drags. */
+export const TOUCH_DRAG_THRESHOLD_PX = 16
+/** A drag only disarms seat clicks past this travel, so small taps still select. */
+export const CLICK_SUPPRESSION_PX = 24
 export const PITCH_MIN = -0.35
 export const PITCH_MAX = 0.45
 
@@ -38,14 +42,20 @@ export function hasMoved(prevX: number, prevZ: number, x: number, z: number, del
  */
 export type DragTracker = {
   pointerId: number | null
+  pointerType: string
   lastX: number
   lastY: number
   travelled: number
   dragging: boolean
 }
 
-export function dragStart(pointerId: number, clientX: number, clientY: number): DragTracker {
-  return { pointerId, lastX: clientX, lastY: clientY, travelled: 0, dragging: false }
+export function dragStart(
+  pointerId: number,
+  clientX: number,
+  clientY: number,
+  pointerType = 'mouse',
+): DragTracker {
+  return { pointerId, pointerType, lastX: clientX, lastY: clientY, travelled: 0, dragging: false }
 }
 
 export function dragMove(
@@ -58,9 +68,10 @@ export function dragMove(
   const dx = clientX - tracker.lastX
   const dy = clientY - tracker.lastY
   const travelled = tracker.travelled + Math.hypot(dx, dy)
-  const dragging = tracker.dragging || travelled > DRAG_THRESHOLD_PX
+  const threshold = tracker.pointerType === 'touch' ? TOUCH_DRAG_THRESHOLD_PX : DRAG_THRESHOLD_PX
+  const dragging = tracker.dragging || travelled > threshold
   return {
-    tracker: { pointerId, lastX: clientX, lastY: clientY, travelled, dragging },
+    tracker: { ...tracker, pointerId, lastX: clientX, lastY: clientY, travelled, dragging },
     yawDeltaPx: dragging ? dx : 0,
     pitchDeltaPx: dragging ? dy : 0,
   }
@@ -69,7 +80,7 @@ export function dragMove(
 export function dragEnd(tracker: DragTracker, pointerId: number): { tracker: DragTracker; suppressClick: boolean } {
   if (pointerId !== tracker.pointerId) return { tracker, suppressClick: false }
   return {
-    tracker: { pointerId: null, lastX: 0, lastY: 0, travelled: 0, dragging: false },
-    suppressClick: tracker.dragging,
+    tracker: { pointerId: null, pointerType: '', lastX: 0, lastY: 0, travelled: 0, dragging: false },
+    suppressClick: tracker.travelled > CLICK_SUPPRESSION_PX,
   }
 }
