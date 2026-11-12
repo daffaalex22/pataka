@@ -2,7 +2,15 @@
 
 import { useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
-import { type DragTracker, dragEnd, dragMove, dragStart, updateLookYaw, updatePitch } from './lookYaw'
+import {
+  CLICK_SUPPRESSION_PX,
+  type DragTracker,
+  dragEnd,
+  dragMove,
+  dragStart,
+  updateLookYaw,
+  updatePitch,
+} from './lookYaw'
 
 /**
  * Horizontal pointer drag rotates the walk camera around the character.
@@ -10,6 +18,10 @@ import { type DragTracker, dragEnd, dragMove, dragStart, updateLookYaw, updatePi
  * pointer-id tracking keeps its second thumb from corrupting or ending the
  * look drag. A drag past the threshold marks dragStateRef so seat/booth
  * clicks are suppressed for that gesture.
+ *
+ * PlazaScene sets `touch-action: none` on the Canvas container in walk mode:
+ * without it the browser claims the touch as a page pan, sends a couple of
+ * pointermoves and then pointercancel.
  */
 export function LookDrag({
   yawRef,
@@ -25,10 +37,11 @@ export function LookDrag({
 
   useEffect(() => {
     const element = gl.domElement
+    const dragState = dragStateRef.current
 
     const down = (event: PointerEvent) => {
       if (tracker.current) return
-      tracker.current = dragStart(event.pointerId, event.clientX, event.clientY)
+      tracker.current = dragStart(event.pointerId, event.clientX, event.clientY, event.pointerType)
     }
 
     const move = (event: PointerEvent) => {
@@ -36,10 +49,11 @@ export function LookDrag({
       const result = dragMove(tracker.current, event.pointerId, event.clientX, event.clientY)
       tracker.current = result.tracker
       if (result.tracker.dragging) {
-        dragStateRef.current.dragging = true
         yawRef.current = updateLookYaw(yawRef.current, result.yawDeltaPx)
         pitchRef.current = updatePitch(pitchRef.current, result.pitchDeltaPx)
       }
+      // A small touch tap may start rotating, but it must still select a seat.
+      dragState.dragging = result.tracker.travelled > CLICK_SUPPRESSION_PX
     }
 
     const end = (event: PointerEvent) => {
@@ -62,7 +76,7 @@ export function LookDrag({
 
     return () => {
       tracker.current = null
-      dragStateRef.current.dragging = false
+      dragState.dragging = false
       element.removeEventListener('pointerdown', down)
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', end)

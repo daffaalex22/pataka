@@ -23,7 +23,12 @@ old venue shell is replaced.
 - **Scripted walks** route up the stage-side switchback, across the bridge, and
   along the curved terrace with arc waypoints.
 - **The 2D seat map** projects all seats into the shell ellipse, so the curved
-  TRIB bands are visible instead of being clipped by the old fixed scale.
+  TRIB bands are visible instead of being clipped by the old fixed scale. The
+  booking overview uses the same shell and curved balcony geometry, and the
+  full seat sheet draws the three stepped terraces.
+- **Walk-mode touch** uses `touch-action: none` on the 3D canvas container, a
+  separate touch drag threshold, and a forgiving seat hit target, so one-finger
+  look drags and seat taps both work on phones.
 - **Night lighting** keeps the original stage/string lights, adds a small
   procedural environment map for glass/metal reflections, and adds a warm stage
   wash plus two balcony practicals.
@@ -74,7 +79,7 @@ seeds the new positions through `src/lib/seatLayout.ts`.
 ## Verification
 
 ```bash
-npm test                     # 161 tests
+npm test                     # 171 tests
 npm run build
 npm run db:migrate-trib      # once per existing local/preview DB
 npx next start -p 3010       # production check

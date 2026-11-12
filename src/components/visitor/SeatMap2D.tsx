@@ -5,23 +5,16 @@ import { STATUS_COLORS } from '@/components/ui/Legend'
 import { useLang, useT } from '@/lib/i18n'
 import { findNextSeat, type SeatDirection } from '@/lib/seatNavigation'
 import { formatIdr, type Seat } from '@/lib/types'
-import { BALCONY, SHELL, shellOffsetPoint } from '@/lib/sawarga/scene/venue/layout'
+import { BALCONY, SHELL } from '@/lib/sawarga/scene/venue/layout'
+import {
+  balconyArcPath,
+  balconyBandPath,
+  createSeatMapProjection,
+} from '@/lib/seatMapGeometry'
 
 const MAP_WIDTH = 640
 const MAP_HEIGHT = 620
 const MAP_PADDING = 24
-
-function createProjection() {
-  const scale = Math.min(
-    (MAP_WIDTH - MAP_PADDING * 2) / (SHELL.radiusX * 2),
-    (MAP_HEIGHT - MAP_PADDING * 2) / (SHELL.radiusZ * 2),
-  )
-  return {
-    scale,
-    x: (x: number) => MAP_WIDTH / 2 + x * scale,
-    y: (z: number) => MAP_HEIGHT / 2 + z * scale,
-  }
-}
 
 const KEY_DIRECTIONS: Partial<Record<string, SeatDirection>> = {
   ArrowUp: 'up',
@@ -84,20 +77,26 @@ export function SeatMap2D({
     moved: boolean
   } | null>(null)
   const suppressClickRef = useRef(false)
-  const projection = useMemo(() => createProjection(), [])
-  const balconyBands = useMemo(() => {
-    const band = (range: readonly [number, number]) => {
-      const steps = 30
-      const points: string[] = []
-      for (let i = 0; i < steps; i += 1) {
-        const angle = range[0] * Math.PI + ((range[1] - range[0]) * Math.PI * i) / (steps - 1)
-        const point = shellOffsetPoint(angle, BALCONY.depth / 2)
-        points.push(`${i === 0 ? 'M' : 'L'}${projection.x(point.x).toFixed(1)} ${projection.y(point.z).toFixed(1)}`)
-      }
-      return points.join(' ')
-    }
-    return [band(BALCONY.eastAngleRange), band(BALCONY.westAngleRange)]
-  }, [projection])
+  const projection = useMemo(
+    () => createSeatMapProjection(MAP_WIDTH, MAP_HEIGHT, MAP_PADDING),
+    [],
+  )
+  const balconyDecks = useMemo(
+    () => [
+      balconyBandPath(projection, BALCONY.eastAngleRange),
+      balconyBandPath(projection, BALCONY.westAngleRange),
+    ],
+    [projection],
+  )
+  const balconyTiers = useMemo(
+    () =>
+      [2, 4].flatMap((offset) => [
+        balconyArcPath(projection, BALCONY.eastAngleRange, offset),
+        balconyArcPath(projection, BALCONY.westAngleRange, offset),
+      ]),
+    [projection],
+  )
+  const tribuneActive = categoryKey === 'TRIB'
 
   const tabStopId = useMemo(() => {
     if (selectedId && seats.some((seat) => seat.id === selectedId)) return selectedId
@@ -331,14 +330,23 @@ export function SeatMap2D({
             stroke="rgba(244,241,255,0.14)"
             strokeWidth="1.2"
           />
-          {balconyBands.map((band, index) => (
+          {balconyDecks.map((deck, index) => (
             <path
-              key={index}
-              d={band}
+              key={`deck-${index}`}
+              d={deck}
+              fill={tribuneActive ? 'rgba(56,189,248,0.14)' : 'rgba(244,241,255,0.045)'}
+              stroke={tribuneActive ? 'rgba(56,189,248,0.36)' : 'rgba(244,241,255,0.12)'}
+              strokeWidth="1"
+            />
+          ))}
+          {balconyTiers.map((tier, index) => (
+            <path
+              key={`tier-${index}`}
+              d={tier}
               fill="none"
-              stroke="rgba(56,189,248,0.18)"
-              strokeWidth={BALCONY.depth * projection.scale}
-              strokeLinecap="round"
+              stroke={tribuneActive ? 'rgba(56,189,248,0.22)' : 'rgba(244,241,255,0.07)'}
+              strokeWidth="0.8"
+              strokeDasharray="4 4"
             />
           ))}
           <ellipse

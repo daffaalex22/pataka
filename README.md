@@ -16,7 +16,7 @@ Walk, with occupancy, revenue, check-ins, lifecycle and settlement.
 - Postgres — Neon in production, PGlite (in-process Postgres) for local dev and tests
 - Thin SQL adapter (`src/lib/db.ts`), no ORM
 - HMAC-signed QR payloads, `html5-qrcode` camera scanning on the check-in page
-- Vitest (161 tests) for the business-critical services, curved venue walkability, walk path, ticket store, portfolio builder and email delivery
+- Vitest (171 tests) for the business-critical services, curved venue walkability, 2D map geometry, walk path, ticket store, portfolio builder and email delivery
 
 ## Local development
 
